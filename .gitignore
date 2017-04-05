@@ -117,8 +117,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # Lazarus specific
-lib/*
-backup/*
+lib
+backup
 *.res
 *.dbg
 *.lrs
