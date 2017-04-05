@@ -23,10 +23,11 @@ object Form1: TForm1
     Top = 0
     Width = 301
     Align = alLeft
-    Font.Height = -13
-    Font.Name = 'Courier New'
+    Font.CharSet = ANSI_CHARSET
+    Font.Height = -20
+    Font.Name = 'Consolas'
     Font.Pitch = fpFixed
-    Font.Quality = fqNonAntialiased
+    Font.Quality = fqDraft
     ParentColor = False
     ParentFont = False
     TabOrder = 1
@@ -490,7 +491,7 @@ object Form1: TForm1
         MouseActions = <>
       end
       object SynGutterLineNumber1: TSynGutterLineNumber
-        Width = 17
+        Width = 23
         MouseActions = <>
         MarkupInfo.Background = clBtnFace
         MarkupInfo.Foreground = clNone

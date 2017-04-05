@@ -20,7 +20,7 @@ type
   private
     FPortA: String;
     procedure SetPortA(AValue: String);
-    procedure parseStringlist(List: TStringList);
+    procedure ParseStringlist(List: TStringList);
   public
      property PortA: String read FPortA write SetPortA;
   end;
@@ -38,16 +38,14 @@ procedure TForm1.btnEpicEventClick(Sender: TObject);
 var
   LstFile: TStringList;
 begin
-
   if OpenDialog1.Execute then
   begin
     LstFile := TStringList.Create;
     LstFile.LoadFromFile(OpenDialog1.FileName);
-    parseStringlist(LstFile);
+    ParseStringlist(LstFile);
     SynEdit1.Text := LstFile.Text;
     LstFile.Free;
   end;
-
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -61,7 +59,7 @@ begin
   FPortA := AValue;
 end;
 
-procedure TForm1.parseStringlist(List: TStringList);
+procedure TForm1.ParseStringlist(List: TStringList);
 var
   Counter: Integer;
 begin
