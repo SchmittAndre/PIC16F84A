@@ -2,38 +2,35 @@ unit Main;
 
 interface
 
-  uses
-    Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, StdCtrls,
-    ExtCtrls;
+uses
+  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, StdCtrls,
+  ExtCtrls;
 
-  type
+type
 
-    { TForm1 }
+  { TForm1 }
 
-    TForm1 = class(TForm)
-      btnEpicEvent: TButton;
-      OpenDialog1: TOpenDialog;
-      Splitter1: TSplitter;
-      SynEdit1: TSynEdit;
-      procedure btnEpicEventClick(Sender: TObject);
-      procedure FormCreate(Sender: TObject);
-    private
-      FPortA: String;
-      procedure SetPortA(AValue: String);
-      procedure parseStringlist(List: TStringList);
-    public
-       property PortA: String read FPortA write SetPortA;
-    end;
+  TForm1 = class(TForm)
+    btnEpicEvent: TButton;
+    OpenDialog1: TOpenDialog;
+    Splitter1: TSplitter;
+    SynEdit1: TSynEdit;
+    procedure btnEpicEventClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+  private
+    FPortA: String;
+    procedure SetPortA(AValue: String);
+    procedure parseStringlist(List: TStringList);
+  public
+     property PortA: String read FPortA write SetPortA;
+  end;
 
-
-
-  var
-    Form1: TForm1;
+var
+  Form1: TForm1;
 
 implementation
+
 {$R *.lfm}
-
-
 
 { TForm1 }
 

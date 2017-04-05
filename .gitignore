@@ -115,3 +115,10 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Lazarus specific
+lib
+Backup
+*.res
+*.dbg
+*.lrs
