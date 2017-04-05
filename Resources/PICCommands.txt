@@ -1,0 +1,43 @@
+--- Byte-Oriented File Register Operations ---
+ADDWF  | 6  | 00 0111 dfff ffff
+ANDWF  | 6  | 00 0101 dfff ffff
+CLRF   | 7  | 00 0001 1fff ffff
+CLRW   | 7  | 00 0001 0xxx xxxx
+COMF   | 6  | 00 1001 dfff ffff
+DECF   | 6  | 00 0011 dfff ffff
+DECFSZ | 6  | 00 1011 dfff ffff
+INCF   | 6  | 00 1010 dfff ffff
+INCFSZ | 6  | 00 1111 dfff ffff
+IORWF  | 6  | 00 0100 dfff ffff
+MOVF   | 6  | 00 1000 dfff ffff
+MOVWF  | 7  | 00 0000 1fff ffff
+NOP1   | 14 | 00 0000 0000 0000
+NOP2   | 14 | 00 0000 0010 0000
+NOP3   | 14 | 00 0000 0100 0000
+NOP4   | 14 | 00 0000 0110 0000
+RLF    | 6  | 00 1101 dfff ffff
+RRF    | 6  | 00 1100 dfff ffff
+SUBWF  | 6  | 00 0010 dfff ffff
+SWAPF  | 6  | 00 1110 dfff ffff
+XORWF  | 6  | 00 0110 dfff ffff
+
+--- Bit-Oriented File Register Operations ---
+BCF    | 4  | 01 00bb bfff ffff
+BSF    | 4  | 01 01bb bfff ffff
+BTFSC  | 4  | 01 10bb bfff ffff
+BTFSS  | 4  | 01 11bb bfff ffff
+
+--- Literal and Control Operations ---
+ADDLW  | 5  | 11 111x kkkk kkkk
+ANDLW  | 6  | 11 1001 kkkk kkkk
+CALL   | 3  | 10 0kkk kkkk kkkk
+CLRWDT | 14 | 00 0000 0110 0100
+GOTO   | 3  | 10 1kkk kkkk kkkk
+IORLW  | 6  | 11 1000 kkkk kkkk
+MOVLW  | 4  | 11 00xx kkkk kkkk
+RETFIE | 14 | 00 0000 0000 1001
+RETLW  | 4  | 11 01xx kkkk kkkk
+RETURN | 14 | 00 0000 0000 1000
+SLEEP  | 14 | 00 0000 0110 0011
+SUBLW  | 5  | 11 110x kkkk kkkk
+XORLW  | 6  | 11 1010 kkkk kkkk
