@@ -1,0 +1,41 @@
+                    00001           ;TPicSim2
+                    00002           ;Programm zum Test des 16F84-Simulators.
+                    00003           ;Es werden CALL, GOTO, RETLW, RETURN geprüft (kein RETFIE)
+                    00004           ;(c) St. Lehmann
+                    00005           ;Ersterstellung: 23.03.2016
+                    00006           ;
+                    00007           list c=132          ;Zeilenlänge im LST auf 132 Zeichen setzen
+                    00008           
+                    00009           ;Definition einiger Symbole
+                    00010           ;zuerst Hardware-Register
+                    00011           status   equ 03h
+                    00012           ra       equ 05h
+                    00013           rb       equ 06h
+                    00014           
+                    00015           ;für den Benutzer frei verwendbare Register
+                    00016           count    equ 0ch
+                    00017           
+                    00018           ;Definition des Prozessors
+                    00019           device 16F84
+                    00020             
+                    00021           ;Festlegen des Codebeginns
+                    00022           org 0
+                    00023  loop     
+0000 3011           00024           movlw 11h           ;in W steht nun 11h, Statusreg. unverändert
+0001 2006           00025           call up1            ;beim Call wird Rücksprungadresse auf Stack gelegt
+0002 0000           00026           nop                 ;W = 36h, C=0, DC=0, Z=0
+0003 2008           00027           call up2            ;in W steht der Rückgabewert
+0004 0000           00028           nop                 ;W = 77h, DC=0, C=0, Z=0;
+0005 2800           00029           goto loop
+                    00030           
+                    00031           ;UP1 zählt zu W den Wert 25h hinzu und kehrt mit RETURN zurück
+0006 3E25           00032  up1      addlw 25h           ;W = 36h, DC=0, C=0, Z=0
+0007 0008           00033           return
+                    00034             
+                    00035           ;UP2 kehrt mit der Konstanten 77h zurück
+0008 3477           00036  up2      retlw 77h
+                    00037           
+                    00038  ende     
+0009 2809           00039           goto ende           ;Endlosschleife, verhindert Nirwana
+                    00040           
+                    00041             

@@ -1,0 +1,35 @@
+                    00001           ;TPicSim1
+                    00002           ;Programm zum Test des 16F84-Simulators.
+                    00003           ;Es werden alle Literal-Befehle geprüft
+                    00004           ;(c) St. Lehmann
+                    00005           ;Ersterstellung: 23.03.2016
+                    00006           ;
+                    00007           list c=132          ;Zeilenlänge im LST auf 132 Zeichen setzen
+                    00008           
+                    00009           ;Definition einiger Symbole
+                    00010           ;zuerst Hardware-Register
+                    00011           status   equ 03h
+                    00012           ra       equ 05h
+                    00013           rb       equ 06h
+                    00014           
+                    00015           ;für den Benutzer frei verwendbare Register
+                    00016           count    equ 0ch
+                    00017           
+                    00018           ;Definition des Prozessors
+                    00019           device 16F84
+                    00020             
+                    00021           ;Festlegen des Codebeginns
+                    00022           org 0
+                    00023  start    
+0000 3011           00024           movlw 11h           ;in W steht nun 11h, Statusreg. unverändert
+0001 3930           00025           andlw 30h           ;W = 10h, C=x, DC=x, Z=0
+0002 380D           00026           iorlw 0Dh           ;W = 1Dh, C=x, DC=x, Z=0
+0003 3C3D           00027           sublw 3Dh           ;W = 20h, C=1, DC=1, Z=0
+0004 3A20           00028           xorlw 20h           ;W = 00h, C=1, DC=1, Z=1
+0005 3E25           00029           addlw 25h           ;W = 25h, C=0, DC=0, Z=0
+                    00030             
+                    00031           
+                    00032  ende     
+0006 2806           00033           goto ende           ;Endlosschleife, verhindert Nirwana
+                    00034           
+                    00035             
