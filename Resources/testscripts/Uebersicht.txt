@@ -1,6 +1,6 @@
 Für die Test, ob ihr Simulator richtig funktioniert, gibt es
 dieverse Testprogramme. Sie sind bewusst kurz gehalten, damit
-der Überblick nicht verloren geht. 
+der Überblick nicht verloren geht.
 
 
 Die Testprogramme für den PIC-Simulator haben folgende Aufgaben:

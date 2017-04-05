@@ -2,11 +2,11 @@
                     00002           ;Programm zum Test des 16F84-Simulators.
                     00003           ;Es wird die richtige Funktionsweise von PCL und PCLATH am Beispiel
                     00004           ;eines Tabellenzugriffs getestet
-                    00005           ;(c) St. Lehmann  
-                    00006           ;19.04.2014 
-                    00007           
+                    00005           ;(c) St. Lehmann
+                    00006           ;19.04.2014
+                    00007
                     00008           list c=132          ;Zeilenlänge im LST auf 132 Zeichen setzen
-                    00009             
+                    00009
                     00010           ;Definition einiger Symbole
                     00011           indirect equ 0
                     00012           pcl      equ 02h
@@ -16,22 +16,22 @@
                     00016           rb       equ 06h
                     00017           pclath   equ 0ah
                     00018           intcon   equ 0bh
-                    00019           
+                    00019
                     00020           ;Definition des Prozessors
                     00021           device 16F84
                     00022           ;Festlegen des Codebeginns
                     00023           org 0
-                    00024  start    
+                    00024  start
 0000 3000           00025           movlw 0             ;Index für Tabellenzugriff in 0FH
 0001 008F           00026           movwf 0fh
 0002 3005           00027           movlw 5             ;insgesamt 5 Tabellenzugriffe
 0003 008E           00028           movwf 0eh
 0004 3010           00029           movlw 10h           ;Ergebnis wird ab 10H abgespeichert
 0005 0084           00030           movwf fsr
-                    00031  loop     
+                    00031  loop
 0006 3001           00032           movlw 1             ;PCLATH setzen, damit auf den Bereich 256-511 zugegriffen werden kann
 0007 008A           00033           movwf pclath
-0008 080F           00034           movf 0fh,w         
+0008 080F           00034           movf 0fh,w
 0009 2109           00035           call tabelle
 000A 0080           00036           movwf indirect
 000B 0A84           00037           incf fsr
@@ -45,11 +45,11 @@
                     00045           ;die oberen Bits auf 0 gesetzt (PCLATH=0). Damit steht im PC der Wert
                     00046           ;0Fh. Dorthin springt der PIC durch den ADDWF-Befehl. Hier verweilt
                     00047           ;das Programm während der Stack immer weiter wächst.
-                    00048             
-                    00049           
-                    00050  ende     
+                    00048
+                    00049
+                    00050  ende
 0012 2812           00051           goto ende           ;Endlosschleife, verhindert Nirwana
-                    00052           
+                    00052
 0013 0000           00053           nop
 0014 0000           00054           nop
 0015 0000           00055           nop
@@ -296,8 +296,8 @@
 0106 0000           00296           nop
 0107 0000           00297           nop
 0108 0000           00298           nop
-                    00299  Tabelle  
-0109 0782           00300           addwf pcl         
+                    00299  Tabelle
+0109 0782           00300           addwf pcl
 010A 3460           00301           retlw 60h
 010B 3461           00302           retlw 61h
 010C 3462           00303           retlw 62h
@@ -309,6 +309,6 @@
 0112 3468           00309           retlw 68h
 0113 3469           00310           retlw 69h
 0114 346A           00311           retlw 6Ah
-                    00312             
-                    00313           
-                    00314             
+                    00312
+                    00313
+                    00314
