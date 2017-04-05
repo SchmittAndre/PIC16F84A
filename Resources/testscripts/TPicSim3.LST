@@ -1,0 +1,64 @@
+                    00001           ;TPicSim3
+                    00002           ;Programm zum Test des 16F84-Simulators.
+                    00003           ;Es werden die Byte-orientieren File-Register Befehle geprüft
+                    00004           ;aber kein DECFSZ, INCFSZ, RLF, RRF
+                    00005           ;(c) St. Lehmann
+                    00006           ;Ersterstellung: 23.03.2016
+                    00007           
+                    00008           ;Hinweis:
+                    00009           ;Bei diesen Befehlen entscheidet das d-Bit (Destination), ob das Ergebnis
+                    00010           ;dieser Operation ins W- oder File-Register geschrieben wird. Wird im
+                    00011           ;Assemblercode der Befehl mit ",W" geschrieben, bedeutet dies, dass das
+                    00012           ;d-Bit 0 ist und das Ergebnis ins W-Register kommt. Fehlt ",W" ist das 
+                    00013           ;d-Bit 1 und das Ergebnis wird ins Fileregister geschrieben.
+                    00014           ;
+                    00015           ;Alle Befehle die eine Fileregister-Adresse haben, können auch "indirekt"
+                    00016           ;adressieren. Dies ist im Testfile TPicSim6.LST beschrieben.
+                    00017           ;
+                    00018           list c=132          ;Zeilenlänge im LST auf 132 Zeichen setzen
+                    00019           
+                    00020           ;Definition einiger Symbole
+                    00021           ;zuerst Hardware-Register
+                    00022           status   equ 03h
+                    00023           ra       equ 05h
+                    00024           rb       equ 06h
+                    00025           
+                    00026           ;für den Benutzer frei verwendbare Register
+                    00027           wert1    equ 0ch             ;Variable Nr.1
+                    00028           wert2    equ 0dh             ;Variable Nr.2
+                    00029           ergeb    equ 0eh             ;Variable Nr.3
+                    00030           
+                    00031           ;Definition des Prozessors
+                    00032           device 16F84
+                    00033             
+                    00034           ;Festlegen des Codebeginns
+                    00035           org 0
+                    00036  loop     
+0000 3011           00037           movlw 11h           ;in W steht nun 11h, DC=?, C=?, Z=?
+0001 008C           00038           movwf wert1         ;diesen Wert abspeichern, DC=?, C=?, Z=?
+0002 3014           00039           movlw 14h           ;W = 14h, DC=?, C=?, Z=?
+0003 070C           00040           addwf wert1,w       ;W = 25h, DC=0, C=0, Z=0
+0004 078C           00041           addwf wert1         ;W = 25h, wert1 = 36h, DC=0, C=0, Z=0
+0005 050C           00042           andwf wert1,w       ;W = 24h, wert1 = 36h, DC=0, C=0, Z=0
+0006 008D           00043           movwf wert2         ;W=24h, wert1=36, wert2=24h
+0007 018C           00044           clrf wert1          ;W=24h, wert1=0, wert2=24h, DC=0, C=0, Z=1
+0008 090D           00045           comf wert2,w        ;W=DBh, wert1=0, wert2=24h, DC=0, C=0, Z=0
+0009 030C           00046           decf wert1,w        ;W=FFh, wert1=0, wert2=24h, DC=0, C=0, Z=0
+000A 0A8D           00047           incf wert2          ;W=FFh, wert1=0, wert2=25h, DC=0, C=0, Z=0
+000B 088C           00048           movf wert1          ;W=FFh, wert1=0, wert2=25h, DC=0, C=0, Z=1
+000C 048C           00049           iorwf wert1         ;W=FFh, wert1=FFh, wert2=25h, DC=0, C=0, Z=0
+000D 020D           00050           subwf wert2,w       ;W=26h, wert1=FFh, wert2=25h, DC=0, C=0, Z=0
+000E 0E8D           00051           swapf wert2         ;W=26h, wert1=FFh, wert2=52h, DC=0, C=0, Z=0
+000F 068C           00052           xorwf wert1         ;W=26h, wert1=D9h, wert2=52h, DC=0, C=0, Z=0
+0010 0100           00053           clrw                ;W=00h, wert1=D9h, wert2=52h, DC=0, C=0, Z=1
+                    00054             
+0011 020C           00055           subwf wert1,w       ;W=D9h, wert1=D9h, wert2=52h, DC=1, C=1, Z=0
+0012 020D           00056           subwf wert2,w       ;W=79h, wert1=D9h, wert2=52h, DC=0, C=0, Z=0
+0013 028D           00057           subwf wert2         ;W=79h, wert1=D9h, wert2=D9h, DC=0, C=0, Z=0
+0014 028D           00058           subwf wert2         ;W=79h, wert1=D9h, wert2=60h, DC=1, C=1, Z=0
+                    00059             
+                    00060           
+                    00061  ende     
+0015 2815           00062           goto ende           ;Endlosschleife, verhindert Nirwana
+                    00063           
+                    00064             

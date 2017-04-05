@@ -1,0 +1,46 @@
+Für die Test, ob ihr Simulator richtig funktioniert, gibt es
+dieverse Testprogramme. Sie sind bewusst kurz gehalten, damit
+der Überblick nicht verloren geht. 
+
+
+Die Testprogramme für den PIC-Simulator haben folgende Aufgaben:
+
+TPicSim1
+Es werden die Literal-Befehle getestet
+
+TPicSim2
+Test von CALL, GOTO, RETLW und RETURN (RETFIE in TPicSim8)
+
+TPicSim3
+Prüfen der Byte-orientierten Befehle, ohne die aus TPicSim4
+
+TPicSim4
+DECFSZ, INCFSZ, RLF und RRF werden hier gesondert getestet
+
+TPicSim5
+Hier werden die Bit-orientierten Befehle geprüft.
+
+TPicSim6
+Die indirekte Adressierung ist wichtig und kommt sehr oft vor.
+
+TPicSim7
+Der Timer0 wird mit und ohne Vorteiler geprüft.
+
+TPicSim8
+Es gibt neben dem RB0, RB4-RB7 und dem Timer-Interrupt auch den
+EEPROM-Interrupt, der aber nicht geprüft wird.
+
+TPicSim9
+Der SLEEP-Befehl verlangt etwas mehr Überlegung bei den Tests.
+(Siehe auch TPicSim11)
+
+TPicSim10
+Das PCL- und das PCLATH-Register sind etwas Besonderes beim PIC
+und benötigt mehr Detailkenntisse als die übrigen Befehle
+
+TPicSim11
+Diese Funktion ist grundlegend für das TPicSim9-Testprogramm.
+
+TPicSim12
+Lesen und Beschreiben des internen Daten-EEPROMs.
+
