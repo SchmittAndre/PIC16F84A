@@ -3,63 +3,146 @@ unit Main;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  ExtCtrls;
+  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList, StdCtrls, Grids,
+  ComCtrls, ValEdit;
 
 type
 
-  { TForm1 }
+  { TfrmMain }
 
-  TForm1 = class(TForm)
-    btnEpicEvent: TButton;
-    OpenDialog1: TOpenDialog;
+  TfrmMain = class(TForm)
+    actExit: TAction;
+    actRefreshMemory: TAction;
+    actToggleMemoryVisible: TAction;
+    actOpenFile: TAction;
+    alActionList: TActionList;
+    btnRefreshMemory: TButton;
+    cbMemorySelection: TComboBox;
+    cbAutoRefreshMemory: TCheckBox;
+    gbMemory: TGroupBox;
+    gbPorts: TGroupBox;
+    gbPeripherals: TGroupBox;
+    MainMenu1: TMainMenu;
+    MenuItem1: TMenuItem;
+    MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
+    miView: TMenuItem;
+    miFileSplit1: TMenuItem;
+    miPlaceholder: TMenuItem;
+    miFile: TMenuItem;
+    mmMainMenu: TMainMenu;
+    pnlMemorySelection: TPanel;
+    pnlCenter: TPanel;
+    pmMain: TPopupMenu;
     Splitter1: TSplitter;
-    SynEdit1: TSynEdit;
-    procedure btnEpicEventClick(Sender: TObject);
+    Splitter2: TSplitter;
+    StatusBar1: TStatusBar;
+    edtEditor: TSynEdit;
+    sgMemView: TStringGrid;
+    procedure actExitExecute(Sender: TObject);
+    procedure actToggleMemoryVisibleExecute(Sender: TObject);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
+    procedure vlMemoryValidateEntry(sender: TObject; aCol, aRow: Integer; const OldValue: string; var NewValue: String);
   private
-    FPortA: String;
-    procedure SetPortA(AValue: String);
+    function GetAutoRefreshMemory: Boolean;
     procedure ParseStringlist(List: TStringList);
-  public
-     property PortA: String read FPortA write SetPortA;
+
+    function GetMemoryVisible: Boolean;
+    procedure SetAutoRefreshMemory(AValue: Boolean);
+    procedure SetMemoryVisible(AValue: Boolean);
+
+  published
+    property MemoryVisible: Boolean read GetMemoryVisible write SetMemoryVisible default True;
+    property AutoRefreshMemory: Boolean read GetAutoRefreshMemory write SetAutoRefreshMemory default False;
+
   end;
 
 var
-  Form1: TForm1;
+  frmMain: TfrmMain;
 
 implementation
 
 {$R *.lfm}
 
-{ TForm1 }
+{ TfrmMain }
 
-procedure TForm1.btnEpicEventClick(Sender: TObject);
+procedure TfrmMain.FormCreate(Sender: TObject);
 var
-  LstFile: TStringList;
+  I: Integer;
 begin
-  if OpenDialog1.Execute then
+ { vlMemory.BeginUpdate;
+  for I := 0 to $3FF do
   begin
-    LstFile := TStringList.Create;
-    LstFile.LoadFromFile(OpenDialog1.FileName);
-    ParseStringlist(LstFile);
-    SynEdit1.Text := LstFile.Text;
-    LstFile.Free;
+    vlMemory.InsertRow(Format('0x%.4x', [I * 8]), 'DE AD BE EF 00 11 22 33', True);
   end;
+  vlMemory.EndUpdate;  }
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TfrmMain.actExitExecute(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TfrmMain.actToggleMemoryVisibleExecute(Sender: TObject);
+begin
+  MemoryVisible := not MemoryVisible;
+end;
+
+procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: boolean);
+begin
+  // TODO: Do you want to save? dialog
+  CanClose := True;
+end;
+
+procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
 
 end;
 
-procedure TForm1.SetPortA(AValue: String);
+procedure TfrmMain.FormDropFiles(Sender: TObject; const FileNames: array of String);
 begin
-  if FPortA = AValue then Exit;
-  FPortA := AValue;
+  // TODO: Load dropped file
 end;
 
-procedure TForm1.ParseStringlist(List: TStringList);
+procedure TfrmMain.vlMemoryValidateEntry(sender: TObject; aCol, aRow: Integer; const OldValue: string;
+  var NewValue: String);
+begin
+  NewValue := OldValue;
+end;
+
+function TfrmMain.GetAutoRefreshMemory: Boolean;
+begin
+  Result := cbAutoRefreshMemory.Checked;
+end;
+
+function TfrmMain.GetMemoryVisible: Boolean;
+begin
+  Result := gbMemory.Visible;
+end;
+
+procedure TfrmMain.SetAutoRefreshMemory(AValue: Boolean);
+begin
+  if AutoRefreshMemory = AValue then
+    Exit;
+  cbAutoRefreshMemory.Checked := AValue;
+end;
+
+procedure TfrmMain.SetMemoryVisible(AValue: Boolean);
+begin
+  if MemoryVisible = AValue then
+    Exit;
+  gbMemory.Visible := AValue;
+  actToggleMemoryVisible.Checked := MemoryVisible;
+  if MemoryVisible then
+    frmMain.Width := frmMain.Width + gbMemory.BorderSpacing.ControlWidth
+  else
+    frmMain.Width := frmMain.Width - gbMemory.BorderSpacing.ControlWidth;
+end;
+
+procedure TfrmMain.ParseStringlist(List: TStringList);
 var
   Counter: Integer;
 begin
