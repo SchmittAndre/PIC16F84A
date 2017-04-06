@@ -1,11 +1,11 @@
 object frmMain: TfrmMain
-  Left = 443
+  Left = 501
   Height = 718
-  Top = 190
+  Top = 145
   Width = 1151
   AllowDropFiles = True
   Caption = 'PIC16F84A Emulator'
-  ClientHeight = 693
+  ClientHeight = 698
   ClientWidth = 1151
   Menu = mmMainMenu
   OnCloseQuery = FormCloseQuery
@@ -15,35 +15,35 @@ object frmMain: TfrmMain
   PopupMenu = pmMain
   LCLVersion = '1.6.4.0'
   object gbMemory: TGroupBox
-    Left = 873
-    Height = 654
+    Left = 896
+    Height = 665
     Top = 5
-    Width = 273
+    Width = 250
     Align = alRight
     BorderSpacing.Around = 5
     Caption = 'Memory'
-    ClientHeight = 629
-    ClientWidth = 269
-    Constraints.MinWidth = 273
+    ClientHeight = 645
+    ClientWidth = 246
+    Constraints.MinWidth = 250
     TabOrder = 0
     object pnlMemorySelection: TPanel
       Left = 5
-      Height = 71
+      Height = 65
       Top = 5
-      Width = 259
+      Width = 236
       Align = alTop
       BorderSpacing.Around = 5
-      ClientHeight = 71
-      ClientWidth = 259
+      ClientHeight = 65
+      ClientWidth = 236
       TabOrder = 0
       object cbMemorySelection: TComboBox
         Left = 6
-        Height = 28
+        Height = 23
         Top = 6
-        Width = 247
+        Width = 224
         Align = alTop
         BorderSpacing.Around = 5
-        ItemHeight = 20
+        ItemHeight = 15
         ItemIndex = 0
         Items.Strings = (
           'RAM'
@@ -55,9 +55,9 @@ object frmMain: TfrmMain
         Text = 'RAM'
       end
       object btnRefreshMemory: TButton
-        Left = 127
-        Height = 26
-        Top = 39
+        Left = 104
+        Height = 25
+        Top = 34
         Width = 126
         Action = actRefreshMemory
         Align = alRight
@@ -66,9 +66,9 @@ object frmMain: TfrmMain
       end
       object cbAutoRefreshMemory: TCheckBox
         Left = 6
-        Height = 26
-        Top = 39
-        Width = 116
+        Height = 25
+        Top = 34
+        Width = 93
         Align = alClient
         BorderSpacing.Around = 5
         Caption = 'Auto Refresh'
@@ -77,44 +77,45 @@ object frmMain: TfrmMain
     end
     object sgMemView: TStringGrid
       Left = 0
-      Height = 548
-      Top = 81
-      Width = 269
+      Height = 570
+      Top = 75
+      Width = 246
       Align = alClient
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goThumbTracking, goSmoothScroll]
       TabOrder = 1
     end
   end
   object pnlCenter: TPanel
-    Left = 177
-    Height = 664
+    Left = 170
+    Height = 675
     Top = 0
-    Width = 686
+    Width = 711
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 664
-    ClientWidth = 686
+    ClientHeight = 675
+    ClientWidth = 711
     TabOrder = 1
     object gbPeripherals: TGroupBox
       Left = 5
       Height = 120
       Top = 5
-      Width = 676
+      Width = 701
       Align = alTop
       BorderSpacing.Around = 5
       Caption = 'Peripherals'
       Constraints.MinHeight = 120
       TabOrder = 0
     end
-    inline edtEditor: TSynEdit
+    inline synEditor: TSynEdit
       Left = 5
-      Height = 519
-      Top = 140
-      Width = 518
+      Height = 525
+      Top = 145
+      Width = 543
       Align = alClient
+      BlockTabIndent = 2
       BorderSpacing.Around = 5
       Font.CharSet = ANSI_CHARSET
-      Font.Height = -17
+      Font.Height = -16
       Font.Name = 'Consolas'
       Font.Pitch = fpFixed
       Font.Quality = fqDraft
@@ -125,6 +126,7 @@ object frmMain: TfrmMain
       Gutter.MouseActions = <>
       RightGutter.Width = 0
       RightGutter.MouseActions = <>
+      Highlighter = synHighlighter
       Keystrokes = <      
         item
           Command = ecUp
@@ -545,12 +547,19 @@ object frmMain: TfrmMain
         item
           Command = ecColSelEditorBottom
           ShortCut = 57379
+        end      
+        item
+          Command = ecDeleteWord
+          ShortCut = 16430
         end>
       MouseActions = <>
       MouseTextActions = <>
       MouseSelActions = <>
-      MaxLeftChar = 1
+      MaxLeftChar = 100
+      Options = [eoAutoIndent, eoBracketHighlight, eoGroupUndo, eoScrollPastEol, eoTabIndent, eoTabsToSpaces, eoTrimTrailingSpaces, eoAltSetsColumnMode, eoDragDropEditing]
+      MouseOptions = [emAltSetsColumnMode, emDragDropEditing, emRightMouseMovesCursor, emCtrlWheelZoom]
       VisibleSpecialChars = [vscSpace, vscTabAtLast]
+      RightEdge = 100
       SelectedColor.BackPriority = 50
       SelectedColor.ForePriority = 50
       SelectedColor.FramePriority = 50
@@ -569,6 +578,7 @@ object frmMain: TfrmMain
       MouseLinkColor.Foreground = clBlue
       LineHighlightColor.Background = clNone
       LineHighlightColor.Foreground = clNone
+      TabWidth = 2
       inline SynLeftGutterPartList1: TSynGutterPartList
         object SynGutterMarks1: TSynGutterMarks
           Width = 24
@@ -605,23 +615,23 @@ object frmMain: TfrmMain
         end
       end
     end
-    object Splitter3: TSplitter
+    object spltPeripherals: TSplitter
       Cursor = crVSplit
       Left = 0
-      Height = 5
+      Height = 10
       Top = 130
-      Width = 686
+      Width = 711
       Align = alTop
       ResizeAnchor = akTop
     end
-    object Panel1: TPanel
-      Left = 528
-      Height = 519
-      Top = 140
+    object pnlControl: TPanel
+      Left = 553
+      Height = 525
+      Top = 145
       Width = 153
       Align = alRight
       BorderSpacing.Around = 5
-      ClientHeight = 519
+      ClientHeight = 525
       ClientWidth = 153
       TabOrder = 3
       object btnFlash: TButton
@@ -632,7 +642,7 @@ object frmMain: TfrmMain
         Action = actFlashMem
         Align = alTop
         BorderSpacing.Around = 5
-        TabOrder = 0
+        TabOrder = 3
       end
       object btnCompile: TButton
         Left = 6
@@ -642,7 +652,7 @@ object frmMain: TfrmMain
         Action = actCompile
         Align = alTop
         BorderSpacing.Around = 5
-        TabOrder = 1
+        TabOrder = 5
       end
       object btnStartStop: TButton
         Left = 6
@@ -654,78 +664,72 @@ object frmMain: TfrmMain
         BorderSpacing.Around = 5
         TabOrder = 2
       end
-      object pnlInfo: TPanel
+      object pnlRuntime: TPanel
         Left = 6
-        Height = 72
+        Height = 25
         Top = 126
         Width = 141
         Align = alTop
         BorderSpacing.Around = 5
-        BevelOuter = bvNone
-        ClientHeight = 72
+        ClientHeight = 25
         ClientWidth = 141
-        TabOrder = 3
-        object pnlRuntime: TPanel
-          Left = 0
-          Height = 26
-          Top = 0
-          Width = 141
-          Align = alTop
-          ClientHeight = 26
-          ClientWidth = 141
-          TabOrder = 0
-          object lbRuntimeTitle: TLabel
-            Left = 6
-            Height = 24
-            Top = 1
-            Width = 58
-            Align = alLeft
-            BorderSpacing.Left = 5
-            Caption = 'Runtime:'
-            ParentColor = False
-          end
-          object lbRuntime: TLabel
-            Left = 64
-            Height = 24
-            Top = 1
-            Width = 71
-            Align = alClient
-            Alignment = taRightJustify
-            BorderSpacing.Right = 5
-            Caption = '0 ms'
-            ParentColor = False
-          end
+        TabOrder = 0
+        object lbRuntimeTitle: TLabel
+          Left = 6
+          Height = 23
+          Top = 1
+          Width = 48
+          Align = alLeft
+          BorderSpacing.Left = 5
+          Caption = 'Runtime:'
+          Layout = tlCenter
+          ParentColor = False
         end
-        object pnlCycles: TPanel
-          Left = 0
-          Height = 26
-          Top = 26
-          Width = 141
-          Align = alTop
-          ClientHeight = 26
-          ClientWidth = 141
-          TabOrder = 1
-          object lbCyclesTitle: TLabel
-            Left = 6
-            Height = 24
-            Top = 1
-            Width = 44
-            Align = alLeft
-            BorderSpacing.Left = 5
-            Caption = 'Cycles:'
-            ParentColor = False
-          end
-          object lbCycles: TLabel
-            Left = 50
-            Height = 24
-            Top = 1
-            Width = 85
-            Align = alClient
-            Alignment = taRightJustify
-            BorderSpacing.Right = 5
-            Caption = '0'
-            ParentColor = False
-          end
+        object lbRuntime: TLabel
+          Left = 54
+          Height = 23
+          Top = 1
+          Width = 81
+          Align = alClient
+          Alignment = taRightJustify
+          BorderSpacing.Right = 5
+          Caption = '0 ms'
+          Layout = tlCenter
+          ParentColor = False
+        end
+      end
+      object pnlCycles: TPanel
+        Left = 6
+        Height = 25
+        Top = 156
+        Width = 141
+        Align = alTop
+        BorderSpacing.Around = 5
+        ClientHeight = 25
+        ClientWidth = 141
+        TabOrder = 1
+        object lbCyclesTitle: TLabel
+          Left = 6
+          Height = 23
+          Top = 1
+          Width = 37
+          Align = alLeft
+          BorderSpacing.Left = 5
+          Caption = 'Cycles:'
+          Layout = tlCenter
+          ParentColor = False
+        end
+        object lbCycles: TLabel
+          Left = 43
+          Height = 23
+          Top = 1
+          Width = 92
+          Align = alClient
+          Alignment = taRightJustify
+          BorderSpacing.Right = 5
+          Caption = '0'
+          Layout = tlCenter
+          ParentColor = False
         end
       end
       object btnOpen: TButton
@@ -742,32 +746,33 @@ object frmMain: TfrmMain
   end
   object gbPorts: TGroupBox
     Left = 5
-    Height = 654
+    Height = 665
     Top = 5
-    Width = 162
+    Width = 150
     Align = alLeft
     BorderSpacing.Around = 5
     Caption = 'Ports'
+    Constraints.MinWidth = 150
     TabOrder = 2
   end
-  object spltLeft: TSplitter
-    Left = 172
-    Height = 664
+  object spltPorts: TSplitter
+    Left = 160
+    Height = 675
     Top = 0
-    Width = 5
+    Width = 10
   end
-  object spltRight: TSplitter
-    Left = 863
-    Height = 664
+  object spltMemory: TSplitter
+    Left = 881
+    Height = 675
     Top = 0
-    Width = 5
+    Width = 10
     Align = alRight
     ResizeAnchor = akRight
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 29
-    Top = 664
+    Height = 23
+    Top = 675
     Width = 1151
     Panels = <>
   end
@@ -788,8 +793,23 @@ object frmMain: TfrmMain
     end
     object miView: TMenuItem
       Caption = 'View'
-      object MenuItem3: TMenuItem
+      object miPorts: TMenuItem
+        Action = actTogglePortsVisible
+      end
+      object miPeripherals: TMenuItem
+        Action = actTogglePeripheralsVisible
+      end
+      object miMemory: TMenuItem
         Action = actToggleMemoryVisible
+      end
+      object miViewSplit1: TMenuItem
+        Caption = '-'
+      end
+      object miShowAll: TMenuItem
+        Action = actShowAll
+      end
+      object miHideAll: TMenuItem
+        Action = actHideAll
       end
     end
   end
@@ -836,5 +856,97 @@ object frmMain: TfrmMain
       Category = 'Processor'
       Caption = 'Start'
     end
+    object actTogglePeripheralsVisible: TAction
+      Category = 'View'
+      Caption = 'Peripherals'
+      Checked = True
+      OnExecute = actTogglePeripheralsVisibleExecute
+    end
+    object actTogglePortsVisible: TAction
+      Category = 'View'
+      Caption = 'Ports'
+      Checked = True
+      OnExecute = actTogglePortsVisibleExecute
+    end
+    object actShowAll: TAction
+      Category = 'View'
+      Caption = 'Show All'
+      OnExecute = actShowAllExecute
+    end
+    object actHideAll: TAction
+      Category = 'View'
+      Caption = 'Hide All'
+      OnExecute = actHideAllExecute
+    end
+  end
+  object synCompletion: TSynCompletion
+    OnPaintItem = synCompletionPaintItem
+    OnMeasureItem = synCompletionMeasureItem
+    Position = -1
+    LinesInWindow = 6
+    OnSearchPosition = synCompletionSearchPosition
+    SelectedColor = clHighlight
+    CaseSensitive = False
+    Width = 262
+    AutoUseSingleIdent = True
+    ShortCut = 16416
+    ExecCommandID = ecSynCompletionExecute
+    Editor = synEditor
+    left = 264
+    top = 208
+  end
+  object synHighlighter: TSynAnySyn
+    CommentAttri.Foreground = clGreen
+    Comments = [csAsmStyle]
+    DetectPreprocessor = False
+    IdentifierChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz'
+    ObjectAttri.Foreground = clBlue
+    KeyWords.Strings = (
+      'ADDLW'
+      'ADDWF'
+      'ANDLW'
+      'ANDWF'
+      'BCF'
+      'BSF'
+      'BTFSC'
+      'BTFSS'
+      'CALL'
+      'CLRF'
+      'CLRW'
+      'CLRWDT'
+      'COMF'
+      'DECF'
+      'DECFSZ'
+      'DEVICE'
+      'EQU'
+      'GOTO'
+      'INCF'
+      'INCFSZ'
+      'IORLW'
+      'IORWF'
+      'LIST'
+      'MOVF'
+      'MOVLW'
+      'MOVWF'
+      'NOP'
+      'ORG'
+      'RETFIE'
+      'RETLW'
+      'RETURN'
+      'RLF'
+      'RRF'
+      'SLEEP'
+      'SUBLW'
+      'SUBWF'
+      'SWAPF'
+      'XORLW'
+      'XORWF'
+    )
+    Markup = False
+    Entity = False
+    DollarVariables = False
+    ActiveDot = False
+    left = 264
+    top = 152
   end
 end

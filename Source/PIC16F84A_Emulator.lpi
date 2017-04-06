@@ -10,7 +10,7 @@
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
       <XPManifest>
-        <DpiAware Value="True"/>
+        <DpiAware Value="Per-monitor"/>
       </XPManifest>
       <Icon Value="0"/>
     </General>
@@ -20,6 +20,7 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
+      <BuildNr Value="1"/>
       <Attributes pvaPrivateBuild="True"/>
       <StringTable Comments="Best Program" CompanyName="VS42 Inc." FileDescription="PIC16F84A Emulator" ProductVersion=""/>
     </VersionInfo>
