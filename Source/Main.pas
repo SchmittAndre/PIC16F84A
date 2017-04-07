@@ -3,8 +3,9 @@ unit Main;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList, StdCtrls, Grids,
-  ComCtrls, ValEdit, ProcessorDefine, SynEditMarks, SynCompletion, SynHighlighterAny, SynExportHTML, Types, LCLType;
+  Windows, Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
+  StdCtrls, Grids, ComCtrls, ValEdit, ProcessorDefine, SynEditMarks, SynCompletion, SynHighlighterAny, SynExportHTML,
+  Types, LCLType, SynEditMiscClasses, SynEditMarkupSpecialLine;
 
 type
 
@@ -33,6 +34,7 @@ type
     gbMemory: TGroupBox;
     gbPorts: TGroupBox;
     gbPeripherals: TGroupBox;
+    ilMarker: TImageList;
     lbRuntime: TLabel;
     lbCycles: TLabel;
     lbRuntimeTitle: TLabel;
@@ -82,6 +84,8 @@ type
     function synCompletionPaintItem(const AKey: string; ACanvas: TCanvas; X, Y: integer; Selected: boolean;
       Index: integer): boolean;
     procedure synCompletionSearchPosition(var APosition: integer);
+    procedure synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
+      Markup: TSynSelectedColor);
   private
     FStartTime: Int64;
     FCycles: Cardinal;
@@ -279,6 +283,12 @@ begin
       synCompletion.ItemList.Add(C);
   end;
   APosition := 0;
+end;
+
+procedure TfrmMain.synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
+  Markup: TSynSelectedColor);
+begin
+
 end;
 
 procedure TfrmMain.InitSynEdit;
