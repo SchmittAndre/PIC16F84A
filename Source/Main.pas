@@ -3,18 +3,20 @@ unit Main;
 interface
 
 uses
-  Windows, Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
-  StdCtrls, Grids, ComCtrls, ValEdit, ProcessorDefine, SynEditMarks, SynCompletion, SynHighlighterAny, SynExportHTML,
-  Types, LCLType, SynEditMiscClasses, SynEditMarkupSpecialLine;
+  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
+  StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny,
+  Types, LCLType, SynEditMiscClasses;
 
 type
 
   { TfrmMain }
 
   TfrmMain = class(TForm)
+  published
     actExit: TAction;
     actFlashMem: TAction;
     actCompile: TAction;
+    actSaveFile: TAction;
     actShowAll: TAction;
     actHideAll: TAction;
     actTogglePeripheralsVisible: TAction;
@@ -26,6 +28,7 @@ type
     alActionList: TActionList;
     btnCompile: TButton;
     btnOpen: TButton;
+    btnSave: TButton;
     btnStartStop: TButton;
     btnRefreshMemory: TButton;
     btnFlash: TButton;
@@ -42,6 +45,7 @@ type
     MainMenu1: TMainMenu;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
     miShowAll: TMenuItem;
     miHideAll: TMenuItem;
     miViewSplit1: TMenuItem;
@@ -72,6 +76,7 @@ type
     procedure actHideAllExecute(Sender: TObject);
     procedure actOpenFileExecute(Sender: TObject);
     procedure actRefreshMemoryExecute(Sender: TObject);
+    procedure actSaveFileExecute(Sender: TObject);
     procedure actShowAllExecute(Sender: TObject);
     procedure actToggleMemoryVisibleExecute(Sender: TObject);
     procedure actTogglePeripheralsVisibleExecute(Sender: TObject);
@@ -84,6 +89,7 @@ type
     function synCompletionPaintItem(const AKey: string; ACanvas: TCanvas; X, Y: integer; Selected: boolean;
       Index: integer): boolean;
     procedure synCompletionSearchPosition(var APosition: integer);
+    procedure synEditorChange(Sender: TObject);
     procedure synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
       Markup: TSynSelectedColor);
   private
@@ -93,6 +99,8 @@ type
     FFileData: TStringList;
 
     procedure InitSynEdit;
+    procedure InitMemView;
+
     function GetAutoRefreshMemory: Boolean;
     procedure ParseStringlist(List: TStringList);
 
@@ -135,13 +143,7 @@ begin
   FProcessor := TProcessor.Create;
   FFileData := TStringList.Create;
   InitSynEdit;
-
-  { vlMemory.BeginUpdate;
-  for I := 0 to $3FF do
-  begin
-    vlMemory.InsertRow(Format('0x%.4x', [I * 8]), 'DE AD BE EF 00 11 22 33', True);
-  end;
-  vlMemory.EndUpdate;  }
+  InitMemView;
 end;
 
 procedure TfrmMain.actExitExecute(Sender: TObject);
@@ -157,22 +159,124 @@ begin
 end;
 
 procedure TfrmMain.actOpenFileExecute(Sender: TObject);
+
+type
+  TLoadType = (ltAssembler = 1, ltCompiled, ltBinary);
+
+const
+  TypeName: array [TLoadType] of String = (
+    'Assembler Program',
+    'Compiled Program',
+    'Binary Program'
+  );
+
+  Extension: array [TLoadType] of String = (
+    '*.asm',
+    '*.lst',
+    '*.hex'
+  );
+
+var
+  T: TLoadType;
 begin
   with TOpenDialog.Create(Self) do
   begin
-    Filter := 'Assembler Program|*.asm|Compiled Program|*.lst|Binary Program|*.hex';
-    FilterIndex := 2;
-    if Execute then
-    begin
-      FFileData.LoadFromFile(FileName);
+     try
+      for T := Low(TLoadType) to High(TLoadType) do
+        Filter := Filter + TypeName[T] + '|' + Extension[T] + '|';
+      FilterIndex := Integer(ltCompiled);
+      if Execute then
+      begin
+        raise ENotImplemented.Create('Can''t load! Loading not implemented!');
+        case TLoadType(FilterIndex) of
+          ltAssembler:
+          begin
+
+          end;
+          ltCompiled:
+          begin
+
+          end;
+          ltBinary:
+          begin
+
+          end;
+        end;
+      end;
+
+    finally
+      Free;
     end;
-    Free;
   end;
 end;
 
 procedure TfrmMain.actRefreshMemoryExecute(Sender: TObject);
 begin
 
+end;
+
+procedure TfrmMain.actSaveFileExecute(Sender: TObject);
+type
+  TSaveType = (stAssembler = 1, stCompiledCommented, stCompiledUncommented, stBinary);
+
+const
+  TypeName: array [TSaveType] of String = (
+    'Assembler Program',
+    'Compiled Program Commented',
+    'Compiled Program Uncommented',
+    'Binary Program'
+  );
+
+  Extension: array [TSaveType] of String = (
+    '*.asm',
+    '*.lst',
+    '*.lst',
+    '*.hex'
+  );
+
+var
+  T: TSaveType;
+begin
+  with TSaveDialog.Create(Self) do
+  begin
+    try
+      for T := Low(TSaveType) to High(TSaveType) do
+        Filter := Filter + TypeName[T] + '|' + Extension[T] + '|';
+      FilterIndex := Integer(stAssembler);
+      if Execute then
+      begin
+        raise ENotImplemented.Create('Can''t save! Saving not implemented!');
+        T := TSaveType(FilterIndex);
+        if T = stAssembler then
+        begin
+
+        end
+        else
+        begin
+          //if not Compiled then
+          //  MessageDlg('Please compile, before saving to a compiled file!', mtError, [mbOk], 0);
+
+          case T of
+            stCompiledCommented:
+            begin
+
+            end;
+            stCompiledUncommented:
+            begin
+
+            end;
+            stBinary:
+            begin
+
+            end;
+          end;
+        end;
+      end;
+
+    finally
+      Free;
+    end;
+  end;
 end;
 
 procedure TfrmMain.actShowAllExecute(Sender: TObject);
@@ -285,6 +389,11 @@ begin
   APosition := 0;
 end;
 
+procedure TfrmMain.synEditorChange(Sender: TObject);
+begin
+  // TODO: not compiled anymore;
+end;
+
 procedure TfrmMain.synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
   Markup: TSynSelectedColor);
 begin
@@ -295,6 +404,30 @@ procedure TfrmMain.InitSynEdit;
 begin
   synCompletion.TheForm.Font := synEditor.Font;
   synCompletion.TheForm.Font.Bold := True;
+end;
+
+procedure TfrmMain.InitMemView;
+var
+  I, J: Integer;
+begin
+  sgMemView.TitleFont := Font;
+  sgMemView.Columns.Add.Title.Caption := 'Adress';
+  for I := 0 to 7 do
+    with sgMemView.Columns.Add do
+    begin
+      Title.Caption := Format('%.2x', [I]);
+    end;
+
+  sgMemView.RowCount := 9;
+  for I := 0 to 7 do
+  begin
+    sgMemView.Rows[I + 1][0] := Format('0x%.4x', [I * 8]);
+    for J := 1 to 8 do
+      sgMemView.Rows[I + 1][J] := Format('%.2x', [Random(256)]);
+  end;
+
+  sgMemView.AutoSizeColumns;
+
 end;
 
 function TfrmMain.GetPeripheralsVisible: Boolean;
