@@ -29,8 +29,8 @@ type
     // EEPRom
     ROMSize = $40;
     // Timing
-    OperationFrequeny = 20e6;
-    OperationTime = 1 / OperationFrequeny;
+    OperationTime = 1e-6;
+    OperationFrequeny = 1 / OperationTime;
     {$ENDREGION}
 
   public type
@@ -251,7 +251,7 @@ type
     FCycles: Int64;
     FFrequency: Int64;
     FStartTime: Int64;
-    FOverride: Single;
+    FSpeedFactor: Single;
 
     function GetCurrentInstruction: TInstruction;
     function GetDataMem(P: TROMPointer): Byte;
@@ -262,6 +262,7 @@ type
     function GetRAM(P: TRAMPointer): Byte;
     function GetRegisterBank0(S: TRegisterBank0): Byte;
     function GetRegisterBank1(S: TRegisterBank1): Byte;
+    function GetTimeBehind: Single;
     function GetValid(AType: TMemoryType; APos: Cardinal): Boolean;
 
     function NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
@@ -285,7 +286,7 @@ type
     procedure DoStep;
 
     procedure CatchUp;
-    function UpToDate: Boolean;
+    property TimeBehind: Single read GetTimeBehind;
 
     property ProgramMem[P: TProgramMemPointer]: Byte read GetProgramMem;
     property ProgramInstruction[P: TProgramCounter]: TInstruction read GetProgramInstruction;
@@ -300,6 +301,7 @@ type
     property Memory[AType: TMemoryType; APos: Cardinal]: Byte read GetMemory;
 
     property Running: Boolean read FRunning;
+    property Cycles: Int64 read FCycles;
 
   published
     {$REGION --- Byte-Oriented File Register Operations --- }
@@ -429,6 +431,14 @@ begin
   Result := FRAM[NormalizeRAMPointer(TRAMPointer(S))];
 end;
 
+function TProcessor.GetTimeBehind: Single;
+var
+  T: Int64;
+begin
+  QueryPerformanceCounter(T);
+  Result := (T - FStartTime) / FFrequency * TProcessor.OperationFrequeny - FCycles * FSpeedFactor;
+end;
+
 function TProcessor.GetValid(AType: TMemoryType; APos: Cardinal): Boolean;
 begin
   try
@@ -481,6 +491,7 @@ begin
       FMethods[T] := TInstructionMethod(M);
   end;
   QueryPerformanceFrequency(FFrequency);
+  FSpeedFactor := 1;
 end;
 
 procedure TProcessor.LoadProgram(AFileData: TStrings);
@@ -555,27 +566,25 @@ begin
     raise ENotImplemented.CreateFmt('Processor-Instruction "%s" not implemented!', [InstructionInfo[T].Name]);
 
   if FKeepProgramCounter then
-    FKeepProgramCounter := False
+  begin
+    // program counter changed, this needs 2 cycles
+    FKeepProgramCounter := False;
+    Inc(FCycles, 2);
+  end
   else
   begin
     if FProgramCounter = High(FProgramCounter) then
       FProgramCounter := 0
     else
       Inc(FProgramCounter);
+    Inc(FCycles);
   end;
-
-  Inc(FCycles);
 end;
 
 procedure TProcessor.CatchUp;
 begin
-  while not UpToDate do
+  while TimeBehind > 0 do
     DoStep;
-end;
-
-function TProcessor.UpToDate;
-begin
-
 end;
 
 end.

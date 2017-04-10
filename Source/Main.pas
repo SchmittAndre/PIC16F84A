@@ -600,8 +600,8 @@ procedure TfrmMain.IdleHandler(Sender: TObject; var ADone: Boolean);
 begin
   if FProcessor.Running then
   begin
-    FProcessor.DoStep;
-    Sleep(1);
+    FProcessor.CatchUp;
+    Cycles := FProcessor.Cycles;
     ADone := False;
   end
   else
