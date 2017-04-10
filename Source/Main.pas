@@ -5,16 +5,14 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
   StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny,
-  Types, LCLType, SynEditMiscClasses;
+  Types, LCLType, SynEditMiscClasses, Math;
 
 type
 
   { TfrmMain }
 
   TfrmMain = class(TForm)
-  published
     actExit: TAction;
-    actFlashMem: TAction;
     actCompile: TAction;
     actSaveFile: TAction;
     actShowAll: TAction;
@@ -31,7 +29,6 @@ type
     btnSave: TButton;
     btnStartStop: TButton;
     btnRefreshMemory: TButton;
-    btnFlash: TButton;
     cbMemorySelection: TComboBox;
     cbAutoRefreshMemory: TCheckBox;
     gbMemory: TGroupBox;
@@ -78,9 +75,11 @@ type
     procedure actRefreshMemoryExecute(Sender: TObject);
     procedure actSaveFileExecute(Sender: TObject);
     procedure actShowAllExecute(Sender: TObject);
+    procedure actStartStopExecute(Sender: TObject);
     procedure actToggleMemoryVisibleExecute(Sender: TObject);
     procedure actTogglePeripheralsVisibleExecute(Sender: TObject);
     procedure actTogglePortsVisibleExecute(Sender: TObject);
+    procedure cbMemorySelectionChange(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -93,6 +92,10 @@ type
     procedure synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
       Markup: TSynSelectedColor);
   private
+    function GetMemViewType: TProcessor.TMemoryType;
+    procedure SetMemViewType(AValue: TProcessor.TMemoryType);
+  private
+    FMemViewColumns: Cardinal;
     FStartTime: Int64;
     FCycles: Cardinal;
     FProcessor: TProcessor;
@@ -104,6 +107,7 @@ type
     function GetAutoRefreshMemory: Boolean;
     procedure ParseStringlist(List: TStringList);
 
+    procedure SetMemViewColumns(AValue: Cardinal);
     function GetRuntime: Int64;
     procedure SetCycles(AValue: Cardinal);
     procedure SetStartTime(AValue: Int64);
@@ -126,6 +130,12 @@ type
     property StartTime: Int64 read FStartTime write SetStartTime;
     property Runtime: Int64 read GetRuntime;
     property Cycles: Cardinal read FCycles write SetCycles;
+    property MemViewColumns: Cardinal read FMemViewColumns write SetMemViewColumns;
+    property MemViewType: TProcessor.TMemoryType read GetMemViewType write SetMemViewType;
+
+    procedure RefreshMemView;
+
+    procedure IdleHandler(Sender: TObject; var ADone: Boolean);
 
   end;
 
@@ -144,6 +154,26 @@ begin
   FFileData := TStringList.Create;
   InitSynEdit;
   InitMemView;
+  Application.OnIdle := IdleHandler;
+end;
+
+procedure TfrmMain.SetMemViewColumns(AValue: Cardinal);
+var
+  I: Integer;
+begin
+  AValue := EnsureRange(AValue, 1, 256);
+  if FMemViewColumns = AValue then
+    Exit;
+  FMemViewColumns := AValue;
+
+  while sgMemView.Columns.Count > 1 do
+    sgMemView.Columns.Delete(sgMemView.Columns.Count - 1);
+  for I := 0 to MemViewColumns - 1 do
+    sgMemView.Columns.Add.Title.Caption := Format('%.2x', [I]);
+
+  RefreshMemView;
+
+  sgMemView.AutoAdjustColumns;
 end;
 
 procedure TfrmMain.actExitExecute(Sender: TObject);
@@ -286,6 +316,11 @@ begin
   PortsVisible := True;
 end;
 
+procedure TfrmMain.actStartStopExecute(Sender: TObject);
+begin
+  FProcessor.Start;
+end;
+
 procedure TfrmMain.actToggleMemoryVisibleExecute(Sender: TObject);
 begin
   MemoryVisible := not MemoryVisible;
@@ -299,6 +334,11 @@ end;
 procedure TfrmMain.actTogglePortsVisibleExecute(Sender: TObject);
 begin
   PortsVisible := not PortsVisible;
+end;
+
+procedure TfrmMain.cbMemorySelectionChange(Sender: TObject);
+begin
+  RefreshMemView;
 end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: boolean);
@@ -400,6 +440,19 @@ begin
 
 end;
 
+function TfrmMain.GetMemViewType: TProcessor.TMemoryType;
+begin
+  Result := TProcessor.TMemoryType(cbMemorySelection.ItemIndex);
+end;
+
+procedure TfrmMain.SetMemViewType(AValue: TProcessor.TMemoryType);
+begin
+  if MemViewType = AValue then
+    Exit;
+  cbMemorySelection.ItemIndex := Ord(AValue);
+  RefreshMemView;
+end;
+
 procedure TfrmMain.InitSynEdit;
 begin
   synCompletion.TheForm.Font := synEditor.Font;
@@ -409,25 +462,24 @@ end;
 procedure TfrmMain.InitMemView;
 var
   I, J: Integer;
+  T: TProcessor.TMemoryType;
 begin
+  FMemViewColumns := 4;
   sgMemView.TitleFont := Font;
   sgMemView.Columns.Add.Title.Caption := 'Adress';
-  for I := 0 to 7 do
+  for I := 0 to MemViewColumns - 1 do
     with sgMemView.Columns.Add do
     begin
       Title.Caption := Format('%.2x', [I]);
     end;
 
-  sgMemView.RowCount := 9;
-  for I := 0 to 7 do
-  begin
-    sgMemView.Rows[I + 1][0] := Format('0x%.4x', [I * 8]);
-    for J := 1 to 8 do
-      sgMemView.Rows[I + 1][J] := Format('%.2x', [Random(256)]);
-  end;
+  cbMemorySelection.Clear;
+  for T := Low(T) to High(T) do
+    cbMemorySelection.Items.Add(TProcessor.MemoryName[T]);
+  MemViewType := mtRAM;
 
+  RefreshMemView;
   sgMemView.AutoSizeColumns;
-
 end;
 
 function TfrmMain.GetPeripheralsVisible: Boolean;
@@ -512,6 +564,39 @@ end;
 procedure TfrmMain.UpdateRuntime;
 begin
   lbRuntime.Caption := Format('%d ms', [Runtime]);
+end;
+
+procedure TfrmMain.RefreshMemView;
+var
+  R, C, P: Integer;
+begin
+  sgMemView.BeginUpdate;
+  sgMemView.RowCount := Ceil(TProcessor.MemorySize[MemViewType] / MemViewColumns) + 1;
+  for R := 0 to sgMemView.RowCount - 2 do
+  begin
+    sgMemView.Rows[R + 1][0] := Format('0x%.4x', [R * MemViewColumns]);
+    for C := 0 to MemViewColumns - 1 do
+    begin
+      P := C + R * MemViewColumns;
+      if FProcessor.Valid[MemViewType, P] then
+        sgMemView.Rows[R + 1][C + 1] := Format('%.2x', [FProcessor.Memory[MemViewType, P]])
+      else
+        sgMemView.Rows[R + 1][C + 1] := 'XX';
+    end;
+  end;
+  sgMemView.EndUpdate;
+end;
+
+procedure TfrmMain.IdleHandler(Sender: TObject; var ADone: Boolean);
+begin
+  if FProcessor.Running then
+  begin
+    FProcessor.DoStep;
+    Sleep(1);
+    ADone := False;
+  end
+  else
+    ADone := True;
 end;
 
 procedure TfrmMain.ParseStringlist(List: TStringList);

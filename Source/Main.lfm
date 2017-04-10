@@ -1,11 +1,11 @@
 object frmMain: TfrmMain
-  Left = 473
+  Left = 710
   Height = 718
-  Top = 165
+  Top = 119
   Width = 1151
   AllowDropFiles = True
   Caption = 'PIC16F84A Emulator'
-  ClientHeight = 698
+  ClientHeight = 693
   ClientWidth = 1151
   Menu = mmMainMenu
   OnCloseQuery = FormCloseQuery
@@ -17,13 +17,13 @@ object frmMain: TfrmMain
   LCLVersion = '1.6.4.0'
   object gbMemory: TGroupBox
     Left = 896
-    Height = 665
+    Height = 654
     Top = 5
     Width = 250
     Align = alRight
     BorderSpacing.Around = 5
     Caption = 'Memory'
-    ClientHeight = 645
+    ClientHeight = 629
     ClientWidth = 246
     Constraints.MinWidth = 250
     TabOrder = 0
@@ -39,26 +39,27 @@ object frmMain: TfrmMain
       TabOrder = 0
       object cbMemorySelection: TComboBox
         Left = 6
-        Height = 23
+        Height = 28
         Top = 6
         Width = 224
         Align = alTop
         BorderSpacing.Around = 5
-        ItemHeight = 15
+        ItemHeight = 20
         ItemIndex = 0
         Items.Strings = (
           'RAM'
           'Program'
           'EEPROM'
         )
+        OnChange = cbMemorySelectionChange
         Style = csDropDownList
         TabOrder = 0
         Text = 'RAM'
       end
       object btnRefreshMemory: TButton
         Left = 104
-        Height = 25
-        Top = 34
+        Height = 20
+        Top = 39
         Width = 126
         Action = actRefreshMemory
         Align = alRight
@@ -67,8 +68,8 @@ object frmMain: TfrmMain
       end
       object cbAutoRefreshMemory: TCheckBox
         Left = 6
-        Height = 25
-        Top = 34
+        Height = 20
+        Top = 39
         Width = 93
         Align = alClient
         BorderSpacing.Around = 5
@@ -78,7 +79,7 @@ object frmMain: TfrmMain
     end
     object sgMemView: TStringGrid
       Left = 5
-      Height = 565
+      Height = 549
       Top = 75
       Width = 236
       Align = alClient
@@ -104,12 +105,12 @@ object frmMain: TfrmMain
   end
   object pnlCenter: TPanel
     Left = 170
-    Height = 675
+    Height = 664
     Top = 0
     Width = 711
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 675
+    ClientHeight = 664
     ClientWidth = 711
     TabOrder = 1
     object gbPeripherals: TGroupBox
@@ -125,7 +126,7 @@ object frmMain: TfrmMain
     end
     inline synEditor: TSynEdit
       Left = 5
-      Height = 525
+      Height = 514
       Top = 145
       Width = 543
       Align = alClient
@@ -646,38 +647,28 @@ object frmMain: TfrmMain
     end
     object pnlControl: TPanel
       Left = 553
-      Height = 525
+      Height = 514
       Top = 145
       Width = 153
       Align = alRight
       BorderSpacing.Around = 5
-      ClientHeight = 525
+      ClientHeight = 514
       ClientWidth = 153
       TabOrder = 3
-      object btnFlash: TButton
+      object btnCompile: TButton
         Left = 6
         Height = 25
         Top = 96
         Width = 141
-        Action = actFlashMem
-        Align = alTop
-        BorderSpacing.Around = 5
-        TabOrder = 3
-      end
-      object btnCompile: TButton
-        Left = 6
-        Height = 25
-        Top = 66
-        Width = 141
         Action = actCompile
         Align = alTop
         BorderSpacing.Around = 5
-        TabOrder = 5
+        TabOrder = 4
       end
       object btnStartStop: TButton
         Left = 6
         Height = 25
-        Top = 126
+        Top = 66
         Width = 141
         Action = actStartStop
         Align = alTop
@@ -698,7 +689,7 @@ object frmMain: TfrmMain
           Left = 6
           Height = 23
           Top = 1
-          Width = 48
+          Width = 58
           Align = alLeft
           BorderSpacing.Left = 5
           Caption = 'Runtime:'
@@ -706,10 +697,10 @@ object frmMain: TfrmMain
           ParentColor = False
         end
         object lbRuntime: TLabel
-          Left = 54
+          Left = 64
           Height = 23
           Top = 1
-          Width = 81
+          Width = 71
           Align = alClient
           Alignment = taRightJustify
           BorderSpacing.Right = 5
@@ -721,7 +712,7 @@ object frmMain: TfrmMain
       object pnlCycles: TPanel
         Left = 6
         Height = 25
-        Top = 186
+        Top = 126
         Width = 141
         Align = alTop
         BorderSpacing.Around = 5
@@ -732,7 +723,7 @@ object frmMain: TfrmMain
           Left = 6
           Height = 23
           Top = 1
-          Width = 37
+          Width = 44
           Align = alLeft
           BorderSpacing.Left = 5
           Caption = 'Cycles:'
@@ -740,10 +731,10 @@ object frmMain: TfrmMain
           ParentColor = False
         end
         object lbCycles: TLabel
-          Left = 43
+          Left = 50
           Height = 23
           Top = 1
-          Width = 92
+          Width = 85
           Align = alClient
           Alignment = taRightJustify
           BorderSpacing.Right = 5
@@ -755,28 +746,28 @@ object frmMain: TfrmMain
       object btnOpen: TButton
         Left = 6
         Height = 25
-        Top = 6
+        Top = 36
         Width = 141
         Action = actOpenFile
         Align = alTop
         BorderSpacing.Around = 5
-        TabOrder = 4
+        TabOrder = 3
       end
       object btnSave: TButton
         Left = 6
         Height = 25
-        Top = 36
+        Top = 6
         Width = 141
         Action = actSaveFile
         Align = alTop
         BorderSpacing.Around = 5
-        TabOrder = 6
+        TabOrder = 5
       end
     end
   end
   object gbPorts: TGroupBox
     Left = 5
-    Height = 665
+    Height = 654
     Top = 5
     Width = 150
     Align = alLeft
@@ -787,13 +778,13 @@ object frmMain: TfrmMain
   end
   object spltPorts: TSplitter
     Left = 160
-    Height = 675
+    Height = 664
     Top = 0
     Width = 10
   end
   object spltMemory: TSplitter
     Left = 881
-    Height = 675
+    Height = 664
     Top = 0
     Width = 10
     Align = alRight
@@ -801,8 +792,8 @@ object frmMain: TfrmMain
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 23
-    Top = 675
+    Height = 29
+    Top = 664
     Width = 1151
     Panels = <>
   end
@@ -877,17 +868,10 @@ object frmMain: TfrmMain
       Caption = 'Refresh Memory'
       OnExecute = actRefreshMemoryExecute
     end
-    object actFlashMem: TAction
-      Category = 'Processor'
-      Caption = 'Flash Program'
-    end
-    object actCompile: TAction
-      Category = 'Processor'
-      Caption = 'Compile'
-    end
     object actStartStop: TAction
       Category = 'Processor'
       Caption = 'Start'
+      OnExecute = actStartStopExecute
     end
     object actTogglePeripheralsVisible: TAction
       Category = 'View'
@@ -915,6 +899,10 @@ object frmMain: TfrmMain
       Category = 'File'
       Caption = 'Save...'
       OnExecute = actSaveFileExecute
+    end
+    object actCompile: TAction
+      Category = 'Processor'
+      Caption = 'Compile'
     end
   end
   object synCompletion: TSynCompletion
