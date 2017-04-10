@@ -272,7 +272,7 @@ type
   public
     constructor Create;
 
-    procedure LoadProgram(AFileData:TStrings);
+    procedure LoadProgram(AFileData: TStrings);
     procedure Initialize;
     procedure ResetROM;
 
@@ -421,7 +421,7 @@ end;
 
 function TProcessor.GetRegisterBank0(S: TRegisterBank0): Byte;
 begin
-  Result := FRAM[NormalizeRAMPointer(TRAMPointer(S))];
+  Result := FRAM[TRAMPointer(S)];
 end;
 
 function TProcessor.GetRegisterBank1(S: TRegisterBank1): Byte;

@@ -65,12 +65,14 @@ type
     spltMemory: TSplitter;
     spltPeripherals: TSplitter;
     StatusBar1: TStatusBar;
+    sgSpecialFunction: TStringGrid;
     synEditor: TSynEdit;
     sgMemView: TStringGrid;
     synHighlighter: TSynAnySyn;
     synCompletion: TSynCompletion;
     procedure actExitExecute(Sender: TObject);
     procedure actHideAllExecute(Sender: TObject);
+    procedure Action1Execute(Sender: TObject);
     procedure actOpenFileExecute(Sender: TObject);
     procedure actRefreshMemoryExecute(Sender: TObject);
     procedure actSaveFileExecute(Sender: TObject);
@@ -105,7 +107,7 @@ type
     procedure InitMemView;
 
     function GetAutoRefreshMemory: Boolean;
-    procedure ParseStringlist(List: TStringList);
+    procedure ParseStringListFromLST(List: TStringList);
 
     procedure SetMemViewColumns(AValue: Cardinal);
     function GetRuntime: Int64;
@@ -188,6 +190,11 @@ begin
   PortsVisible := False;
 end;
 
+procedure TfrmMain.Action1Execute(Sender: TObject);
+begin
+
+end;
+
 procedure TfrmMain.actOpenFileExecute(Sender: TObject);
 
 type
@@ -217,19 +224,21 @@ begin
       FilterIndex := Integer(ltCompiled);
       if Execute then
       begin
-        raise ENotImplemented.Create('Can''t load! Loading not implemented!');
         case TLoadType(FilterIndex) of
           ltAssembler:
           begin
-
+            raise ENotImplemented.Create('Can''t load! Loading not implemented!');
           end;
           ltCompiled:
           begin
+            FFileData.LoadFromFile(FileName);
+            FProcessor.LoadProgram(FFileData);
+            ParseStringListFromLST(FFileData);
 
           end;
           ltBinary:
           begin
-
+            raise ENotImplemented.Create('Can''t load! Loading not implemented!');
           end;
         end;
       end;
@@ -599,21 +608,32 @@ begin
     ADone := True;
 end;
 
-procedure TfrmMain.ParseStringlist(List: TStringList);
+procedure TfrmMain.ParseStringListFromLST(List: TStringList);
+const
+  AssamblerOffset: Integer = 7;
 var
   Counter: Integer;
+  CharCounter: Integer;
+  MinWhitespacecount: Integer;
 begin
-  for Counter := List.Count - 1 downto 0 do
+  MinWhitespacecount := Integer.MaxValue;
+  synEditor.Lines := List;
+  for Counter := 0 to synEditor.lines.Count - 1 do
   begin
-    if List[Counter].StartsWith(' ') then
+    for CharCounter := 10 to synEditor.Lines.Strings[Counter].Length do
     begin
-      List.Delete(Counter);
-    end
-    else
-    begin
-      List[Counter] := Copy(List[Counter], 1 , 9);
+      if synEditor.Lines[Counter][CharCounter] <> ' ' then
+      begin
+        MinWhitespacecount := Min(MinWhitespacecount, CharCounter);
+        Break;
+      end;
     end;
   end;
+  for Counter := 0 to List.Count - 1 do
+  begin
+    synEditor.Lines[Counter] := synEditor.Lines[Counter].Remove(0, MinWhitespacecount - 1 + AssamblerOffset );
+  end;
+
 end;
 
 end.
