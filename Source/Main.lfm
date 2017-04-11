@@ -763,7 +763,7 @@ object frmMain: TfrmMain
         BorderSpacing.Around = 5
         TabOrder = 5
       end
-      object btnStartStop1: TButton
+      object btnStep: TButton
         Left = 6
         Height = 25
         Top = 96

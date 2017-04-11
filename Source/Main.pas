@@ -30,7 +30,7 @@ type
     btnSave: TButton;
     btnStartStop: TButton;
     btnRefreshMemory: TButton;
-    btnStartStop1: TButton;
+    btnStep: TButton;
     cbMemorySelection: TComboBox;
     cbAutoRefreshMemory: TCheckBox;
     gbMemory: TGroupBox;

@@ -178,44 +178,44 @@ type
 
     {$REGION Instructions}
     InstructionInfo: array [TInstructionType] of TInstructionInfo = (
-      (Name: 'ADDWF';  SignificantBits: 6  ; Instruction: $0700),
-      (Name: 'ANDWF';  SignificantBits: 6  ; Instruction: $0500),
-      (Name: 'CLRF';   SignificantBits: 7  ; Instruction: $0180),
-      (Name: 'CLRW';   SignificantBits: 7  ; Instruction: $0100),
-      (Name: 'COMF';   SignificantBits: 6  ; Instruction: $0900),
-      (Name: 'DECF';   SignificantBits: 6  ; Instruction: $0300),
-      (Name: 'DECFSZ'; SignificantBits: 6  ; Instruction: $0B00),
-      (Name: 'INCF';   SignificantBits: 6  ; Instruction: $0A00),
-      (Name: 'INCFSZ'; SignificantBits: 6  ; Instruction: $0F00),
-      (Name: 'IORWF';  SignificantBits: 6  ; Instruction: $0400),
-      (Name: 'MOVF';   SignificantBits: 6  ; Instruction: $0800),
-      (Name: 'MOVWF';  SignificantBits: 7  ; Instruction: $0080),
-      (Name: 'NOP';    SignificantBits: 14 ; Instruction: $0000),
-      (Name: 'NOP';    SignificantBits: 14 ; Instruction: $0020),
-      (Name: 'NOP';    SignificantBits: 14 ; Instruction: $0040),
-      (Name: 'NOP';    SignificantBits: 14 ; Instruction: $0060),
-      (Name: 'RLF';    SignificantBits: 6  ; Instruction: $0D00),
-      (Name: 'RRF';    SignificantBits: 6  ; Instruction: $0C00),
-      (Name: 'SUBWF';  SignificantBits: 6  ; Instruction: $0200),
-      (Name: 'SWAPF';  SignificantBits: 6  ; Instruction: $0E00),
-      (Name: 'XORWF';  SignificantBits: 6  ; Instruction: $0600),
-      (Name: 'BCF';    SignificantBits: 4  ; Instruction: $1000),
-      (Name: 'BSF';    SignificantBits: 4  ; Instruction: $1400),
-      (Name: 'BTFSC';  SignificantBits: 4  ; Instruction: $1800),
-      (Name: 'BTFSS';  SignificantBits: 4  ; Instruction: $1C00),
-      (Name: 'ADDLW';  SignificantBits: 5  ; Instruction: $3E00),
-      (Name: 'ANDLW';  SignificantBits: 6  ; Instruction: $3900),
-      (Name: 'CALL';   SignificantBits: 3  ; Instruction: $2000),
-      (Name: 'CLRWDT'; SignificantBits: 14 ; Instruction: $0064),
-      (Name: 'GOTO';   SignificantBits: 3  ; Instruction: $2800),
-      (Name: 'IORLW';  SignificantBits: 6  ; Instruction: $3800),
-      (Name: 'MOVLW';  SignificantBits: 4  ; Instruction: $3000),
-      (Name: 'RETFIE'; SignificantBits: 14 ; Instruction: $0009),
-      (Name: 'RETLW';  SignificantBits: 4  ; Instruction: $3400),
-      (Name: 'RETURN'; SignificantBits: 14 ; Instruction: $0008),
-      (Name: 'SLEEP';  SignificantBits: 14 ; Instruction: $0063),
-      (Name: 'SUBLW';  SignificantBits: 5  ; Instruction: $3C00),
-      (Name: 'XORLW';  SignificantBits: 6  ; Instruction: $3A00)
+      (Name: 'ADDWF';  SignificantBits: 6;  Instruction: $0700),
+      (Name: 'ANDWF';  SignificantBits: 6;  Instruction: $0500),
+      (Name: 'CLRF';   SignificantBits: 7;  Instruction: $0180),
+      (Name: 'CLRW';   SignificantBits: 7;  Instruction: $0100),
+      (Name: 'COMF';   SignificantBits: 6;  Instruction: $0900),
+      (Name: 'DECF';   SignificantBits: 6;  Instruction: $0300),
+      (Name: 'DECFSZ'; SignificantBits: 6;  Instruction: $0B00),
+      (Name: 'INCF';   SignificantBits: 6;  Instruction: $0A00),
+      (Name: 'INCFSZ'; SignificantBits: 6;  Instruction: $0F00),
+      (Name: 'IORWF';  SignificantBits: 6;  Instruction: $0400),
+      (Name: 'MOVF';   SignificantBits: 6;  Instruction: $0800),
+      (Name: 'MOVWF';  SignificantBits: 7;  Instruction: $0080),
+      (Name: 'NOP';    SignificantBits: 14; Instruction: $0000),
+      (Name: 'NOP';    SignificantBits: 14; Instruction: $0020),
+      (Name: 'NOP';    SignificantBits: 14; Instruction: $0040),
+      (Name: 'NOP';    SignificantBits: 14; Instruction: $0060),
+      (Name: 'RLF';    SignificantBits: 6;  Instruction: $0D00),
+      (Name: 'RRF';    SignificantBits: 6;  Instruction: $0C00),
+      (Name: 'SUBWF';  SignificantBits: 6;  Instruction: $0200),
+      (Name: 'SWAPF';  SignificantBits: 6;  Instruction: $0E00),
+      (Name: 'XORWF';  SignificantBits: 6;  Instruction: $0600),
+      (Name: 'BCF';    SignificantBits: 4;  Instruction: $1000),
+      (Name: 'BSF';    SignificantBits: 4;  Instruction: $1400),
+      (Name: 'BTFSC';  SignificantBits: 4;  Instruction: $1800),
+      (Name: 'BTFSS';  SignificantBits: 4;  Instruction: $1C00),
+      (Name: 'ADDLW';  SignificantBits: 5;  Instruction: $3E00),
+      (Name: 'ANDLW';  SignificantBits: 6;  Instruction: $3900),
+      (Name: 'CALL';   SignificantBits: 3;  Instruction: $2000),
+      (Name: 'CLRWDT'; SignificantBits: 14; Instruction: $0064),
+      (Name: 'GOTO';   SignificantBits: 3;  Instruction: $2800),
+      (Name: 'IORLW';  SignificantBits: 6;  Instruction: $3800),
+      (Name: 'MOVLW';  SignificantBits: 4;  Instruction: $3000),
+      (Name: 'RETFIE'; SignificantBits: 14; Instruction: $0009),
+      (Name: 'RETLW';  SignificantBits: 4;  Instruction: $3400),
+      (Name: 'RETURN'; SignificantBits: 14; Instruction: $0008),
+      (Name: 'SLEEP';  SignificantBits: 14; Instruction: $0063),
+      (Name: 'SUBLW';  SignificantBits: 5;  Instruction: $3C00),
+      (Name: 'XORLW';  SignificantBits: 6;  Instruction: $3A00)
     );
     {$ENDREGION}
 
@@ -229,20 +229,6 @@ type
     FInstructionArray: array [TInstruction] of TInstructionType;
 
     class constructor Create;
-    function GetCarryFlag: Boolean;
-    function GetDigitCarryFlag: Boolean;
-    function GetFileMap(P: TRAMPointer): Byte;
-    function GetFlag(P: TRAMPointer; ABit: TBitIndex): Boolean; overload;
-    function GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean; overload;
-    function GetFlag(P: TRegisterBank1; ABit: TBitIndex): Boolean; overload;
-    function GetZeroFlag: Boolean;
-    procedure SetCarryFlag(AValue: Boolean);
-    procedure SetDigitCarryFlag(AValue: Boolean);
-    procedure SetFileMap(P: TRAMPointer; AValue: Byte);
-    procedure SetFlag(P: TRAMPointer; ABit: TBitIndex; AValue: Boolean); overload;
-    procedure SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean); overload;
-    procedure SetFlag(P: TRegisterBank1; ABit: TBitIndex; AValue: Boolean); overload;
-    procedure SetZeroFlag(AValue: Boolean);
 
   private
     // Program
@@ -284,10 +270,23 @@ type
     function GetRegisterBank1(S: TRegisterBank1): Byte;
     function GetTimeBehind: Single;
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
+    function GetCarryFlag: Boolean;
+    function GetDigitCarryFlag: Boolean;
+    function GetFileMap(P: TRAMPointer): Byte;
+    function GetFlag(P: TRAMPointer; ABit: TBitIndex): Boolean; overload;
+    function GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean; overload;
+    function GetFlag(P: TRegisterBank1; ABit: TBitIndex): Boolean; overload;
+    function GetZeroFlag: Boolean;
+    procedure SetCarryFlag(AValue: Boolean);
+    procedure SetDigitCarryFlag(AValue: Boolean);
+    procedure SetFileMap(P: TRAMPointer; AValue: Byte);
+    procedure SetFlag(P: TRAMPointer; ABit: TBitIndex; AValue: Boolean); overload;
+    procedure SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean); overload;
+    procedure SetFlag(P: TRegisterBank1; ABit: TBitIndex; AValue: Boolean); overload;
+    procedure SetZeroFlag(AValue: Boolean);
 
     function NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
 
-    procedure KeepProgramCounter;
     procedure SetSpeedFactor(AValue: Single);
 
     property FileMap[P: TRAMPointer]: Byte read GetFileMap write SetFileMap;
@@ -297,6 +296,8 @@ type
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
 
     // help-functions
+    procedure KeepProgramCounter;
+
     class function ExtractByteLiteral(AInstruction: TInstruction): Byte; static;
     class function ExtractFileAdress(AInstruction: TInstruction): TFileAdress; static;
     class function ExtractProgramCounter(AInstruction: TInstruction): TProgramCounter; static;
@@ -304,8 +305,9 @@ type
 
     function DoAdd(A, B: Byte): Byte;
     function DoSub(A, B: Byte): Byte;
-
+    
     procedure AdvanceProgramCounter(ACount: Integer = 1);
+    procedure AdvanceCycles(ACount: Integer = 1);
 
     procedure PushStack(AProgramCounter: TProgramCounter);
     function PopStack: TProgramCounter;
@@ -383,7 +385,7 @@ type
     procedure InstructionMOVLW(AInstruction: TInstruction);
     // TODO: procedure InstructionRETFIE(AInstruction: TInstruction);
     procedure InstructionRETLW(AInstruction: TInstruction);
-    procedure InstructionRETURN(AInstruction: TInstruction);
+    procedure InstructionRETURN({%H-}AInstruction: TInstruction);
     // TODO: procedure InstructionSLEEP(AInstruction: TInstruction);
     procedure InstructionSUBLW(AInstruction: TInstruction);
     procedure InstructionXORLW(AInstruction: TInstruction);
@@ -399,6 +401,12 @@ begin
   FProgramCounter := (FProgramCounter + ACount) and High(FProgramCounter);
 end;
 
+procedure TProcessor.AdvanceCycles(ACount: Integer);
+begin
+  Inc(FCycles, ACount);
+  Inc(FCyclesFromStart, ACount);
+end;
+
 class constructor TProcessor.Create;
 var
   T: TInstructionType;
@@ -408,7 +416,7 @@ begin
   for T := Low(T) to High(T) do
   begin
     for I := InstructionInfo[T].Instruction to
-      InstructionInfo[T].Instruction + 1 shl (14 - InstructionInfo[T].SignificantBits) - 1 do
+      InstructionInfo[T].Instruction + (1 shl (14 - InstructionInfo[T].SignificantBits)) - 1 do
     begin
       FInstructionArray[InstructionInfo[T].Instruction or I] := T;
     end;
@@ -563,7 +571,7 @@ var
   T: Int64;
 begin
   QueryPerformanceCounter(T);
-  Result := (T - FStartTime) / FFrequency * TProcessor.OperationFrequeny - FCycles * FSpeedFactor;
+  Result := (T - FStartTime) / FFrequency * FSpeedFactor - FCyclesFromStart * TProcessor.OperationTime;
 end;
 
 function TProcessor.GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
@@ -755,15 +763,14 @@ begin
     begin
       // program counter changed, this needs 2 cycles
       FKeepProgramCounter := False;
-      Inc(FCycles, 2);
+      AdvanceCycles(2);
     end
     else
     begin
       AdvanceProgramCounter;
-      Inc(FCycles);
+      AdvanceCycles;
     end;
   end;
-
 end;
 
 procedure TProcessor.CatchUp;
