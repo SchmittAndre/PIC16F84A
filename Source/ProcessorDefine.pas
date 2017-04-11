@@ -305,7 +305,7 @@ type
     function DoAdd(A, B: Byte): Byte;
     function DoSub(A, B: Byte): Byte;
 
-    procedure AdvanceProgramCounter;
+    procedure AdvanceProgramCounter(ACount: Integer = 1);
 
     procedure PushStack(AProgramCounter: TProgramCounter);
     function PopStack: TProgramCounter;
@@ -351,19 +351,19 @@ type
     procedure InstructionCLRF(AInstruction: TInstruction);
     procedure InstructionCLRW({%H-}AInstruction: TInstruction);
     procedure InstructionCOMF(AInstruction: TInstruction);
-    // TODO: procedure InstructionDECF(AInstruction: TInstruction);
-    // TODO: procedure InstructionDECFSZ(AInstruction: TInstruction);
-    // TODO: procedure InstructionINCF(AInstruction: TInstruction);
-    // TODO: procedure InstructionINCFSZ(AInstruction: TInstruction);
-    // TODO: procedure InstructionIORWF(AInstruction: TInstruction);
-    // TODO: procedure InstructionMOVF(AInstruction: TInstruction);
+    procedure InstructionDECF(AInstruction: TInstruction);
+    procedure InstructionDECFSZ(AInstruction: TInstruction);
+    procedure InstructionINCF(AInstruction: TInstruction);
+    procedure InstructionINCFSZ(AInstruction: TInstruction);
+    procedure InstructionIORWF(AInstruction: TInstruction);
+    procedure InstructionMOVF(AInstruction: TInstruction);
     procedure InstructionMOVWF(AInstruction: TInstruction);
     procedure InstructionNOP({%H-}AInstruction: TInstruction);
     // TODO: procedure InstructionRLF(AInstruction: TInstruction);
     // TODO: procedure InstructionRRF(AInstruction: TInstruction);
-    // TODO: procedure InstructionSUBWF(AInstruction: TInstruction);
-    // TODO: procedure InstructionSWAPF(AInstruction: TInstruction);
-    // TODO: procedure InstructionXORWF(AInstruction: TInstruction);
+    procedure InstructionSUBWF(AInstruction: TInstruction);
+    procedure InstructionSWAPF(AInstruction: TInstruction);
+    procedure InstructionXORWF(AInstruction: TInstruction);
     {$ENDREGION}
 
     {$REGION --- Bit-Oriented File Register Operations --- }
@@ -394,12 +394,9 @@ implementation
 
 { TProcessor }
 
-procedure TProcessor.AdvanceProgramCounter;
+procedure TProcessor.AdvanceProgramCounter(ACount: Integer);
 begin
-  if FProgramCounter = High(FProgramCounter) then
-    FProgramCounter := 0
-  else
-    Inc(FProgramCounter);
+  FProgramCounter := (FProgramCounter + ACount) and High(FProgramCounter);
 end;
 
 class constructor TProcessor.Create;
@@ -651,7 +648,7 @@ end;
 
 function TProcessor.DoSub(A, B: Byte): Byte;
 begin
-  Result := DoAdd(A, not B + 1);
+  Result := DoAdd(A, (not B + 1) and $FF);
 end;
 
 procedure TProcessor.PushStack(AProgramCounter: TProgramCounter);
@@ -775,6 +772,8 @@ begin
     DoStep;
 end;
 
+{$REGION METHODS}
+
 procedure TProcessor.InstructionADDWF(AInstruction: TInstruction);
 var
   A: TFileAdress;
@@ -832,16 +831,174 @@ begin
   end;
 end;
 
+procedure TProcessor.InstructionDECF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := (FileMap[A] - 1) and $FF;
+    ZeroFlag := FileMap[A] = 0;
+  end
+  else
+  begin
+    FWRegister := (FileMap[A] - 1) and $FF;
+    ZeroFlag := FWRegister = 0;
+  end;
+end;
+
+procedure TProcessor.InstructionDECFSZ(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := (FileMap[A] - 1) and $FF;
+    if FileMap[A] = 0 then
+    begin
+      AdvanceProgramCounter(2);
+      KeepProgramCounter;
+    end;
+  end
+  else
+  begin
+    FWRegister := (FileMap[A] - 1) and $FF;
+    if FileMap[A] = 0 then
+    begin
+      AdvanceProgramCounter(2);
+      KeepProgramCounter;
+    end;
+  end;
+end;
+
+procedure TProcessor.InstructionINCF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := (FileMap[A] + 1) and $FF;
+    ZeroFlag := FileMap[A] = 0;
+  end
+  else
+  begin
+    FWRegister := (FileMap[A] + 1) and $FF;
+    ZeroFlag := FWRegister = 0;
+  end;
+end;
+
+procedure TProcessor.InstructionINCFSZ(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := (FileMap[A] + 1) and $FF;
+    if FileMap[A] = 0 then
+    begin
+      AdvanceProgramCounter(2);
+      KeepProgramCounter;
+    end;
+  end
+  else
+  begin
+    FWRegister := (FileMap[A] + 1) and $FF;
+    if FileMap[A] = 0 then
+    begin
+      AdvanceProgramCounter(2);
+      KeepProgramCounter;
+    end;
+  end;
+end;
+
+procedure TProcessor.InstructionIORWF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := FileMap[A] or FWRegister;
+    ZeroFlag := FileMap[A] = 0;
+  end
+  else
+  begin
+    FWRegister := FileMap[A] or FWRegister;
+    ZeroFlag := FWRegister = 0;
+  end;
+end;
+
+procedure TProcessor.InstructionMOVF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    ZeroFlag := FileMap[A] = 0;
+  end
+  else
+  begin
+    FWRegister := FileMap[A];
+    ZeroFlag := FWRegister = 0;
+  end;
+end;
+
 procedure TProcessor.InstructionMOVWF(AInstruction: TInstruction);
 begin
   FileMap[ExtractFileAdress(AInstruction)] := FWRegister;
 end;
 
-{$REGION METHODS}
-
 procedure TProcessor.InstructionNOP(AInstruction: TInstruction);
 begin
   // no operation
+end;
+
+procedure TProcessor.InstructionSUBWF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := DoSub(FileMap[A], FWRegister);
+  end
+  else
+  begin
+    FWRegister := DoSub(FileMap[A], FWRegister);
+  end;
+end;
+
+procedure TProcessor.InstructionSWAPF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+    FileMap[A] := (FileMap[A] shr 4) or ((FileMap[A] shl 4) and $FF)
+  else
+    FWRegister := (FileMap[A] shr 4) or ((FileMap[A] shl 4) and $FF);
+end;
+
+procedure TProcessor.InstructionXORWF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := FileMap[A] xor FWRegister;
+    ZeroFlag := FileMap[A] = 0;
+  end
+  else
+  begin
+    FWRegister := FileMap[A] xor FWRegister;
+    ZeroFlag := FWRegister = 0;
+  end;
 end;
 
 procedure TProcessor.InstructionADDLW(AInstruction: TInstruction);
