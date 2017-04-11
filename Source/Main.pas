@@ -14,6 +14,7 @@ type
   TfrmMain = class(TForm)
     actExit: TAction;
     actCompile: TAction;
+    actStep: TAction;
     actSaveFile: TAction;
     actShowAll: TAction;
     actHideAll: TAction;
@@ -29,6 +30,7 @@ type
     btnSave: TButton;
     btnStartStop: TButton;
     btnRefreshMemory: TButton;
+    btnStartStop1: TButton;
     cbMemorySelection: TComboBox;
     cbAutoRefreshMemory: TCheckBox;
     gbMemory: TGroupBox;
@@ -78,6 +80,7 @@ type
     procedure actSaveFileExecute(Sender: TObject);
     procedure actShowAllExecute(Sender: TObject);
     procedure actStartStopExecute(Sender: TObject);
+    procedure actStepExecute(Sender: TObject);
     procedure actToggleMemoryVisibleExecute(Sender: TObject);
     procedure actTogglePeripheralsVisibleExecute(Sender: TObject);
     procedure actTogglePortsVisibleExecute(Sender: TObject);
@@ -251,7 +254,7 @@ end;
 
 procedure TfrmMain.actRefreshMemoryExecute(Sender: TObject);
 begin
-
+  RefreshMemView;
 end;
 
 procedure TfrmMain.actSaveFileExecute(Sender: TObject);
@@ -327,7 +330,23 @@ end;
 
 procedure TfrmMain.actStartStopExecute(Sender: TObject);
 begin
-  FProcessor.Start;
+  if FProcessor.Running then
+  begin
+    FProcessor.Stop;
+    actStartStop.Caption := 'Start';
+  end
+  else
+  begin
+    FProcessor.Start;
+    actStartStop.Caption := 'Stop';
+  end;
+end;
+
+procedure TfrmMain.actStepExecute(Sender: TObject);
+begin
+  FProcessor.DoStep;
+  Cycles := FProcessor.Cycles;
+  RefreshMemView;
 end;
 
 procedure TfrmMain.actToggleMemoryVisibleExecute(Sender: TObject);
@@ -470,7 +489,7 @@ end;
 
 procedure TfrmMain.InitMemView;
 var
-  I, J: Integer;
+  I: Integer;
   T: TProcessor.TMemoryType;
 begin
   FMemViewColumns := 4;
@@ -587,10 +606,10 @@ begin
     for C := 0 to MemViewColumns - 1 do
     begin
       P := C + R * MemViewColumns;
-      if FProcessor.Valid[MemViewType, P] then
-        sgMemView.Rows[R + 1][C + 1] := Format('%.2x', [FProcessor.Memory[MemViewType, P]])
+      if FProcessor.ReadAsZero[MemViewType, P] then
+        sgMemView.Rows[R + 1][C + 1] := 'XX'
       else
-        sgMemView.Rows[R + 1][C + 1] := 'XX';
+        sgMemView.Rows[R + 1][C + 1] := Format('%.2x', [FProcessor.Memory[MemViewType, P]]);
     end;
   end;
   sgMemView.EndUpdate;

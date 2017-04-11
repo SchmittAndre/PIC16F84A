@@ -19,12 +19,12 @@ type
     // Program Memory
     ProgramMemorySize = $400;
     // Ram
-    RegisterBankOffset = $80;
+    FileMapOffset = $80;
     RAMStart = $0C;
     RAMEnd = $4F;
     RAMSize = RAMEnd - RAMStart + 1;
-    RAMMappedStart = RAMStart + RegisterBankOffset;
-    RAMMappedEnd = RAMEnd + RegisterBankOffset;
+    RAMMappedStart = RAMStart + FileMapOffset;
+    RAMMappedEnd = RAMEnd + FileMapOffset;
     RAMFullSize = $100;
     // EEPRom
     ROMSize = $40;
@@ -78,11 +78,14 @@ type
     {$REGION Custom Rangers}
     TProgramCounter = $0 .. $1FFF;
     TProgramCounterStackPos = 0 .. StackSize - 1;
+    TProgramCounterStackPointer = 0 .. StackSize * 2 - 1;
     TInstruction = $0 .. $3FFF;
     TProgramMemPos = 0 .. ProgramMemorySize - 1;
     TProgramMemPointer = 0 .. ProgramMemorySize * 2 - 1;
+    TFileAdress = $0 .. $7F;
     TRAMPointer = $0 .. $FF;
     TROMPointer = 0 .. ROMSize - 1;
+    TBitIndex = 0 .. 7;
     {$ENDREGION}
 
     {$REGION TInstructionType}
@@ -129,7 +132,7 @@ type
     {$ENDREGION}
 
     TInstructionInfo = record
-      Name: ShortString;
+      Name: String;
       SignificantBits: Byte;
       Instruction: TInstruction;
     end;
@@ -226,6 +229,20 @@ type
     FInstructionArray: array [TInstruction] of TInstructionType;
 
     class constructor Create;
+    function GetCarryFlag: Boolean;
+    function GetDigitCarryFlag: Boolean;
+    function GetFileMap(P: TRAMPointer): Byte;
+    function GetFlag(P: TRAMPointer; ABit: TBitIndex): Boolean; overload;
+    function GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean; overload;
+    function GetFlag(P: TRegisterBank1; ABit: TBitIndex): Boolean; overload;
+    function GetZeroFlag: Boolean;
+    procedure SetCarryFlag(AValue: Boolean);
+    procedure SetDigitCarryFlag(AValue: Boolean);
+    procedure SetFileMap(P: TRAMPointer; AValue: Byte);
+    procedure SetFlag(P: TRAMPointer; ABit: TBitIndex; AValue: Boolean); overload;
+    procedure SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean); overload;
+    procedure SetFlag(P: TRegisterBank1; ABit: TBitIndex; AValue: Boolean); overload;
+    procedure SetZeroFlag(AValue: Boolean);
 
   private
     // Program
@@ -238,6 +255,7 @@ type
 
     // Banks + RAM
     FRAM: array [TRAMPointer] of Byte;
+    FWRegister: Byte;
 
     // EEPROM
     FROM: array [TROMPointer] of Byte;
@@ -248,27 +266,49 @@ type
 
     // State
     FRunning: Boolean;
-    FCycles: Int64;
+    FCycles: Int64;           // All Cycles that happened after a call of Start
+    FCyclesFromStart: Int64;  // Cycles from StartTime
     FFrequency: Int64;
-    FStartTime: Int64;
+    FStartTime: Int64;        // Changes for ResetSyncTime
     FSpeedFactor: Single;
 
-    function GetCurrentInstruction: TInstruction;
+    function GetCurrentInstruction: TLineInstruction;
     function GetDataMem(P: TROMPointer): Byte;
     function GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
-    function GetProgramCounterStack(P: TProgramCounterStackPos): TProgramCounter;
-    function GetProgramInstruction(P: TProgramCounter): TInstruction;
+    function GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
+    function GetCode(P: TProgramCounter): TLineInstruction;
+    function GetPCStackMem(P: TProgramCounterStackPointer): Byte;
     function GetProgramMem(P: TProgramMemPointer): Byte;
     function GetRAM(P: TRAMPointer): Byte;
     function GetRegisterBank0(S: TRegisterBank0): Byte;
     function GetRegisterBank1(S: TRegisterBank1): Byte;
     function GetTimeBehind: Single;
-    function GetValid(AType: TMemoryType; APos: Cardinal): Boolean;
+    function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
 
     function NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
-    function CanNormalize(ARAMPointer: TRAMPointer): Boolean;
 
     procedure KeepProgramCounter;
+    procedure SetSpeedFactor(AValue: Single);
+
+    property FileMap[P: TRAMPointer]: Byte read GetFileMap write SetFileMap;
+    property Flag[P: TRAMPointer; ABit: TBitIndex]: Boolean read GetFlag write SetFlag;
+    property CarryFlag: Boolean read GetCarryFlag write SetCarryFlag;
+    property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
+    property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
+
+    // help-functions
+    class function ExtractByteLiteral(AInstruction: TInstruction): Byte; static;
+    class function ExtractFileAdress(AInstruction: TInstruction): TFileAdress; static;
+    class function ExtractProgramCounter(AInstruction: TInstruction): TProgramCounter; static;
+    class function ExtractDestIsFile(AInstruction: TInstruction): Boolean; static;
+
+    function DoAdd(A, B: Byte): Byte;
+    function DoSub(A, B: Byte): Byte;
+
+    procedure AdvanceProgramCounter;
+
+    procedure PushStack(AProgramCounter: TProgramCounter);
+    function PopStack: TProgramCounter;
 
   public
     constructor Create;
@@ -277,81 +317,90 @@ type
     procedure Initialize;
     procedure ResetROM;
 
-    procedure Start(ARestart: Boolean = True);
+    procedure Start(AReset: Boolean = True);
     procedure Stop;
 
-    procedure WaitForSync;
     procedure ResetSyncTime;
 
     procedure DoStep;
-
     procedure CatchUp;
     property TimeBehind: Single read GetTimeBehind;
 
     property ProgramMem[P: TProgramMemPointer]: Byte read GetProgramMem;
-    property ProgramInstruction[P: TProgramCounter]: TInstruction read GetProgramInstruction;
-    property CurrentInstruction: TInstruction read GetCurrentInstruction;
+    property Code[P: TProgramCounter]: TLineInstruction read GetCode;
+    property CurrentInstruction: TLineInstruction read GetCurrentInstruction;
+    property WRegister: Byte read FWRegister;
     property RegisterBank0[S: TRegisterBank0]: Byte read GetRegisterBank0;
     property RegisterBank1[S: TRegisterBank1]: Byte read GetRegisterBank1;
     property RAM[P: TRAMPointer]: Byte read GetRAM;
     property ROM[P: TROMPointer]: Byte read GetDataMem;
-    property ProgramCounterStack[P: TProgramCounterStackPos]: TProgramCounter read GetProgramCounterStack;
+    property PCStack[P: TProgramCounterStackPos]: TProgramCounter read GetPCStack;
+    property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
 
-    property Valid[AType: TMemoryType; APos: Cardinal]: Boolean read GetValid;
+    property ReadAsZero[AType: TMemoryType; APos: Cardinal]: Boolean read GetReadAsZero;
     property Memory[AType: TMemoryType; APos: Cardinal]: Byte read GetMemory;
 
     property Running: Boolean read FRunning;
     property Cycles: Int64 read FCycles;
+    property SpeedFactor: Single read FSpeedFactor write SetSpeedFactor;
 
   published
     {$REGION --- Byte-Oriented File Register Operations --- }
-    // TODO: procedure ADDWF(AInstruction: TInstruction);
-    // TODO: procedure ANDWF(AInstruction: TInstruction);
-    // TODO: procedure CLRF(AInstruction: TInstruction);
-    // TODO: procedure CLRW(AInstruction: TInstruction);
-    // TODO: procedure COMF(AInstruction: TInstruction);
-    // TODO: procedure DECF(AInstruction: TInstruction);
-    // TODO: procedure DECFSZ(AInstruction: TInstruction);
-    // TODO: procedure INCF(AInstruction: TInstruction);
-    // TODO: procedure INCFSZ(AInstruction: TInstruction);
-    // TODO: procedure IORWF(AInstruction: TInstruction);
-    // TODO: procedure MOVF(AInstruction: TInstruction);
-    // TODO: procedure MOVWF(AInstruction: TInstruction);
-    procedure NOP({%H-}AInstruction: TInstruction);
-    // TODO: procedure RLF(AInstruction: TInstruction);
-    // TODO: procedure RRF(AInstruction: TInstruction);
-    // TODO: procedure SUBWF(AInstruction: TInstruction);
-    // TODO: procedure SWAPF(AInstruction: TInstruction);
-    // TODO: procedure XORWF(AInstruction: TInstruction);
+    procedure InstructionADDWF(AInstruction: TInstruction);
+    procedure InstructionANDWF(AInstruction: TInstruction);
+    procedure InstructionCLRF(AInstruction: TInstruction);
+    procedure InstructionCLRW({%H-}AInstruction: TInstruction);
+    procedure InstructionCOMF(AInstruction: TInstruction);
+    // TODO: procedure InstructionDECF(AInstruction: TInstruction);
+    // TODO: procedure InstructionDECFSZ(AInstruction: TInstruction);
+    // TODO: procedure InstructionINCF(AInstruction: TInstruction);
+    // TODO: procedure InstructionINCFSZ(AInstruction: TInstruction);
+    // TODO: procedure InstructionIORWF(AInstruction: TInstruction);
+    // TODO: procedure InstructionMOVF(AInstruction: TInstruction);
+    procedure InstructionMOVWF(AInstruction: TInstruction);
+    procedure InstructionNOP({%H-}AInstruction: TInstruction);
+    // TODO: procedure InstructionRLF(AInstruction: TInstruction);
+    // TODO: procedure InstructionRRF(AInstruction: TInstruction);
+    // TODO: procedure InstructionSUBWF(AInstruction: TInstruction);
+    // TODO: procedure InstructionSWAPF(AInstruction: TInstruction);
+    // TODO: procedure InstructionXORWF(AInstruction: TInstruction);
     {$ENDREGION}
 
     {$REGION --- Bit-Oriented File Register Operations --- }
-    // TODO: procedure BCF(AInstruction: TInstruction);
-    // TODO: procedure BSF(AInstruction: TInstruction);
-    // TODO: procedure BTFSC(AInstruction: TInstruction);
-    // TODO: procedure BTFSS(AInstruction: TInstruction);
+    // TODO: procedure InstructionBCF(AInstruction: TInstruction);
+    // TODO: procedure InstructionBSF(AInstruction: TInstruction);
+    // TODO: procedure InstructionBTFSC(AInstruction: TInstruction);
+    // TODO: procedure InstructionBTFSS(AInstruction: TInstruction);
     {$ENDREGION}
 
     {$REGION --- Literal and Control Operations --- }
-    // TODO: procedure ADDLW(AInstruction: TInstruction);
-    // TODO: procedure ANDLW(AInstruction: TInstruction);
-    // TODO: procedure CALL(AInstruction: TInstruction);
-    // TODO: procedure CLRWDT(AInstruction: TInstruction);
-    // TODO: procedure GOTO(AInstruction: TInstruction);
-    // TODO: procedure IORLW(AInstruction: TInstruction);
-    // TODO: procedure MOVLW(AInstruction: TInstruction);
-    // TODO: procedure RETFIE(AInstruction: TInstruction);
-    // TODO: procedure RETLW(AInstruction: TInstruction);
-    // TODO: procedure RETURN(AInstruction: TInstruction);
-    // TODO: procedure SLEEP(AInstruction: TInstruction);
-    // TODO: procedure SUBLW(AInstruction: TInstruction);
-    // TODO: procedure XORLW(AInstruction: TInstruction);
+    procedure InstructionADDLW(AInstruction: TInstruction);
+    procedure InstructionANDLW(AInstruction: TInstruction);
+    procedure InstructionCALL(AInstruction: TInstruction);
+    // TODO: procedure InstructionCLRWDT(AInstruction: TInstruction);
+    procedure InstructionGOTO(AInstruction: TInstruction);
+    procedure InstructionIORLW(AInstruction: TInstruction);
+    procedure InstructionMOVLW(AInstruction: TInstruction);
+    // TODO: procedure InstructionRETFIE(AInstruction: TInstruction);
+    procedure InstructionRETLW(AInstruction: TInstruction);
+    procedure InstructionRETURN(AInstruction: TInstruction);
+    // TODO: procedure InstructionSLEEP(AInstruction: TInstruction);
+    procedure InstructionSUBLW(AInstruction: TInstruction);
+    procedure InstructionXORLW(AInstruction: TInstruction);
     {$ENDREGION}
   end;
 
 implementation
 
 { TProcessor }
+
+procedure TProcessor.AdvanceProgramCounter;
+begin
+  if FProgramCounter = High(FProgramCounter) then
+    FProgramCounter := 0
+  else
+    Inc(FProgramCounter);
+end;
 
 class constructor TProcessor.Create;
 var
@@ -369,14 +418,87 @@ begin
   end;
 end;
 
+function TProcessor.GetCarryFlag: Boolean;
+begin
+  Result := Flag[b0STATUS, 0];
+end;
+
+function TProcessor.GetDigitCarryFlag: Boolean;
+begin
+  Result := Flag[b0STATUS, 1];
+end;
+
+function TProcessor.GetFileMap(P: TRAMPointer): Byte;
+begin
+  Result := FRAM[NormalizeRAMPointer(P)];
+end;
+
+function TProcessor.GetFlag(P: TRAMPointer; ABit: TBitIndex): Boolean;
+begin
+  Result := ((FRAM[NormalizeRAMPointer(P)] shr ABit) and 1) = 1;
+end;
+
+function TProcessor.GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean;
+begin
+  Result := Flag[Ord(P), ABit];
+end;
+
+function TProcessor.GetFlag(P: TRegisterBank1; ABit: TBitIndex): Boolean;
+begin
+  Result := Flag[Ord(P), ABit];
+end;
+
+function TProcessor.GetZeroFlag: Boolean;
+begin
+  Result := Flag[b0STATUS, 2];
+end;
+
+procedure TProcessor.SetCarryFlag(AValue: Boolean);
+begin
+  Flag[b0STATUS, 0] := AValue;
+end;
+
+procedure TProcessor.SetDigitCarryFlag(AValue: Boolean);
+begin
+  Flag[b0STATUS, 1] := AValue;
+end;
+
+procedure TProcessor.SetFileMap(P: TRAMPointer; AValue: Byte);
+begin
+  FRAM[NormalizeRAMPointer(P)] := AValue;
+end;
+
+procedure TProcessor.SetFlag(P: TRAMPointer; ABit: TBitIndex; AValue: Boolean);
+begin
+  if AValue then // set
+    FRAM[P] := FRAM[P] or (1 shl ABit)
+  else           // clear
+    FRAM[P] := FRAM[P] and not (1 shl ABit);
+end;
+
+procedure TProcessor.SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean);
+begin
+  Flag[Ord(P), ABit] := AValue;
+end;
+
+procedure TProcessor.SetFlag(P: TRegisterBank1; ABit: TBitIndex; AValue: Boolean);
+begin
+  Flag[Ord(P), ABit] := AValue;
+end;
+
+procedure TProcessor.SetZeroFlag(AValue: Boolean);
+begin
+  Flag[b0STATUS, 2] := AValue;
+end;
+
 function TProcessor.GetDataMem(P: TROMPointer): Byte;
 begin
   Result := FROM[P];
 end;
 
-function TProcessor.GetCurrentInstruction: TInstruction;
+function TProcessor.GetCurrentInstruction: TLineInstruction;
 begin
-  Result := ProgramInstruction[FProgramCounter];
+  Result := Code[FProgramCounter];
 end;
 
 function TProcessor.GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
@@ -390,7 +512,7 @@ begin
     mtROM:
       Result := ROM[APos];
     mtProgramCounterStack:
-      Result := ProgramCounterStack[APos div 2] shl APos mod 2 and $FF;
+      Result := PCStackMem[APos];
   end;
   except
     on ERangeError do
@@ -398,14 +520,22 @@ begin
   end;
 end;
 
-function TProcessor.GetProgramCounterStack(P: TProgramCounterStackPos): TProgramCounter;
+function TProcessor.GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
 begin
   Result := FProgramCounterStack[P];
 end;
 
-function TProcessor.GetProgramInstruction(P: TProgramCounter): TInstruction;
+function TProcessor.GetCode(P: TProgramCounter): TLineInstruction;
 begin
-  Result := FProgramMem[P mod ProgramMemorySize].Instruction;
+  Result := FProgramMem[P mod ProgramMemorySize];
+end;
+
+function TProcessor.GetPCStackMem(P: TProgramCounterStackPointer): Byte;
+begin
+  if P mod 2 = 0 then
+    Result := (FProgramCounterStack[P div 2] shr 8) and $FF
+  else
+    Result := FProgramCounterStack[P div 2] and $FF;
 end;
 
 function TProcessor.GetProgramMem(P: TProgramMemPointer): Byte;
@@ -439,33 +569,40 @@ begin
   Result := (T - FStartTime) / FFrequency * TProcessor.OperationFrequeny - FCycles * FSpeedFactor;
 end;
 
-function TProcessor.GetValid(AType: TMemoryType; APos: Cardinal): Boolean;
+function TProcessor.GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
 begin
-  try
-    if (AType = mtRAM) and not CanNormalize(TRAMPointer(APos)) then
-      Exit(False);
-  except
-    on ERangeError do
-      Exit(False);
+  case AType of
+    mtRAM:
+    begin
+      if APos >= FileMapOffset then
+        APos := APos - FileMapOffset;
+      Result := (APos > RAMEnd) or (APos = Ord(b0Unused));
+    end;
+    mtProgram:
+    begin
+      Result := False;
+    end;
+    mtROM:
+    begin
+      Result := False;
+    end;
+    mtProgramCounterStack:
+    begin
+      Result := False;
+    end;
   end;
-  Result := True;
 end;
 
 function TProcessor.NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
 begin
-  if not CanNormalize(ARAMPointer) then
-    raise Exception.CreateFmt('Cannot process RAM-Pointer: 0x%.2x', [ARAMPointer]);
-  case ARAMPointer of
-  RAMStart .. RAMEnd:
-    Result := ARAMPointer;
-  RAMMappedStart .. RAMMappedEnd:
-    Result := ARAMPointer - RegisterBankOffset;
+  try
+    if (ARAMPointer >= FileMapOffset) and (
+       (ARAMPointer >= RAMMappedStart) and (ARAMPointer <= RAMMappedEnd) or
+       (TRegisterBank1(ARAMPointer) in (RegisterBank1Mapped))) then
+      Exit(ARamPointer - FileMapOffset);
+  except
   end;
-end;
-
-function TProcessor.CanNormalize(ARAMPointer: TRAMPointer): Boolean;
-begin
-  Result := (ARAMPointer <= RAMEnd) or (ARAMPointer >= RegisterBankOffset) and (ARAMPointer <= RAMMappedEnd);
+  Result := ARAMPointer;
 end;
 
 procedure TProcessor.KeepProgramCounter;
@@ -473,9 +610,60 @@ begin
   FKeepProgramCounter := True;
 end;
 
-procedure TProcessor.NOP(AInstruction: TInstruction);
+procedure TProcessor.SetSpeedFactor(AValue: Single);
 begin
-  // no operation
+  if FSpeedFactor = AValue then
+    Exit;
+  FSpeedFactor := AValue;
+  ResetSyncTime;
+end;
+
+class function TProcessor.ExtractByteLiteral(AInstruction: TInstruction): Byte;
+begin
+  Result := AInstruction and High(Byte);
+end;
+
+class function TProcessor.ExtractFileAdress(AInstruction: TInstruction): TFileAdress;
+begin
+  Result := AInstruction and High(TFileAdress);
+end;
+
+class function TProcessor.ExtractProgramCounter(AInstruction: TInstruction): TProgramCounter;
+begin
+  Result := AInstruction and $7FF;
+end;
+
+class function TProcessor.ExtractDestIsFile(AInstruction: TInstruction): Boolean;
+begin
+  Result := ((AInstruction shr 7) and 1) = 1;
+end;
+
+function TProcessor.DoAdd(A, B: Byte): Byte;
+var
+  R: Word;
+begin
+  R := A + B;
+  CarryFlag := R > $FF;
+  DigitCarryFlag := (A and $F) + (B and $F) > $F;
+  Result := R and $FF;
+  ZeroFlag := Result = 0;
+end;
+
+function TProcessor.DoSub(A, B: Byte): Byte;
+begin
+  Result := DoAdd(A, not B + 1);
+end;
+
+procedure TProcessor.PushStack(AProgramCounter: TProgramCounter);
+begin
+  FProgramCounterStack[FProgramCounterStackPos] := AProgramCounter;
+  FProgramCounterStackPos := (FProgramCounterStackPos + 1) and High(TProgramCounterStackPos);
+end;
+
+function TProcessor.PopStack: TProgramCounter;
+begin
+  FProgramCounterStackPos := (FProgramCounterStackPos - 1) and High(TProgramCounterStackPos);
+  Result := FProgramCounterStack[FProgramCounterStackPos];
 end;
 
 constructor TProcessor.Create;
@@ -486,7 +674,7 @@ begin
   M.Data := Self;
   for T := Low(T) to High(T) do
   begin
-    M.Code := MethodAddress(InstructionInfo[T].Name);
+    M.Code := MethodAddress('Instruction' + InstructionInfo[T].Name);
     if M.Code <> nil then
       FMethods[T] := TInstructionMethod(M);
   end;
@@ -500,6 +688,8 @@ var
   Line: Cardinal;
   Instruction: DWORD;
 begin
+  FillByte(FProgramMem, SizeOf(FProgramMem), 0);
+  Initialize;
   for Counter := 0 to AFileData.Count - 1 do
   begin
     if not AFileData[Counter].StartsWith(' ') then
@@ -523,6 +713,7 @@ begin
   FProgramCounterStackPos := 0;
   FillByte(FProgramCounterStack, SizeOf(FProgramCounterStack), 0);
   FillByte(FRAM, SizeOf(FRAM), 0);
+  FWRegister := 0;
   FCycles := 0;
 end;
 
@@ -531,11 +722,11 @@ begin
   FillByte(FROM, SizeOf(FROM), 0);
 end;
 
-procedure TProcessor.Start(ARestart: Boolean = True);
+procedure TProcessor.Start(AReset: Boolean = True);
 begin
-  if ARestart then
+  if AReset then
     Initialize;
-  QueryPerformanceCounter(FStartTime);
+  ResetSyncTime;
   FRunning := True;
 end;
 
@@ -544,41 +735,38 @@ begin
   FRunning := False;
 end;
 
-procedure TProcessor.WaitForSync;
-begin
-
-end;
-
 procedure TProcessor.ResetSyncTime;
 begin
-
+  QueryPerformanceCounter(FStartTime);
+  FCyclesFromStart := 0;
 end;
 
 procedure TProcessor.DoStep;
 var
   T: TInstructionType;
 begin
-  T := FInstructionArray[ProgramInstruction[FProgramCounter]];
+  T := FInstructionArray[CurrentInstruction.Instruction];
 
-  if Assigned(FMethods[T]) then
-    FMethods[T](ProgramInstruction[FProgramCounter])
-  else
-    raise ENotImplemented.CreateFmt('Processor-Instruction "%s" not implemented!', [InstructionInfo[T].Name]);
-
-  if FKeepProgramCounter then
-  begin
-    // program counter changed, this needs 2 cycles
-    FKeepProgramCounter := False;
-    Inc(FCycles, 2);
-  end
-  else
-  begin
-    if FProgramCounter = High(FProgramCounter) then
-      FProgramCounter := 0
+  try
+    if Assigned(FMethods[T]) then
+      FMethods[T](CurrentInstruction.Instruction)
     else
-      Inc(FProgramCounter);
-    Inc(FCycles);
+      raise ENotImplemented.CreateFmt('Instruction "%s" (line %u) not implemented',
+                                      [InstructionInfo[T].Name, CurrentInstruction.Line]);
+  finally
+    if FKeepProgramCounter then
+    begin
+      // program counter changed, this needs 2 cycles
+      FKeepProgramCounter := False;
+      Inc(FCycles, 2);
+    end
+    else
+    begin
+      AdvanceProgramCounter;
+      Inc(FCycles);
+    end;
   end;
+
 end;
 
 procedure TProcessor.CatchUp;
@@ -586,6 +774,138 @@ begin
   while TimeBehind > 0 do
     DoStep;
 end;
+
+procedure TProcessor.InstructionADDWF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+    FileMap[A] := DoAdd(FileMap[A], FWRegister)
+  else
+    FWRegister := DoAdd(FileMap[A], FWRegister);
+end;
+
+procedure TProcessor.InstructionANDWF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := FileMap[A] and FWRegister;
+    ZeroFlag := FileMap[A] = 0;
+  end
+  else
+  begin
+    FWRegister := FileMap[A] and FWRegister;
+    ZeroFlag := FWRegister = 0;
+  end;
+end;
+
+procedure TProcessor.InstructionCLRF(AInstruction: TInstruction);
+begin
+  FileMap[ExtractFileAdress(AInstruction)] := 0;
+  ZeroFlag := True;
+end;
+
+procedure TProcessor.InstructionCLRW(AInstruction: TInstruction);
+begin
+  FWRegister := 0;
+  ZeroFlag := True;
+end;
+
+procedure TProcessor.InstructionCOMF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+begin
+  A := ExtractFileAdress(AInstruction);
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    FileMap[A] := not FileMap[A];
+    ZeroFlag := FileMap[A] = 0;
+  end
+  else
+  begin
+    FWRegister := not FileMap[A];
+    ZeroFlag := FWRegister = 0;
+  end;
+end;
+
+procedure TProcessor.InstructionMOVWF(AInstruction: TInstruction);
+begin
+  FileMap[ExtractFileAdress(AInstruction)] := FWRegister;
+end;
+
+{$REGION METHODS}
+
+procedure TProcessor.InstructionNOP(AInstruction: TInstruction);
+begin
+  // no operation
+end;
+
+procedure TProcessor.InstructionADDLW(AInstruction: TInstruction);
+begin
+  FWRegister := DoAdd(FWRegister, ExtractByteLiteral(AInstruction));
+end;
+
+procedure TProcessor.InstructionANDLW(AInstruction: TInstruction);
+begin
+  FWRegister := FWRegister and ExtractByteLiteral(AInstruction);
+  ZeroFlag := FWRegister = 0;
+end;
+
+procedure TProcessor.InstructionCALL(AInstruction: TInstruction);
+begin
+  AdvanceProgramCounter;
+  PushStack(FProgramCounter);
+  FProgramCounter := ExtractProgramCounter(AInstruction);
+  KeepProgramCounter;
+end;
+
+procedure TProcessor.InstructionGOTO(AInstruction: TInstruction);
+begin
+  FProgramCounter := ExtractProgramCounter(AInstruction);
+  KeepProgramCounter;
+end;
+
+procedure TProcessor.InstructionIORLW(AInstruction: TInstruction);
+begin
+  FWRegister := FWRegister or ExtractByteLiteral(AInstruction);
+  ZeroFlag := FWRegister = 0;
+end;
+
+procedure TProcessor.InstructionMOVLW(AInstruction: TInstruction);
+begin
+  FWRegister := ExtractByteLiteral(AInstruction);
+  ZeroFlag := FWRegister = 0;
+end;
+
+procedure TProcessor.InstructionRETLW(AInstruction: TInstruction);
+begin
+  FWRegister := ExtractByteLiteral(AInstruction);
+  FProgramCounter := PopStack;
+  KeepProgramCounter;
+end;
+
+procedure TProcessor.InstructionRETURN(AInstruction: TInstruction);
+begin
+  FProgramCounter := PopStack;
+  KeepProgramCounter;
+end;
+
+procedure TProcessor.InstructionSUBLW(AInstruction: TInstruction);
+begin
+  FWRegister := DoSub(ExtractByteLiteral(AInstruction), FWRegister);
+end;
+
+procedure TProcessor.InstructionXORLW(AInstruction: TInstruction);
+begin
+  FWRegister := FWRegister xor ExtractByteLiteral(AInstruction);
+  ZeroFlag := FWRegister = 0;
+end;
+
+{$ENDREGION}
 
 end.
 
