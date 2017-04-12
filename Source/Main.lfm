@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
-  Left = 518
+  Left = 493
   Height = 718
-  Top = 135
+  Top = 140
   Width = 1151
   AllowDropFiles = True
   Caption = 'PIC16F84A Emulator'
@@ -26,7 +26,7 @@ object frmMain: TfrmMain
     ClientHeight = 629
     ClientWidth = 246
     Constraints.MinWidth = 250
-    TabOrder = 0
+    TabOrder = 3
     object pnlMemorySelection: TPanel
       Left = 5
       Height = 65
@@ -64,7 +64,7 @@ object frmMain: TfrmMain
         Action = actRefreshMemory
         Align = alRight
         BorderSpacing.Around = 5
-        TabOrder = 1
+        TabOrder = 2
       end
       object cbAutoRefreshMemory: TCheckBox
         Left = 6
@@ -74,7 +74,7 @@ object frmMain: TfrmMain
         Align = alClient
         BorderSpacing.Around = 5
         Caption = 'Auto Refresh'
-        TabOrder = 2
+        TabOrder = 1
       end
     end
     object sgMemView: TStringGrid
@@ -122,24 +122,24 @@ object frmMain: TfrmMain
       BorderSpacing.Around = 5
       Caption = 'Peripherals'
       Constraints.MinHeight = 120
+      ParentBidiMode = False
       TabOrder = 0
     end
     inline synEditor: TSynEdit
       Left = 5
       Height = 514
       Top = 145
-      Width = 543
+      Width = 550
       Align = alClient
       BlockTabIndent = 2
       BorderSpacing.Around = 5
-      Font.CharSet = ANSI_CHARSET
-      Font.Height = -16
+      Font.Height = -17
       Font.Name = 'Consolas'
       Font.Pitch = fpFixed
       Font.Quality = fqDraft
       ParentColor = False
       ParentFont = False
-      TabOrder = 1
+      TabOrder = 2
       OnClick = synEditorClick
       BookMarkOptions.BookmarkImages = ilMarker
       Gutter.Width = 59
@@ -647,142 +647,232 @@ object frmMain: TfrmMain
       ResizeAnchor = akTop
     end
     object pnlControl: TPanel
-      Left = 553
+      Left = 560
       Height = 514
       Top = 145
-      Width = 153
+      Width = 146
       Align = alRight
       BorderSpacing.Around = 5
       ClientHeight = 514
-      ClientWidth = 153
+      ClientWidth = 146
       TabOrder = 3
-      object btnCompile: TButton
+      object gbFile: TGroupBox
         Left = 6
-        Height = 25
-        Top = 156
-        Width = 141
-        Action = actCompile
-        Align = alTop
-        BorderSpacing.Around = 5
-        TabOrder = 4
-      end
-      object btnStartStop: TButton
-        Left = 6
-        Height = 25
-        Top = 66
-        Width = 141
-        Action = actStartStop
-        Align = alTop
-        BorderSpacing.Around = 5
-        TabOrder = 2
-      end
-      object pnlRuntime: TPanel
-        Left = 6
-        Height = 25
-        Top = 216
-        Width = 141
-        Align = alTop
-        BorderSpacing.Around = 5
-        ClientHeight = 25
-        ClientWidth = 141
-        TabOrder = 0
-        object lbRuntimeTitle: TLabel
-          Left = 6
-          Height = 23
-          Top = 1
-          Width = 58
-          Align = alLeft
-          BorderSpacing.Left = 5
-          Caption = 'Runtime:'
-          Layout = tlCenter
-          ParentColor = False
-        end
-        object lbRuntime: TLabel
-          Left = 64
-          Height = 23
-          Top = 1
-          Width = 71
-          Align = alClient
-          Alignment = taRightJustify
-          BorderSpacing.Right = 5
-          Caption = '0 ms'
-          Layout = tlCenter
-          ParentColor = False
-        end
-      end
-      object pnlCycles: TPanel
-        Left = 6
-        Height = 25
-        Top = 186
-        Width = 141
-        Align = alTop
-        BorderSpacing.Around = 5
-        ClientHeight = 25
-        ClientWidth = 141
-        TabOrder = 1
-        object lbCyclesTitle: TLabel
-          Left = 6
-          Height = 23
-          Top = 1
-          Width = 44
-          Align = alLeft
-          BorderSpacing.Left = 5
-          Caption = 'Cycles:'
-          Layout = tlCenter
-          ParentColor = False
-        end
-        object lbCycles: TLabel
-          Left = 50
-          Height = 23
-          Top = 1
-          Width = 85
-          Align = alClient
-          Alignment = taRightJustify
-          BorderSpacing.Right = 5
-          Caption = '0'
-          Layout = tlCenter
-          ParentColor = False
-        end
-      end
-      object btnOpen: TButton
-        Left = 6
-        Height = 25
-        Top = 36
-        Width = 141
-        Action = actOpenFile
-        Align = alTop
-        BorderSpacing.Around = 5
-        TabOrder = 3
-      end
-      object btnSave: TButton
-        Left = 6
-        Height = 25
+        Height = 122
         Top = 6
-        Width = 141
-        Action = actSaveFile
+        Width = 134
         Align = alTop
         BorderSpacing.Around = 5
-        TabOrder = 5
+        Caption = 'File'
+        ClientHeight = 97
+        ClientWidth = 130
+        TabOrder = 0
+        object btnSave: TButton
+          Left = 5
+          Height = 25
+          Top = 5
+          Width = 120
+          Action = actSaveFile
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 0
+        end
+        object btnOpen: TButton
+          Left = 5
+          Height = 25
+          Top = 35
+          Width = 120
+          Action = actOpenFile
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 1
+        end
+        object btnCompile: TButton
+          Left = 5
+          Height = 25
+          Top = 65
+          Width = 120
+          Action = actCompile
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 2
+        end
       end
-      object btnStep: TButton
+      object gbControl: TGroupBox
         Left = 6
-        Height = 25
-        Top = 96
-        Width = 141
-        Action = actStep
+        Height = 172
+        Top = 133
+        Width = 134
         Align = alTop
         BorderSpacing.Around = 5
-        TabOrder = 6
+        Caption = 'Control'
+        ClientHeight = 147
+        ClientWidth = 130
+        TabOrder = 1
+        object btnStartStop: TButton
+          Left = 5
+          Height = 25
+          Top = 35
+          Width = 120
+          Action = actStartStop
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 0
+        end
+        object btnReset: TButton
+          Left = 5
+          Height = 25
+          Top = 5
+          Width = 120
+          Action = actReset
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 1
+        end
+        object btnStep: TButton
+          Left = 5
+          Height = 25
+          Top = 65
+          Width = 120
+          Action = actStepIn
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 2
+        end
+        object btnStepOver: TButton
+          Left = 5
+          Height = 25
+          Top = 95
+          Width = 120
+          Action = actStepOver
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 3
+        end
+        object btnStepOut: TButton
+          Left = 5
+          Height = 25
+          Top = 125
+          Width = 120
+          Action = actStepOut
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 4
+        end
       end
-      object btnStepOver: TButton
+      object gbStateInfo: TGroupBox
         Left = 6
-        Height = 25
-        Top = 126
-        Width = 141
-        Action = actStepOver
+        Height = 97
+        Top = 310
+        Width = 134
         Align = alTop
         BorderSpacing.Around = 5
-        TabOrder = 7
+        Caption = 'State-Info'
+        ClientHeight = 72
+        ClientWidth = 130
+        TabOrder = 2
+        object pnlCycles: TPanel
+          Left = 0
+          Height = 25
+          Top = 0
+          Width = 130
+          Align = alTop
+          BevelOuter = bvNone
+          ClientHeight = 25
+          ClientWidth = 130
+          TabOrder = 0
+          object lbCyclesTitle: TLabel
+            Left = 5
+            Height = 25
+            Top = 0
+            Width = 44
+            Align = alLeft
+            BorderSpacing.Left = 5
+            Caption = 'Cycles:'
+            Layout = tlCenter
+            ParentColor = False
+          end
+          object lbCycles: TLabel
+            Left = 49
+            Height = 25
+            Top = 0
+            Width = 76
+            Align = alClient
+            Alignment = taRightJustify
+            BorderSpacing.Right = 5
+            Caption = '0'
+            Layout = tlCenter
+            ParentColor = False
+          end
+        end
+        object pnlWRegister: TPanel
+          Left = 0
+          Height = 25
+          Top = 25
+          Width = 130
+          Align = alTop
+          BevelOuter = bvNone
+          ClientHeight = 25
+          ClientWidth = 130
+          TabOrder = 1
+          object lbWRegisterTitle: TLabel
+            Left = 5
+            Height = 25
+            Top = 0
+            Width = 17
+            Align = alLeft
+            BorderSpacing.Left = 5
+            Caption = 'W:'
+            Layout = tlCenter
+            ParentColor = False
+          end
+          object lbWRegister: TLabel
+            Left = 22
+            Height = 25
+            Top = 0
+            Width = 103
+            Align = alClient
+            Alignment = taRightJustify
+            BorderSpacing.Right = 5
+            Caption = '00 [00000000]'
+            Layout = tlCenter
+            ParentColor = False
+          end
+        end
+        object pnlFlags: TPanel
+          Left = 0
+          Height = 25
+          Top = 50
+          Width = 130
+          Align = alTop
+          BevelOuter = bvNone
+          ClientHeight = 25
+          ClientWidth = 130
+          TabOrder = 2
+          object lbFlagsTitle: TLabel
+            Left = 5
+            Height = 25
+            Top = 0
+            Width = 37
+            Align = alLeft
+            BorderSpacing.Left = 5
+            Caption = 'Flags:'
+            Layout = tlCenter
+            ParentColor = False
+          end
+          object lbFlags: TLabel
+            Left = 42
+            Height = 25
+            Top = 0
+            Width = 83
+            Align = alClient
+            Alignment = taRightJustify
+            BorderSpacing.Right = 5
+            Caption = 'none'
+            Layout = tlCenter
+            ParentColor = False
+          end
+        end
       end
     end
   end
@@ -797,7 +887,7 @@ object frmMain: TfrmMain
     ClientHeight = 629
     ClientWidth = 146
     Constraints.MinWidth = 150
-    TabOrder = 2
+    TabOrder = 0
     object sgSpecialFunction: TStringGrid
       Left = 0
       Height = 629
@@ -939,15 +1029,24 @@ object frmMain: TfrmMain
       Category = 'Processor'
       Caption = 'Compile'
     end
-    object actStep: TAction
+    object actStepIn: TAction
       Category = 'Processor'
-      Caption = 'Step'
-      OnExecute = actStepExecute
+      Caption = 'Step In'
+      OnExecute = actStepInExecute
     end
     object actStepOver: TAction
       Category = 'Processor'
       Caption = 'Step Over'
       OnExecute = actStepOverExecute
+    end
+    object actStepOut: TAction
+      Category = 'Processor'
+      Caption = 'Step Out'
+      OnExecute = actStepOutExecute
+    end
+    object actReset: TAction
+      Category = 'Processor'
+      Caption = 'Reset'
     end
   end
   object synCompletion: TSynCompletion

@@ -131,6 +131,16 @@ type
     );
     {$ENDREGION}
 
+    {$REGION TCalcFlag}
+    TCalcFlag = (
+      cfZero,
+      cfDigitCarry,
+      cfCarry
+    );
+    {$ENDREGION}
+
+    TCalcFlags = set of TCalcFlag;
+
     TInstructionInfo = record
       Name: String;
       SignificantBits: Byte;
@@ -173,6 +183,14 @@ type
       'Program',
       'EEPROM',
       'PC-Stack'
+    );
+    {$ENDREGION}
+
+    {$REGION CalcFlag Names}
+    CalcFlagName: array [TCalcFlag] of String = (
+      'Z',
+      'DC',
+      'C'
     );
     {$ENDREGION}
 
@@ -259,10 +277,11 @@ type
     FSpeedFactor: Single;
     FBreakpoints: TCardinalSet;
 
-    FStepOverBreakpointDepth: TProgramCounterStackPos;
-    FStepOverBreakpointPos: TProgramCounter;
+    FHelpBreakpointDepth: TProgramCounterStackPos;
+    FHelpBreakpointEnabled: Boolean;
 
     function GetBreakpoint(ALine: Cardinal): Boolean;
+    function GetCalcFlags: TCalcFlags;
     function GetCurrentInstruction: TLineInstruction;
     function GetDataMem(P: TROMPointer): Byte;
     function GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
@@ -335,8 +354,9 @@ type
 
     procedure ResetSyncTime;
 
-    procedure Step;
+    procedure StepIn;
     procedure StepOver;
+    procedure StepOut;
     function CatchUp: Boolean;
     property TimeBehind: Single read GetTimeBehind;
 
@@ -350,6 +370,7 @@ type
     property ROM[P: TROMPointer]: Byte read GetDataMem;
     property PCStack[P: TProgramCounterStackPos]: TProgramCounter read GetPCStack;
     property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
+    property CalcFlags: TCalcFlags read GetCalcFlags;
 
     property ReadAsZero[AType: TMemoryType; APos: Cardinal]: Boolean read GetReadAsZero;
     property Memory[AType: TMemoryType; APos: Cardinal]: Byte read GetMemory;
@@ -528,6 +549,17 @@ end;
 function TProcessor.GetBreakpoint(ALine: Cardinal): Boolean;
 begin
   Result := FBreakpoints[ALine];
+end;
+
+function TProcessor.GetCalcFlags: TCalcFlags;
+begin
+  Result := [];
+  if ZeroFlag then
+    Include(Result, cfZero);
+  if DigitCarryFlag then
+    Include(Result, cfDigitCarry);
+  if CarryFlag then
+    Include(Result, cfCarry);
 end;
 
 function TProcessor.GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
@@ -774,6 +806,7 @@ end;
 
 procedure TProcessor.Stop;
 begin
+  FHelpBreakpointEnabled := False;
   FRunning := False;
 end;
 
@@ -818,7 +851,7 @@ begin
   FCyclesFromStart := 0;
 end;
 
-procedure TProcessor.Step;
+procedure TProcessor.StepIn;
 begin
   ProcessInstruction(CurrentInstruction);
 end;
@@ -827,21 +860,33 @@ procedure TProcessor.StepOver;
 begin
   if FInstructionArray[CurrentInstruction.Instruction] = itCALL then
   begin
-    FStepOverBreakpointDepth := FProgramCounterStackPos;
-    FStepOverBreakpointPos := NextProgramCounter;
+    FHelpBreakpointDepth := FProgramCounterStackPos;
+    FHelpBreakpointEnabled := True;
     Start(False);
   end
   else
-    Step;
+    StepIn;
+end;
+
+procedure TProcessor.StepOut;
+begin
+  if FProgramCounterStackPos > 0 then
+  begin
+    FHelpBreakpointDepth := FProgramCounterStackPos - 1;
+    FHelpBreakpointEnabled := True;
+    Start(False);
+  end
+  else
+    StepOver;
 end;
 
 function TProcessor.CatchUp: Boolean;
 begin
   while TimeBehind > 0 do
   begin
-    Step;
+    StepIn;
     if Breakpoint[CurrentInstruction.Line] or
-      (FProgramCounter = FStepOverBreakpointPos) and (FProgramCounterStackPos = FStepOverBreakpointDepth) then
+       FHelpBreakpointEnabled and (FProgramCounterStackPos = FHelpBreakpointDepth) then
     begin
       Stop;
       Exit(True);

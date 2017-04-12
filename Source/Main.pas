@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
   StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny,
-  Types, LCLType, SynEditMiscClasses, Math;
+  Types, LCLType, SynEditMiscClasses, Math, LazUTF8;
 
 type
 
@@ -14,8 +14,10 @@ type
   TfrmMain = class(TForm)
     actExit: TAction;
     actCompile: TAction;
+    actStepOut: TAction;
+    actReset: TAction;
     actStepOver: TAction;
-    actStep: TAction;
+    actStepIn: TAction;
     actSaveFile: TAction;
     actShowAll: TAction;
     actHideAll: TAction;
@@ -28,21 +30,28 @@ type
     alActionList: TActionList;
     btnCompile: TButton;
     btnOpen: TButton;
+    btnRefreshMemory: TButton;
+    btnReset: TButton;
     btnSave: TButton;
     btnStartStop: TButton;
-    btnRefreshMemory: TButton;
     btnStep: TButton;
     btnStepOver: TButton;
+    btnStepOut: TButton;
     cbMemorySelection: TComboBox;
     cbAutoRefreshMemory: TCheckBox;
+    gbControl: TGroupBox;
     gbMemory: TGroupBox;
     gbPorts: TGroupBox;
     gbPeripherals: TGroupBox;
+    gbFile: TGroupBox;
+    gbStateInfo: TGroupBox;
     ilMarker: TImageList;
-    lbRuntime: TLabel;
+    lbWRegister: TLabel;
+    lbFlags: TLabel;
+    lbWRegisterTitle: TLabel;
     lbCycles: TLabel;
-    lbRuntimeTitle: TLabel;
     lbCyclesTitle: TLabel;
+    lbFlagsTitle: TLabel;
     MainMenu1: TMainMenu;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
@@ -59,12 +68,13 @@ type
     miFile: TMenuItem;
     mmMainMenu: TMainMenu;
     pnlControl: TPanel;
+    pnlWRegister: TPanel;
     pnlInfo: TPanel;
-    pnlRuntime: TPanel;
     pnlMemorySelection: TPanel;
     pnlCenter: TPanel;
     pmMain: TPopupMenu;
     pnlCycles: TPanel;
+    pnlFlags: TPanel;
     spltPorts: TSplitter;
     spltMemory: TSplitter;
     spltPeripherals: TSplitter;
@@ -81,7 +91,8 @@ type
     procedure actSaveFileExecute(Sender: TObject);
     procedure actShowAllExecute(Sender: TObject);
     procedure actStartStopExecute(Sender: TObject);
-    procedure actStepExecute(Sender: TObject);
+    procedure actStepInExecute(Sender: TObject);
+    procedure actStepOutExecute(Sender: TObject);
     procedure actStepOverExecute(Sender: TObject);
     procedure actToggleMemoryVisibleExecute(Sender: TObject);
     procedure actTogglePeripheralsVisibleExecute(Sender: TObject);
@@ -100,9 +111,12 @@ type
     procedure synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
       Markup: TSynSelectedColor);
   private
+    FFlags: TProcessor.TCalcFlags;
+    procedure SetFlags(AValue: TProcessor.TCalcFlags);
+  private
     FMemViewColumns: Cardinal;
-    FStartTime: Int64;
     FCycles: Cardinal;
+    FWRegister: Byte;
     FProcessor: TProcessor;
     FFileData: TStringList;
 
@@ -113,9 +127,8 @@ type
     procedure ParseStringListFromLST(List: TStringList);
 
     procedure SetMemViewColumns(AValue: Cardinal);
-    function GetRuntime: Int64;
     procedure SetCycles(AValue: Cardinal);
-    procedure SetStartTime(AValue: Int64);
+    procedure SetWRegister(AValue: Byte);
 
     function GetMemoryVisible: Boolean;
     procedure SetAutoRefreshMemory(AValue: Boolean);
@@ -133,15 +146,16 @@ type
     property PeripheralsVisible: Boolean read GetPeripheralsVisible write SetPeripheralsVisible;
     property AutoRefreshMemory: Boolean read GetAutoRefreshMemory write SetAutoRefreshMemory;
 
-    procedure UpdateRuntime;
-    property StartTime: Int64 read FStartTime write SetStartTime;
-    property Runtime: Int64 read GetRuntime;
     property Cycles: Cardinal read FCycles write SetCycles;
+    property Flags: TProcessor.TCalcFlags read FFlags write SetFlags;
+    property WRegister: Byte read FWRegister write SetWRegister;
     property MemViewColumns: Cardinal read FMemViewColumns write SetMemViewColumns;
     property MemViewType: TProcessor.TMemoryType read GetMemViewType write SetMemViewType;
 
     procedure RefreshMemView;
     procedure RefreshSynEditMarkup;
+
+    procedure UpdateActions;
 
     procedure IdleHandler(Sender: TObject; var ADone: Boolean);
 
@@ -216,6 +230,8 @@ const
 
 var
   T: TLoadType;
+  FileData: RawByteString;
+  X: TSystemCodePage;
 begin
   with TOpenDialog.Create(Self) do
   begin
@@ -233,9 +249,12 @@ begin
           ltCompiled:
           begin
             FFileData.LoadFromFile(FileName);
+            FileData := FFileData.Text;
+            SetCodePage(FileData, 1252, False);
+            SetCodePage(FileData, DefaultSystemCodePage);
+            FFileData.Text := FileData;
             FProcessor.LoadProgram(FFileData);
             ParseStringListFromLST(FFileData);
-
           end;
           ltBinary:
           begin
@@ -331,21 +350,32 @@ begin
   if FProcessor.Running then
   begin
     FProcessor.Stop;
-    synEditor.Invalidate;
     actStartStop.Caption := 'Start';
-    RefreshSynEditMarkup;
   end
   else
   begin
     FProcessor.Start;
     actStartStop.Caption := 'Stop';
   end;
+  RefreshSynEditMarkup;
 end;
 
-procedure TfrmMain.actStepExecute(Sender: TObject);
+procedure TfrmMain.actStepInExecute(Sender: TObject);
 begin
-  FProcessor.Step;
+  FProcessor.StepIn;
   Cycles := FProcessor.Cycles;
+  Flags := FProcessor.CalcFlags;
+  WRegister := FProcessor.WRegister;
+  RefreshMemView;
+  RefreshSynEditMarkup;
+end;
+
+procedure TfrmMain.actStepOutExecute(Sender: TObject);
+begin
+  FProcessor.StepOut;
+  Cycles := FProcessor.Cycles;
+  Flags := FProcessor.CalcFlags;
+  WRegister := FProcessor.WRegister;
   RefreshMemView;
   RefreshSynEditMarkup;
 end;
@@ -353,6 +383,10 @@ end;
 procedure TfrmMain.actStepOverExecute(Sender: TObject);
 begin
   FProcessor.StepOver;
+  Cycles := FProcessor.Cycles;
+  Flags := FProcessor.CalcFlags;
+  WRegister := FProcessor.WRegister;
+  RefreshMemView;
   RefreshSynEditMarkup;
 end;
 
@@ -511,6 +545,32 @@ begin
   end;
 end;
 
+procedure TfrmMain.SetFlags(AValue: TProcessor.TCalcFlags);
+var
+  F: TProcessor.TCalcFlag;
+begin
+  if FFlags = AValue then
+    Exit;
+  FFlags := AValue;
+  lbFlags.Caption := '';
+  for F in Flags do
+  begin
+    lbFlags.Caption := lbFlags.Caption + TProcessor.CalcFlagName[F] + ', ';
+  end;
+  if lbFlags.Caption = '' then
+    lbFlags.Caption := 'none'
+  else
+    lbFlags.Caption := Copy(lbFlags.Caption, 0, Length(lbFlags.Caption) - 2);
+end;
+
+procedure TfrmMain.SetWRegister(AValue: Byte);
+begin
+  if FWRegister = AValue then
+    Exit;
+  FWRegister := AValue;
+  lbWRegister.Caption := Format('%.2x [%s]', [WRegister, BinStr(WRegister, 8)]);
+end;
+
 function TfrmMain.GetMemViewType: TProcessor.TMemoryType;
 begin
   Result := TProcessor.TMemoryType(cbMemorySelection.ItemIndex);
@@ -519,6 +579,19 @@ end;
 procedure TfrmMain.RefreshSynEditMarkup;
 begin
   synEditor.Invalidate;
+end;
+
+procedure TfrmMain.UpdateActions;
+begin
+  {
+  actSaveFile.Enabled := ;
+  actOpenFile.Enabled := ;
+  actStartStop.Enabled := ;
+  actStartStop.Caption := FProcessor.Running;
+  actStepIn.Enabled := ;
+  actStepOver.Enabled := ;
+  actCompile.Enabled := ;
+  }
 end;
 
 procedure TfrmMain.SetMemViewType(AValue: TProcessor.TMemoryType);
@@ -590,23 +663,12 @@ begin
   EnableAlign;
 end;
 
-function TfrmMain.GetRuntime: Int64;
-begin
-  Result := GetTickCount64 - StartTime;
-end;
-
 procedure TfrmMain.SetCycles(AValue: Cardinal);
 begin
   if FCycles = AValue then
     Exit;
   FCycles := AValue;
   lbCycles.Caption := Format('%d', [AValue]);
-end;
-
-procedure TfrmMain.SetStartTime(AValue: Int64);
-begin
-  if FStartTime = AValue then Exit;
-  FStartTime := AValue;
 end;
 
 function TfrmMain.GetAutoRefreshMemory: Boolean;
@@ -637,11 +699,6 @@ begin
   EnableAlign;
 end;
 
-procedure TfrmMain.UpdateRuntime;
-begin
-  lbRuntime.Caption := Format('%d ms', [Runtime]);
-end;
-
 procedure TfrmMain.RefreshMemView;
 var
   R, C, P: Integer;
@@ -669,10 +726,12 @@ begin
   begin
     if FProcessor.CatchUp then
     begin
+      WRegister := FProcessor.WRegister;
       RefreshMemView;
       RefreshSynEditMarkup;
     end;
     Cycles := FProcessor.Cycles;
+    Flags := FProcessor.CalcFlags;
     ADone := False;
   end
   else
