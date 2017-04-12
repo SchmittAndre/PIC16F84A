@@ -333,6 +333,7 @@ begin
   if FProcessor.Running then
   begin
     FProcessor.Stop;
+    synEditor.Invalidate;
     actStartStop.Caption := 'Start';
   end
   else
@@ -347,6 +348,8 @@ begin
   FProcessor.DoStep;
   Cycles := FProcessor.Cycles;
   RefreshMemView;
+  synEditor.Invalidate;
+  //RefreshSynEditMarkup;
 end;
 
 procedure TfrmMain.actToggleMemoryVisibleExecute(Sender: TObject);
@@ -465,7 +468,15 @@ end;
 procedure TfrmMain.synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
   Markup: TSynSelectedColor);
 begin
+  if Line <> FProcessor.CurrentInstruction.Line then
+  begin
+    Special := False;
+    Exit;
+  end;
 
+  Special := True;
+  //Markup.Background := clRed;
+  Markup.FrameColor := clRed;
 end;
 
 function TfrmMain.GetMemViewType: TProcessor.TMemoryType;

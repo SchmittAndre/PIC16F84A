@@ -755,6 +755,7 @@ begin
   try
     if Assigned(FMethods[T]) then
       FMethods[T](CurrentInstruction.Instruction)
+
     else
       raise ENotImplemented.CreateFmt('Instruction "%s" (line %u) not implemented',
                                       [InstructionInfo[T].Name, CurrentInstruction.Line]);
