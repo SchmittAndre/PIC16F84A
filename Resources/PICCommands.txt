@@ -1,5 +1,5 @@
 --- Byte-Oriented File Register Operations ---
-ADDWF  | 6  | 00 0111 dfff ffff
+ADDWF  | 6  | 00 0111 dfff ffff 
 ANDWF  | 6  | 00 0101 dfff ffff
 CLRF   | 7  | 00 0001 1fff ffff
 CLRW   | 7  | 00 0001 0xxx xxxx
