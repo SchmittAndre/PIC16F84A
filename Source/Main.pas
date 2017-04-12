@@ -328,6 +328,7 @@ begin
   if FProcessor.Running then
   begin
     FProcessor.Stop;
+    synEditor.Invalidate;
     actStartStop.Caption := 'Start';
     RefreshSynEditMarkup;
   end
