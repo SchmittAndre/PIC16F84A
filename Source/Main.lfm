@@ -659,7 +659,7 @@ object frmMain: TfrmMain
       object btnCompile: TButton
         Left = 6
         Height = 25
-        Top = 126
+        Top = 156
         Width = 141
         Action = actCompile
         Align = alTop
@@ -679,7 +679,7 @@ object frmMain: TfrmMain
       object pnlRuntime: TPanel
         Left = 6
         Height = 25
-        Top = 186
+        Top = 216
         Width = 141
         Align = alTop
         BorderSpacing.Around = 5
@@ -713,7 +713,7 @@ object frmMain: TfrmMain
       object pnlCycles: TPanel
         Left = 6
         Height = 25
-        Top = 156
+        Top = 186
         Width = 141
         Align = alTop
         BorderSpacing.Around = 5
@@ -773,6 +773,16 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         TabOrder = 6
+      end
+      object btnStepOver: TButton
+        Left = 6
+        Height = 25
+        Top = 126
+        Width = 141
+        Action = actStepOver
+        Align = alTop
+        BorderSpacing.Around = 5
+        TabOrder = 7
       end
     end
   end
@@ -933,6 +943,11 @@ object frmMain: TfrmMain
       Category = 'Processor'
       Caption = 'Step'
       OnExecute = actStepExecute
+    end
+    object actStepOver: TAction
+      Category = 'Processor'
+      Caption = 'Step Over'
+      OnExecute = actStepOverExecute
     end
   end
   object synCompletion: TSynCompletion

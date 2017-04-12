@@ -259,6 +259,9 @@ type
     FSpeedFactor: Single;
     FBreakpoints: TCardinalSet;
 
+    FStepOverBreakpointDepth: TProgramCounterStackPos;
+    FStepOverBreakpointPos: TProgramCounter;
+
     function GetBreakpoint(ALine: Cardinal): Boolean;
     function GetCurrentInstruction: TLineInstruction;
     function GetDataMem(P: TROMPointer): Byte;
@@ -308,7 +311,8 @@ type
 
     function DoAdd(A, B: Byte): Byte;
     function DoSub(A, B: Byte): Byte;
-    
+
+    function NextProgramCounter(ACount: Integer = 1): TProgramCounter;
     procedure AdvanceProgramCounter(ACount: Integer = 1);
     procedure AdvanceCycles(ACount: Integer = 1);
 
@@ -331,7 +335,8 @@ type
 
     procedure ResetSyncTime;
 
-    procedure DoStep;
+    procedure Step;
+    procedure StepOver;
     function CatchUp: Boolean;
     property TimeBehind: Single read GetTimeBehind;
 
@@ -407,7 +412,7 @@ implementation
 
 procedure TProcessor.AdvanceProgramCounter(ACount: Integer);
 begin
-  FProgramCounter := (FProgramCounter + ACount) and High(FProgramCounter);
+  FProgramCounter := NextProgramCounter(ACount);
 end;
 
 procedure TProcessor.AdvanceCycles(ACount: Integer);
@@ -678,6 +683,11 @@ begin
   Result := DoAdd(A, (not B + 1) and $FF);
 end;
 
+function TProcessor.NextProgramCounter(ACount: Integer): TProgramCounter;
+begin
+  Result := (FProgramCounter + ACount) and High(FProgramCounter);
+end;
+
 procedure TProcessor.PushStack(AProgramCounter: TProgramCounter);
 begin
   FProgramCounterStack[FProgramCounterStackPos] := AProgramCounter;
@@ -808,17 +818,30 @@ begin
   FCyclesFromStart := 0;
 end;
 
-procedure TProcessor.DoStep;
+procedure TProcessor.Step;
 begin
   ProcessInstruction(CurrentInstruction);
+end;
+
+procedure TProcessor.StepOver;
+begin
+  if FInstructionArray[CurrentInstruction.Instruction] = itCALL then
+  begin
+    FStepOverBreakpointDepth := FProgramCounterStackPos;
+    FStepOverBreakpointPos := NextProgramCounter;
+    Start(False);
+  end
+  else
+    Step;
 end;
 
 function TProcessor.CatchUp: Boolean;
 begin
   while TimeBehind > 0 do
   begin
-    DoStep;
-    if Breakpoint[CurrentInstruction.Line] then
+    Step;
+    if Breakpoint[CurrentInstruction.Line] or
+      (FProgramCounter = FStepOverBreakpointPos) and (FProgramCounterStackPos = FStepOverBreakpointDepth) then
     begin
       Stop;
       Exit(True);

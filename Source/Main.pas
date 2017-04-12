@@ -14,6 +14,7 @@ type
   TfrmMain = class(TForm)
     actExit: TAction;
     actCompile: TAction;
+    actStepOver: TAction;
     actStep: TAction;
     actSaveFile: TAction;
     actShowAll: TAction;
@@ -31,6 +32,7 @@ type
     btnStartStop: TButton;
     btnRefreshMemory: TButton;
     btnStep: TButton;
+    btnStepOver: TButton;
     cbMemorySelection: TComboBox;
     cbAutoRefreshMemory: TCheckBox;
     gbMemory: TGroupBox;
@@ -80,6 +82,7 @@ type
     procedure actShowAllExecute(Sender: TObject);
     procedure actStartStopExecute(Sender: TObject);
     procedure actStepExecute(Sender: TObject);
+    procedure actStepOverExecute(Sender: TObject);
     procedure actToggleMemoryVisibleExecute(Sender: TObject);
     procedure actTogglePeripheralsVisibleExecute(Sender: TObject);
     procedure actTogglePortsVisibleExecute(Sender: TObject);
@@ -341,9 +344,15 @@ end;
 
 procedure TfrmMain.actStepExecute(Sender: TObject);
 begin
-  FProcessor.DoStep;
+  FProcessor.Step;
   Cycles := FProcessor.Cycles;
   RefreshMemView;
+  RefreshSynEditMarkup;
+end;
+
+procedure TfrmMain.actStepOverExecute(Sender: TObject);
+begin
+  FProcessor.StepOver;
   RefreshSynEditMarkup;
 end;
 
