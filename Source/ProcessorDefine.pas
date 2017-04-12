@@ -5,7 +5,7 @@ unit ProcessorDefine;
 interface
 
 uses
-  Classes, windows, SysUtils, Dialogs;
+  Classes, windows, SysUtils, Dialogs, Lists;
 
 type
 
@@ -222,7 +222,7 @@ type
   private type
     TLineInstruction = record
       Instruction: TInstruction;
-      Line: Cardinal;
+      Line: Integer;
     end;
 
   private class var
@@ -257,7 +257,9 @@ type
     FFrequency: Int64;
     FStartTime: Int64;        // Changes for ResetSyncTime
     FSpeedFactor: Single;
+    FBreakpoints: TCardinalSet;
 
+    function GetBreakpoint(ALine: Cardinal): Boolean;
     function GetCurrentInstruction: TLineInstruction;
     function GetDataMem(P: TROMPointer): Byte;
     function GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
@@ -277,6 +279,7 @@ type
     function GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean; overload;
     function GetFlag(P: TRegisterBank1; ABit: TBitIndex): Boolean; overload;
     function GetZeroFlag: Boolean;
+    procedure SetBreakpoint(ALine: Cardinal; AValue: Boolean);
     procedure SetCarryFlag(AValue: Boolean);
     procedure SetDigitCarryFlag(AValue: Boolean);
     procedure SetFileMap(P: TRAMPointer; AValue: Byte);
@@ -314,6 +317,7 @@ type
 
   public
     constructor Create;
+    destructor Destroy; override;
 
     procedure LoadProgram(AFileData: TStrings);
     procedure Initialize;
@@ -322,10 +326,13 @@ type
     procedure Start(AReset: Boolean = True);
     procedure Stop;
 
+    procedure ProcessInstruction(AInstruction: TInstruction; ALine: Integer = -1); overload;
+    procedure ProcessInstruction(AInstruction: TLineInstruction); overload;
+
     procedure ResetSyncTime;
 
     procedure DoStep;
-    procedure CatchUp;
+    function CatchUp: Boolean;
     property TimeBehind: Single read GetTimeBehind;
 
     property ProgramMem[P: TProgramMemPointer]: Byte read GetProgramMem;
@@ -345,6 +352,8 @@ type
     property Running: Boolean read FRunning;
     property Cycles: Int64 read FCycles;
     property SpeedFactor: Single read FSpeedFactor write SetSpeedFactor;
+
+    property Breakpoint[ALine: Cardinal]: Boolean read GetBreakpoint write SetBreakpoint;
 
   published
     {$REGION --- Byte-Oriented File Register Operations --- }
@@ -458,6 +467,11 @@ begin
   Result := Flag[b0STATUS, 2];
 end;
 
+procedure TProcessor.SetBreakpoint(ALine: Cardinal; AValue: Boolean);
+begin
+  FBreakpoints[ALine] := AValue;
+end;
+
 procedure TProcessor.SetCarryFlag(AValue: Boolean);
 begin
   Flag[b0STATUS, 0] := AValue;
@@ -504,6 +518,11 @@ end;
 function TProcessor.GetCurrentInstruction: TLineInstruction;
 begin
   Result := Code[FProgramCounter];
+end;
+
+function TProcessor.GetBreakpoint(ALine: Cardinal): Boolean;
+begin
+  Result := FBreakpoints[ALine];
 end;
 
 function TProcessor.GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
@@ -676,6 +695,7 @@ var
   T: TInstructionType;
   M: TMethod;
 begin
+  FBreakpoints := TCardinalSet.Create;
   M.Data := Self;
   for T := Low(T) to High(T) do
   begin
@@ -687,6 +707,12 @@ begin
   FSpeedFactor := 1;
 end;
 
+destructor TProcessor.Destroy;
+begin
+  FBreakpoints.Free;
+  inherited;
+end;
+
 procedure TProcessor.LoadProgram(AFileData: TStrings);
 var
   Counter: Integer;
@@ -694,6 +720,7 @@ var
   Instruction: DWORD;
 begin
   FillByte(FProgramMem, SizeOf(FProgramMem), 0);
+  FBreakpoints.Clear;
   Initialize;
   for Counter := 0 to AFileData.Count - 1 do
   begin
@@ -740,24 +767,21 @@ begin
   FRunning := False;
 end;
 
-procedure TProcessor.ResetSyncTime;
-begin
-  QueryPerformanceCounter(FStartTime);
-  FCyclesFromStart := 0;
-end;
-
-procedure TProcessor.DoStep;
+procedure TProcessor.ProcessInstruction(AInstruction: TInstruction; ALine: Integer);
 var
   T: TInstructionType;
 begin
-  T := FInstructionArray[CurrentInstruction.Instruction];
+  T := FInstructionArray[AInstruction];
 
   try
     if Assigned(FMethods[T]) then
-      FMethods[T](CurrentInstruction.Instruction)
+      FMethods[T](AInstruction)
+    else if ALine = -1 then
+      raise ENotImplemented.CreateFmt('Instruction "%s" not implemented',
+                                      [InstructionInfo[T].Name])
     else
       raise ENotImplemented.CreateFmt('Instruction "%s" (line %u) not implemented',
-                                      [InstructionInfo[T].Name, CurrentInstruction.Line]);
+                                      [InstructionInfo[T].Name, ALine]);
   finally
     if FKeepProgramCounter then
     begin
@@ -773,10 +797,34 @@ begin
   end;
 end;
 
-procedure TProcessor.CatchUp;
+procedure TProcessor.ProcessInstruction(AInstruction: TLineInstruction);
+begin
+  ProcessInstruction(AInstruction.Instruction, AInstruction.Line);
+end;
+
+procedure TProcessor.ResetSyncTime;
+begin
+  QueryPerformanceCounter(FStartTime);
+  FCyclesFromStart := 0;
+end;
+
+procedure TProcessor.DoStep;
+begin
+  ProcessInstruction(CurrentInstruction);
+end;
+
+function TProcessor.CatchUp: Boolean;
 begin
   while TimeBehind > 0 do
+  begin
     DoStep;
+    if Breakpoint[CurrentInstruction.Line] then
+    begin
+      Stop;
+      Exit(True);
+    end;
+  end;
+  Result := False;
 end;
 
 {$REGION METHODS}

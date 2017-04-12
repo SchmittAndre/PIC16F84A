@@ -74,7 +74,6 @@ type
     synCompletion: TSynCompletion;
     procedure actExitExecute(Sender: TObject);
     procedure actHideAllExecute(Sender: TObject);
-    procedure Action1Execute(Sender: TObject);
     procedure actOpenFileExecute(Sender: TObject);
     procedure actRefreshMemoryExecute(Sender: TObject);
     procedure actSaveFileExecute(Sender: TObject);
@@ -94,11 +93,9 @@ type
       Index: integer): boolean;
     procedure synCompletionSearchPosition(var APosition: integer);
     procedure synEditorChange(Sender: TObject);
+    procedure synEditorClick(Sender: TObject);
     procedure synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
       Markup: TSynSelectedColor);
-  private
-    function GetMemViewType: TProcessor.TMemoryType;
-    procedure SetMemViewType(AValue: TProcessor.TMemoryType);
   private
     FMemViewColumns: Cardinal;
     FStartTime: Int64;
@@ -120,6 +117,8 @@ type
     function GetMemoryVisible: Boolean;
     procedure SetAutoRefreshMemory(AValue: Boolean);
     procedure SetMemoryVisible(AValue: Boolean);
+    function GetMemViewType: TProcessor.TMemoryType;
+    procedure SetMemViewType(AValue: TProcessor.TMemoryType);
 
     function GetPeripheralsVisible: Boolean;
     function GetPortsVisible: Boolean;
@@ -139,6 +138,7 @@ type
     property MemViewType: TProcessor.TMemoryType read GetMemViewType write SetMemViewType;
 
     procedure RefreshMemView;
+    procedure RefreshSynEditMarkup;
 
     procedure IdleHandler(Sender: TObject; var ADone: Boolean);
 
@@ -191,11 +191,6 @@ begin
   MemoryVisible := False;
   PeripheralsVisible := False;
   PortsVisible := False;
-end;
-
-procedure TfrmMain.Action1Execute(Sender: TObject);
-begin
-
 end;
 
 procedure TfrmMain.actOpenFileExecute(Sender: TObject);
@@ -334,6 +329,7 @@ begin
   begin
     FProcessor.Stop;
     actStartStop.Caption := 'Start';
+    RefreshSynEditMarkup;
   end
   else
   begin
@@ -347,6 +343,7 @@ begin
   FProcessor.DoStep;
   Cycles := FProcessor.Cycles;
   RefreshMemView;
+  RefreshSynEditMarkup;
 end;
 
 procedure TfrmMain.actToggleMemoryVisibleExecute(Sender: TObject);
@@ -402,6 +399,7 @@ end;
 
 procedure TfrmMain.synCompletionSearchPosition(var APosition: integer);
 const
+  {$REGION Highlight Strings}
   P: array [0 .. 38] of String = (
     'org',
     'device',
@@ -443,6 +441,7 @@ const
     'sublw',
     'xorlw'
   );
+  {$ENDREGION}
 var
   C: String;
   W: String;
@@ -462,15 +461,54 @@ begin
   // TODO: not compiled anymore;
 end;
 
+procedure TfrmMain.synEditorClick(Sender: TObject);
+var
+  P: TPoint;
+begin
+  P := synEditor.PixelsToRowColumn(synEditor.ScreenToClient(Mouse.CursorPos));
+  if P.X = 0 then
+  begin
+    FProcessor.Breakpoint[P.Y] := not FProcessor.Breakpoint[P.Y];
+    RefreshSynEditMarkup;
+  end;
+end;
+
 procedure TfrmMain.synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
   Markup: TSynSelectedColor);
+const
+  ColorPC = $7799FF;
+  ColorBreakpoint = $2233FF;
+  ColorPCBreakpoint = $4466FF;
 begin
+  if not FProcessor.Running then
+  begin
+    if Line = FProcessor.CurrentInstruction.Line then
+    begin
+      Special := True;
+      if FProcessor.Breakpoint[Line] then
+        Markup.Background := ColorPCBreakpoint
+      else
+        Markup.Background := ColorPC;
+      Exit;
+    end;
+  end;
 
+  if FProcessor.Breakpoint[Line] then
+  begin
+    Special := True;
+    Markup.Background := ColorBreakpoint;
+    Exit;
+  end;
 end;
 
 function TfrmMain.GetMemViewType: TProcessor.TMemoryType;
 begin
   Result := TProcessor.TMemoryType(cbMemorySelection.ItemIndex);
+end;
+
+procedure TfrmMain.RefreshSynEditMarkup;
+begin
+  synEditor.Invalidate;
 end;
 
 procedure TfrmMain.SetMemViewType(AValue: TProcessor.TMemoryType);
@@ -619,7 +657,11 @@ procedure TfrmMain.IdleHandler(Sender: TObject; var ADone: Boolean);
 begin
   if FProcessor.Running then
   begin
-    FProcessor.CatchUp;
+    if FProcessor.CatchUp then
+    begin
+      RefreshMemView;
+      RefreshSynEditMarkup;
+    end;
     Cycles := FProcessor.Cycles;
     ADone := False;
   end
@@ -629,7 +671,7 @@ end;
 
 procedure TfrmMain.ParseStringListFromLST(List: TStringList);
 const
-  AssamblerOffset: Integer = 7;
+  AssemblerOffset: Integer = 7;
 var
   Counter: Integer;
   CharCounter: Integer;
@@ -650,7 +692,7 @@ begin
   end;
   for Counter := 0 to List.Count - 1 do
   begin
-    synEditor.Lines[Counter] := synEditor.Lines[Counter].Remove(0, MinWhitespacecount - 1 + AssamblerOffset );
+    synEditor.Lines[Counter] := synEditor.Lines[Counter].Remove(0, MinWhitespacecount - 1 + AssemblerOffset );
   end;
 
 end;
