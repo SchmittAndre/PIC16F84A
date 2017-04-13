@@ -9,11 +9,19 @@ uses
 
 type
 
+  TLineFollowMode = (
+    lfOff,
+    lfBorder,
+    lfCenter
+  );
+
   { TfrmMain }
 
   TfrmMain = class(TForm)
     actExit: TAction;
     actCompile: TAction;
+    actNew: TAction;
+    actSaveFileAs: TAction;
     actStepOut: TAction;
     actReset: TAction;
     actStepOver: TAction;
@@ -24,21 +32,19 @@ type
     actTogglePeripheralsVisible: TAction;
     actTogglePortsVisible: TAction;
     actStartStop: TAction;
-    actRefreshMemory: TAction;
     actToggleMemoryVisible: TAction;
     actOpenFile: TAction;
     alActionList: TActionList;
     btnCompile: TButton;
     btnOpen: TButton;
-    btnRefreshMemory: TButton;
     btnReset: TButton;
     btnSave: TButton;
+    btnSaveAs: TButton;
     btnStartStop: TButton;
     btnStep: TButton;
     btnStepOver: TButton;
     btnStepOut: TButton;
     cbMemorySelection: TComboBox;
-    cbAutoRefreshMemory: TCheckBox;
     gbControl: TGroupBox;
     gbMemory: TGroupBox;
     gbPorts: TGroupBox;
@@ -56,6 +62,17 @@ type
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
+    MenuItem4: TMenuItem;
+    miNew: TMenuItem;
+    miFileSplitter1: TMenuItem;
+    miCompile: TMenuItem;
+    miControlSplitter1: TMenuItem;
+    MenuItem5: TMenuItem;
+    miStepIn: TMenuItem;
+    miStepOver: TMenuItem;
+    miStepOut: TMenuItem;
+    miReset: TMenuItem;
+    miControl: TMenuItem;
     miShowAll: TMenuItem;
     miHideAll: TMenuItem;
     miViewSplit1: TMenuItem;
@@ -63,7 +80,7 @@ type
     miMemory: TMenuItem;
     miPorts: TMenuItem;
     miView: TMenuItem;
-    miFileSplit1: TMenuItem;
+    miFileSplitter2: TMenuItem;
     miPlaceholder: TMenuItem;
     miFile: TMenuItem;
     mmMainMenu: TMainMenu;
@@ -71,7 +88,6 @@ type
     pnlCycles: TPanel;
     pnlWRegister: TPanel;
     pnlInfo: TPanel;
-    pnlMemorySelection: TPanel;
     pnlCenter: TPanel;
     pmMain: TPopupMenu;
     pnlFlags: TPanel;
@@ -90,9 +106,10 @@ type
     procedure actHideAllExecute(Sender: TObject);
     procedure actOpenFileExecute(Sender: TObject);
     procedure actOpenFileUpdate(Sender: TObject);
-    procedure actRefreshMemoryExecute(Sender: TObject);
     procedure actResetExecute(Sender: TObject);
     procedure actResetUpdate(Sender: TObject);
+    procedure actSaveFileAsExecute(Sender: TObject);
+    procedure actSaveFileAsUpdate(Sender: TObject);
     procedure actSaveFileExecute(Sender: TObject);
     procedure actSaveFileUpdate(Sender: TObject);
     procedure actShowAllExecute(Sender: TObject);
@@ -121,32 +138,35 @@ type
     procedure synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
       Markup: TSynSelectedColor);
   private
-    FCompiled: Boolean;
-    FFlags: TProcessor.TCalcFlags;
-    procedure SetCompiled(AValue: Boolean);
-    procedure SetFlags(AValue: TProcessor.TCalcFlags);
-  private
     FMemViewColumns: Cardinal;
     FCycles: Cardinal;
     FWRegister: Byte;
     FProcessor: TProcessor;
     FFileData: TStringList;
+    FCompiled: Boolean;
+    FFlags: TProcessor.TCalcFlags;
+    FLineFollowMode: TLineFollowMode;
+    FLineFollowRange: Cardinal;
 
     procedure InitSynEdit;
     procedure InitMemView;
 
-    function GetAutoRefreshMemory: Boolean;
     procedure ParseStringListFromLST(List: TStringList);
 
     procedure SetMemViewColumns(AValue: Cardinal);
     procedure SetCycles(AValue: Cardinal);
     procedure SetWRegister(AValue: Byte);
 
+    procedure SetLineFollowMode(AValue: TLineFollowMode);
+    procedure SetLineFollowRange(AValue: Cardinal);
+
     function GetMemoryVisible: Boolean;
-    procedure SetAutoRefreshMemory(AValue: Boolean);
     procedure SetMemoryVisible(AValue: Boolean);
     function GetMemViewType: TProcessor.TMemoryType;
     procedure SetMemViewType(AValue: TProcessor.TMemoryType);
+
+    procedure SetCompiled(AValue: Boolean);
+    procedure SetFlags(AValue: TProcessor.TCalcFlags);
 
     function GetPeripheralsVisible: Boolean;
     function GetPortsVisible: Boolean;
@@ -156,7 +176,6 @@ type
     property MemoryVisible: Boolean read GetMemoryVisible write SetMemoryVisible;
     property PortsVisible: Boolean read GetPortsVisible write SetPortsVisible;
     property PeripheralsVisible: Boolean read GetPeripheralsVisible write SetPeripheralsVisible;
-    property AutoRefreshMemory: Boolean read GetAutoRefreshMemory write SetAutoRefreshMemory;
 
     property Compiled: Boolean read FCompiled write SetCompiled;
     property Cycles: Cardinal read FCycles write SetCycles;
@@ -164,11 +183,14 @@ type
     property WRegister: Byte read FWRegister write SetWRegister;
     property MemViewColumns: Cardinal read FMemViewColumns write SetMemViewColumns;
     property MemViewType: TProcessor.TMemoryType read GetMemViewType write SetMemViewType;
+    property LineFollowMode: TLineFollowMode read FLineFollowMode write SetLineFollowMode;
+    property LineFollowRange: Cardinal read FLineFollowRange write SetLineFollowRange;
 
     procedure UpdateMemView;
     procedure UpdateSynEditMarkup;
     procedure UpdateCycles;
     procedure UpdateALUInfo;
+    procedure UpdateSynEditScroll;
 
     procedure IdleHandler(Sender: TObject; var ADone: Boolean);
 
@@ -187,6 +209,8 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   FProcessor := TProcessor.Create;
   FFileData := TStringList.Create;
+  LineFollowRange := 3;
+  LineFollowMode := lfBorder;
   InitSynEdit;
   InitMemView;
   Application.OnIdle := IdleHandler;
@@ -285,6 +309,11 @@ begin
             FProcessor.LoadProgram(FFileData);
             Compiled := True;
             UpdateActions;
+            UpdateMemView;
+            UpdateCycles;
+            UpdateALUInfo;
+            UpdateSynEditScroll;
+            UpdateSynEditMarkup;
           end;
           ltBinary:
           begin
@@ -304,21 +333,29 @@ begin
   actOpenFile.Enabled := not FProcessor.Running;
 end;
 
-procedure TfrmMain.actRefreshMemoryExecute(Sender: TObject);
-begin
-  UpdateMemView;
-end;
-
 procedure TfrmMain.actResetExecute(Sender: TObject);
 begin
   FProcessor.Initialize;
   UpdateMemView;
   UpdateSynEditMarkup;
+  UpdateALUInfo;
+  UpdateCycles;
+  UpdateSynEditScroll;
 end;
 
 procedure TfrmMain.actResetUpdate(Sender: TObject);
 begin
   actReset.Enabled := Compiled and not FProcessor.Running;
+end;
+
+procedure TfrmMain.actSaveFileAsExecute(Sender: TObject);
+begin
+
+end;
+
+procedure TfrmMain.actSaveFileAsUpdate(Sender: TObject);
+begin
+  actSaveFileAs.Enabled := not FProcessor.Running;
 end;
 
 procedure TfrmMain.actSaveFileExecute(Sender: TObject);
@@ -405,6 +442,7 @@ begin
     UpdateALUInfo;
     UpdateMemView;
     UpdateSynEditMarkup;
+    UpdateSynEditScroll;
   end
   else
     FProcessor.Start;
@@ -428,6 +466,7 @@ begin
   UpdateALUInfo;
   UpdateMemView;
   UpdateSynEditMarkup;
+  UpdateSynEditScroll;
 end;
 
 procedure TfrmMain.actStepInUpdate(Sender: TObject);
@@ -443,6 +482,7 @@ begin
     UpdateALUInfo;
     UpdateMemView;
     UpdateSynEditMarkup;
+    UpdateSynEditScroll;
   end
   else
     UpdateActions;
@@ -461,6 +501,7 @@ begin
     UpdateALUInfo;
     UpdateMemView;
     UpdateSynEditMarkup;
+    UpdateSynEditScroll;
   end
   else
     UpdateActions;
@@ -583,7 +624,7 @@ end;
 
 procedure TfrmMain.synEditorChange(Sender: TObject);
 begin
-  // TODO: not compiled anymore;
+  Compiled := False;
 end;
 
 procedure TfrmMain.synEditorClick(Sender: TObject);
@@ -626,6 +667,22 @@ begin
   end;
 end;
 
+procedure TfrmMain.SetLineFollowMode(AValue: TLineFollowMode);
+begin
+  if FLineFollowMode = AValue then
+    Exit;
+  FLineFollowMode := AValue;
+  UpdateSynEditScroll;
+end;
+
+procedure TfrmMain.SetLineFollowRange(AValue: Cardinal);
+begin
+  if FLineFollowRange = AValue then
+    Exit;
+  FLineFollowRange := AValue;
+  UpdateSynEditScroll;
+end;
+
 procedure TfrmMain.SetFlags(AValue: TProcessor.TCalcFlags);
 var
   F: TProcessor.TCalcFlag;
@@ -650,6 +707,7 @@ begin
     Exit;
   FCompiled := AValue;
   UpdateActions;
+  UpdateSynEditMarkup;
 end;
 
 procedure TfrmMain.SetWRegister(AValue: Byte);
@@ -657,7 +715,7 @@ begin
   if FWRegister = AValue then
     Exit;
   FWRegister := AValue;
-  lbWRegister.Caption := Format('%.2x [%s]', [WRegister, BinStr(WRegister, 8)]);
+  lbWRegister.Caption := Format('%.2xh/%s', [WRegister, BinStr(WRegister, 8)]);
 end;
 
 function TfrmMain.GetMemViewType: TProcessor.TMemoryType;
@@ -679,6 +737,18 @@ procedure TfrmMain.UpdateALUInfo;
 begin
   WRegister := FProcessor.WRegister;
   Flags := FProcessor.CalcFlags;
+end;
+
+procedure TfrmMain.UpdateSynEditScroll;
+begin
+  case LineFollowMode of
+    lfBorder:
+      synEditor.TopLine :=
+        Min(Max(synEditor.TopLine, FProcessor.CurrentInstruction.Line - synEditor.LinesInWindow + LineFollowRange),
+            FProcessor.CurrentInstruction.Line - LineFollowRange);
+    lfCenter:
+      synEditor.TopLine := FProcessor.CurrentInstruction.Line - synEditor.LinesInWindow div 2;
+  end;
 end;
 
 procedure TfrmMain.SetMemViewType(AValue: TProcessor.TMemoryType);
@@ -758,21 +828,9 @@ begin
   lbCycles.Caption := Format('%d', [AValue]);
 end;
 
-function TfrmMain.GetAutoRefreshMemory: Boolean;
-begin
-  Result := cbAutoRefreshMemory.Checked;
-end;
-
 function TfrmMain.GetMemoryVisible: Boolean;
 begin
   Result := gbMemory.Visible;
-end;
-
-procedure TfrmMain.SetAutoRefreshMemory(AValue: Boolean);
-begin
-  if AutoRefreshMemory = AValue then
-    Exit;
-  cbAutoRefreshMemory.Checked := AValue;
 end;
 
 procedure TfrmMain.SetMemoryVisible(AValue: Boolean);
@@ -816,6 +874,7 @@ begin
       UpdateALUInfo;
       UpdateMemView;
       UpdateSynEditMarkup;
+      UpdateSynEditScroll;
     end;
     UpdateCycles;
     Sleep(5);

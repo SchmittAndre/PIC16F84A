@@ -351,7 +351,7 @@ type
     procedure Initialize;
     procedure ResetROM;
 
-    procedure Start(AReset: Boolean = True);
+    procedure Start;
     procedure Stop;
 
     procedure ProcessInstruction(AInstruction: TInstruction; ALine: Integer = -1); overload;
@@ -763,7 +763,7 @@ end;
 procedure TProcessor.LoadProgram(AFileData: TStrings);
 var
   Counter: Integer;
-  Line: Cardinal;
+  CodePos: Cardinal;
   Instruction: DWORD;
 begin
   FillByte(FProgramMem, SizeOf(FProgramMem), 0);
@@ -773,15 +773,15 @@ begin
   begin
     if not AFileData[Counter].StartsWith(' ') then
     begin
-      Line := StrToDWord('$' + AFileData[Counter].Substring(0, 4));
+      CodePos := StrToDWord('$' + AFileData[Counter].Substring(0, 4));
       Instruction := StrToDWord('$' + AFileData[Counter].Substring(5, 4));
       try
-        FProgramMem[Line].Instruction := TInstruction(Instruction);
+        FProgramMem[CodePos].Instruction := TInstruction(Instruction);
       except
         on ERangeError do
-          raise Exception.CreateFmt('Unknown Instruction 0x%.2h', [Instruction]);
+          raise Exception.CreateFmt('Impossible/Unknown Instruction 0x%.2h in line %d', [Instruction, Counter + 1]);
       end;
-      FProgramMem[Line].Line := Counter + 1;
+      FProgramMem[CodePos].Line := Counter + 1;
     end;
   end;
 end;
@@ -801,10 +801,8 @@ begin
   FillByte(FROM, SizeOf(FROM), 0);
 end;
 
-procedure TProcessor.Start(AReset: Boolean = True);
+procedure TProcessor.Start;
 begin
-  if AReset then
-    Initialize;
   ResetSyncTime;
   FRunning := True;
 end;
@@ -867,7 +865,7 @@ begin
   begin
     FHelpBreakpointDepth := FProgramCounterStackPos;
     FHelpBreakpointEnabled := True;
-    Start(False);
+    Start;
     Result := siMultiple;
   end
   else
@@ -883,7 +881,7 @@ begin
   begin
     FHelpBreakpointDepth := FProgramCounterStackPos - 1;
     FHelpBreakpointEnabled := True;
-    Start(False);
+    Start;
     Result := siMultiple;
   end
   else

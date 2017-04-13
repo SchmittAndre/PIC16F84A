@@ -27,60 +27,10 @@ object frmMain: TfrmMain
     ClientWidth = 246
     Constraints.MinWidth = 250
     TabOrder = 3
-    object pnlMemorySelection: TPanel
-      Left = 5
-      Height = 65
-      Top = 5
-      Width = 236
-      Align = alTop
-      BorderSpacing.Around = 5
-      ClientHeight = 65
-      ClientWidth = 236
-      TabOrder = 0
-      object cbMemorySelection: TComboBox
-        Left = 6
-        Height = 28
-        Top = 6
-        Width = 224
-        Align = alTop
-        BorderSpacing.Around = 5
-        ItemHeight = 20
-        ItemIndex = 0
-        Items.Strings = (
-          'RAM'
-          'Program'
-          'EEPROM'
-        )
-        OnChange = cbMemorySelectionChange
-        Style = csDropDownList
-        TabOrder = 0
-        Text = 'RAM'
-      end
-      object btnRefreshMemory: TButton
-        Left = 104
-        Height = 20
-        Top = 39
-        Width = 126
-        Action = actRefreshMemory
-        Align = alRight
-        BorderSpacing.Around = 5
-        TabOrder = 2
-      end
-      object cbAutoRefreshMemory: TCheckBox
-        Left = 6
-        Height = 20
-        Top = 39
-        Width = 93
-        Align = alClient
-        BorderSpacing.Around = 5
-        Caption = 'Auto Refresh'
-        TabOrder = 1
-      end
-    end
     object sgMemView: TStringGrid
       Left = 5
-      Height = 549
-      Top = 75
+      Height = 586
+      Top = 38
       Width = 236
       Align = alClient
       AutoEdit = False
@@ -95,12 +45,31 @@ object frmMain: TfrmMain
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goThumbTracking, goSmoothScroll]
       ParentFont = False
       RowCount = 1
-      TabOrder = 1
+      TabOrder = 0
       TitleFont.CharSet = ANSI_CHARSET
       TitleFont.Height = -16
       TitleFont.Name = 'Consolas'
       TitleFont.Pitch = fpFixed
       TitleFont.Quality = fqDraft
+    end
+    object cbMemorySelection: TComboBox
+      Left = 5
+      Height = 28
+      Top = 5
+      Width = 236
+      Align = alTop
+      BorderSpacing.Around = 5
+      ItemHeight = 20
+      ItemIndex = 0
+      Items.Strings = (
+        'RAM'
+        'Program'
+        'EEPROM'
+      )
+      OnChange = cbMemorySelectionChange
+      Style = csDropDownList
+      TabOrder = 1
+      Text = 'RAM'
     end
   end
   object pnlCenter: TPanel
@@ -575,6 +544,9 @@ object frmMain: TfrmMain
       MouseActions = <>
       MouseTextActions = <>
       MouseSelActions = <>
+      Lines.Strings = (
+        ' '
+      )
       MaxLeftChar = 100
       Options = [eoAutoIndent, eoBracketHighlight, eoGroupUndo, eoScrollPastEol, eoSmartTabs, eoTabIndent, eoTabsToSpaces, eoTrimTrailingSpaces, eoAltSetsColumnMode, eoDragDropEditing]
       MouseOptions = [emAltSetsColumnMode, emDragDropEditing, emRightMouseMovesCursor, emCtrlWheelZoom]
@@ -658,19 +630,19 @@ object frmMain: TfrmMain
       TabOrder = 3
       object gbFile: TGroupBox
         Left = 6
-        Height = 122
+        Height = 149
         Top = 6
         Width = 134
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'File'
-        ClientHeight = 97
+        ClientHeight = 124
         ClientWidth = 130
         TabOrder = 0
         object btnSave: TButton
           Left = 5
           Height = 25
-          Top = 5
+          Top = 35
           Width = 120
           Action = actSaveFile
           Align = alTop
@@ -680,7 +652,7 @@ object frmMain: TfrmMain
         object btnOpen: TButton
           Left = 5
           Height = 25
-          Top = 35
+          Top = 5
           Width = 120
           Action = actOpenFile
           Align = alTop
@@ -690,23 +662,33 @@ object frmMain: TfrmMain
         object btnCompile: TButton
           Left = 5
           Height = 25
-          Top = 65
+          Top = 95
           Width = 120
           Action = actCompile
           Align = alTop
           BorderSpacing.Around = 5
           TabOrder = 2
         end
+        object btnSaveAs: TButton
+          Left = 5
+          Height = 25
+          Top = 65
+          Width = 120
+          Action = actSaveFileAs
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 3
+        end
       end
       object gbControl: TGroupBox
         Left = 6
-        Height = 172
-        Top = 133
+        Height = 181
+        Top = 160
         Width = 134
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'Control'
-        ClientHeight = 147
+        ClientHeight = 156
         ClientWidth = 130
         TabOrder = 1
         object btnStartStop: TButton
@@ -763,7 +745,7 @@ object frmMain: TfrmMain
       object gbStateInfo: TGroupBox
         Left = 6
         Height = 97
-        Top = 310
+        Top = 346
         Width = 134
         Align = alTop
         BorderSpacing.Around = 5
@@ -800,7 +782,7 @@ object frmMain: TfrmMain
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
-            Caption = '00 [00000000]'
+            Caption = '00h/00000000'
             Layout = tlCenter
             ParentColor = False
           end
@@ -927,13 +909,25 @@ object frmMain: TfrmMain
     top = 32
     object miFile: TMenuItem
       Caption = 'File'
+      object miNew: TMenuItem
+        Action = actNew
+      end
+      object miFileSplitter1: TMenuItem
+        Caption = '-'
+      end
       object MenuItem1: TMenuItem
         Action = actOpenFile
       end
       object MenuItem3: TMenuItem
         Action = actSaveFile
       end
-      object miFileSplit1: TMenuItem
+      object MenuItem4: TMenuItem
+        Action = actSaveFileAs
+      end
+      object miCompile: TMenuItem
+        Action = actCompile
+      end
+      object miFileSplitter2: TMenuItem
         Caption = '-'
       end
       object MenuItem2: TMenuItem
@@ -961,6 +955,27 @@ object frmMain: TfrmMain
         Action = actHideAll
       end
     end
+    object miControl: TMenuItem
+      Caption = 'Emulation'
+      object miReset: TMenuItem
+        Action = actReset
+      end
+      object miControlSplitter1: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem5: TMenuItem
+        Action = actStartStop
+      end
+      object miStepIn: TMenuItem
+        Action = actStepIn
+      end
+      object miStepOver: TMenuItem
+        Action = actStepOver
+      end
+      object miStepOut: TMenuItem
+        Action = actStepOut
+      end
+    end
   end
   object pmMain: TPopupMenu
     left = 280
@@ -972,33 +987,11 @@ object frmMain: TfrmMain
   object alActionList: TActionList
     left = 352
     top = 32
-    object actOpenFile: TAction
-      Category = 'File'
-      Caption = 'Open...'
-      OnExecute = actOpenFileExecute
-      OnUpdate = actOpenFileUpdate
-    end
-    object actExit: TAction
-      Category = 'File'
-      Caption = 'Exit'
-      OnExecute = actExitExecute
-    end
     object actToggleMemoryVisible: TAction
       Category = 'View'
       Caption = 'Memory'
       Checked = True
       OnExecute = actToggleMemoryVisibleExecute
-    end
-    object actRefreshMemory: TAction
-      Category = 'Processor'
-      Caption = 'Refresh Memory'
-      OnExecute = actRefreshMemoryExecute
-    end
-    object actStartStop: TAction
-      Category = 'Processor'
-      Caption = 'Start'
-      OnExecute = actStartStopExecute
-      OnUpdate = actStartStopUpdate
     end
     object actTogglePeripheralsVisible: TAction
       Category = 'View'
@@ -1022,41 +1015,74 @@ object frmMain: TfrmMain
       Caption = 'Hide All'
       OnExecute = actHideAllExecute
     end
-    object actSaveFile: TAction
-      Category = 'File'
-      Caption = 'Save...'
-      OnExecute = actSaveFileExecute
-      OnUpdate = actSaveFileUpdate
-    end
-    object actCompile: TAction
+    object actReset: TAction
       Category = 'Processor'
-      Caption = 'Compile'
-      OnExecute = actCompileExecute
-      OnUpdate = actCompileUpdate
+      Caption = 'Reset'
+      OnExecute = actResetExecute
+      OnUpdate = actResetUpdate
+    end
+    object actStartStop: TAction
+      Category = 'Processor'
+      Caption = 'Start'
+      OnExecute = actStartStopExecute
+      OnUpdate = actStartStopUpdate
+      ShortCut = 120
     end
     object actStepIn: TAction
       Category = 'Processor'
       Caption = 'Step In'
       OnExecute = actStepInExecute
       OnUpdate = actStepInUpdate
+      ShortCut = 118
     end
     object actStepOver: TAction
       Category = 'Processor'
       Caption = 'Step Over'
       OnExecute = actStepOverExecute
       OnUpdate = actStepOverUpdate
+      ShortCut = 119
     end
     object actStepOut: TAction
       Category = 'Processor'
       Caption = 'Step Out'
       OnExecute = actStepOutExecute
       OnUpdate = actStepOutUpdate
+      ShortCut = 8310
     end
-    object actReset: TAction
-      Category = 'Processor'
-      Caption = 'Reset'
-      OnExecute = actResetExecute
-      OnUpdate = actResetUpdate
+    object actNew: TAction
+      Category = 'File'
+      Caption = 'New'
+      ShortCut = 16462
+    end
+    object actOpenFile: TAction
+      Category = 'File'
+      Caption = 'Open...'
+      OnExecute = actOpenFileExecute
+      OnUpdate = actOpenFileUpdate
+    end
+    object actSaveFile: TAction
+      Category = 'File'
+      Caption = 'Save'
+      OnExecute = actSaveFileExecute
+      OnUpdate = actSaveFileUpdate
+    end
+    object actSaveFileAs: TAction
+      Category = 'File'
+      Caption = 'Save as...'
+      OnExecute = actSaveFileAsExecute
+      OnUpdate = actSaveFileAsUpdate
+    end
+    object actExit: TAction
+      Category = 'File'
+      Caption = 'Exit'
+      OnExecute = actExitExecute
+    end
+    object actCompile: TAction
+      Category = 'File'
+      Caption = 'Compile'
+      OnExecute = actCompileExecute
+      OnUpdate = actCompileUpdate
+      ShortCut = 16504
     end
   end
   object synCompletion: TSynCompletion
