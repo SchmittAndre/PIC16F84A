@@ -771,40 +771,6 @@ object frmMain: TfrmMain
         ClientHeight = 72
         ClientWidth = 130
         TabOrder = 2
-        object pnlCycles: TPanel
-          Left = 0
-          Height = 25
-          Top = 0
-          Width = 130
-          Align = alTop
-          BevelOuter = bvNone
-          ClientHeight = 25
-          ClientWidth = 130
-          TabOrder = 0
-          object lbCyclesTitle: TLabel
-            Left = 5
-            Height = 25
-            Top = 0
-            Width = 44
-            Align = alLeft
-            BorderSpacing.Left = 5
-            Caption = 'Cycles:'
-            Layout = tlCenter
-            ParentColor = False
-          end
-          object lbCycles: TLabel
-            Left = 49
-            Height = 25
-            Top = 0
-            Width = 76
-            Align = alClient
-            Alignment = taRightJustify
-            BorderSpacing.Right = 5
-            Caption = '0'
-            Layout = tlCenter
-            ParentColor = False
-          end
-        end
         object pnlWRegister: TPanel
           Left = 0
           Height = 25
@@ -814,7 +780,7 @@ object frmMain: TfrmMain
           BevelOuter = bvNone
           ClientHeight = 25
           ClientWidth = 130
-          TabOrder = 1
+          TabOrder = 0
           object lbWRegisterTitle: TLabel
             Left = 5
             Height = 25
@@ -848,7 +814,7 @@ object frmMain: TfrmMain
           BevelOuter = bvNone
           ClientHeight = 25
           ClientWidth = 130
-          TabOrder = 2
+          TabOrder = 1
           object lbFlagsTitle: TLabel
             Left = 5
             Height = 25
@@ -869,6 +835,40 @@ object frmMain: TfrmMain
             Alignment = taRightJustify
             BorderSpacing.Right = 5
             Caption = 'none'
+            Layout = tlCenter
+            ParentColor = False
+          end
+        end
+        object pnlCycles: TPanel
+          Left = 0
+          Height = 25
+          Top = 0
+          Width = 130
+          Align = alTop
+          BevelOuter = bvNone
+          ClientHeight = 25
+          ClientWidth = 130
+          TabOrder = 2
+          object lbCyclesTitle: TLabel
+            Left = 5
+            Height = 25
+            Top = 0
+            Width = 44
+            Align = alLeft
+            BorderSpacing.Left = 5
+            Caption = 'Cycles:'
+            Layout = tlCenter
+            ParentColor = False
+          end
+          object lbCycles: TLabel
+            Left = 49
+            Height = 25
+            Top = 0
+            Width = 76
+            Align = alClient
+            Alignment = taRightJustify
+            BorderSpacing.Right = 5
+            Caption = '0'
             Layout = tlCenter
             ParentColor = False
           end
@@ -970,12 +970,13 @@ object frmMain: TfrmMain
     end
   end
   object alActionList: TActionList
-    left = 344
+    left = 352
     top = 32
     object actOpenFile: TAction
       Category = 'File'
       Caption = 'Open...'
       OnExecute = actOpenFileExecute
+      OnUpdate = actOpenFileUpdate
     end
     object actExit: TAction
       Category = 'File'
@@ -997,6 +998,7 @@ object frmMain: TfrmMain
       Category = 'Processor'
       Caption = 'Start'
       OnExecute = actStartStopExecute
+      OnUpdate = actStartStopUpdate
     end
     object actTogglePeripheralsVisible: TAction
       Category = 'View'
@@ -1024,29 +1026,37 @@ object frmMain: TfrmMain
       Category = 'File'
       Caption = 'Save...'
       OnExecute = actSaveFileExecute
+      OnUpdate = actSaveFileUpdate
     end
     object actCompile: TAction
       Category = 'Processor'
       Caption = 'Compile'
+      OnExecute = actCompileExecute
+      OnUpdate = actCompileUpdate
     end
     object actStepIn: TAction
       Category = 'Processor'
       Caption = 'Step In'
       OnExecute = actStepInExecute
+      OnUpdate = actStepInUpdate
     end
     object actStepOver: TAction
       Category = 'Processor'
       Caption = 'Step Over'
       OnExecute = actStepOverExecute
+      OnUpdate = actStepOverUpdate
     end
     object actStepOut: TAction
       Category = 'Processor'
       Caption = 'Step Out'
       OnExecute = actStepOutExecute
+      OnUpdate = actStepOutUpdate
     end
     object actReset: TAction
       Category = 'Processor'
       Caption = 'Reset'
+      OnExecute = actResetExecute
+      OnUpdate = actResetUpdate
     end
   end
   object synCompletion: TSynCompletion

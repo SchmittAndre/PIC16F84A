@@ -149,6 +149,11 @@ type
 
     TInstructionMethod = procedure (AInstruction: TInstruction) of object;
 
+    TStepInfo = (
+      siSingle,
+      siMultiple
+    );
+
   public const
     {$REGION RegisterBank Mapped Parts}
     RegisterBank0Mapped: set of TRegisterBank0 = [
@@ -355,8 +360,8 @@ type
     procedure ResetSyncTime;
 
     procedure StepIn;
-    procedure StepOver;
-    procedure StepOut;
+    function StepOver: TStepInfo;
+    function StepOut: TStepInfo;
     function CatchUp: Boolean;
     property TimeBehind: Single read GetTimeBehind;
 
@@ -396,8 +401,8 @@ type
     procedure InstructionMOVF(AInstruction: TInstruction);
     procedure InstructionMOVWF(AInstruction: TInstruction);
     procedure InstructionNOP({%H-}AInstruction: TInstruction);
-    // TODO: procedure InstructionRLF(AInstruction: TInstruction);
-    // TODO: procedure InstructionRRF(AInstruction: TInstruction);
+    procedure InstructionRLF(AInstruction: TInstruction);
+    procedure InstructionRRF(AInstruction: TInstruction);
     procedure InstructionSUBWF(AInstruction: TInstruction);
     procedure InstructionSWAPF(AInstruction: TInstruction);
     procedure InstructionXORWF(AInstruction: TInstruction);
@@ -774,7 +779,7 @@ begin
         FProgramMem[Line].Instruction := TInstruction(Instruction);
       except
         on ERangeError do
-          raise Exception.CreateFmt('Unknown Instruction! 0x%.2h', [Instruction]);
+          raise Exception.CreateFmt('Unknown Instruction 0x%.2h', [Instruction]);
       end;
       FProgramMem[Line].Line := Counter + 1;
     end;
@@ -856,28 +861,33 @@ begin
   ProcessInstruction(CurrentInstruction);
 end;
 
-procedure TProcessor.StepOver;
+function TProcessor.StepOver: TStepInfo;
 begin
   if FInstructionArray[CurrentInstruction.Instruction] = itCALL then
   begin
     FHelpBreakpointDepth := FProgramCounterStackPos;
     FHelpBreakpointEnabled := True;
     Start(False);
+    Result := siMultiple;
   end
   else
+  begin
     StepIn;
+    Result := siSingle;
+  end;
 end;
 
-procedure TProcessor.StepOut;
+function TProcessor.StepOut: TStepInfo;
 begin
   if FProgramCounterStackPos > 0 then
   begin
     FHelpBreakpointDepth := FProgramCounterStackPos - 1;
     FHelpBreakpointEnabled := True;
     Start(False);
+    Result := siMultiple;
   end
   else
-    StepOver;
+    Result := StepOver;
 end;
 
 function TProcessor.CatchUp: Boolean;
@@ -1079,6 +1089,50 @@ end;
 procedure TProcessor.InstructionNOP(AInstruction: TInstruction);
 begin
   // no operation
+end;
+
+procedure TProcessor.InstructionRLF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+  C: Boolean;
+begin
+  A := ExtractFileAdress(AInstruction);
+  C := CarryFlag;
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    CarryFlag := Flag[A, 7];
+    FileMap[A] := (FileMap[A] shl 1) and $FF;
+    Flag[A, 0] := C;
+  end
+  else
+  begin
+    CarryFlag := Flag[A, 7];
+    FWRegister := (FileMap[A] shl 1) and $FF;
+    if C then
+      FWRegister := FWRegister or $01;
+  end;
+end;
+
+procedure TProcessor.InstructionRRF(AInstruction: TInstruction);
+var
+  A: TFileAdress;
+  C: Boolean;
+begin
+  A := ExtractFileAdress(AInstruction);
+  C := CarryFlag;
+  if ExtractDestIsFile(AInstruction) then
+  begin
+    CarryFlag := Flag[A, 0];
+    FileMap[A] := FileMap[A] shr 1;
+    Flag[A, 7] := C;
+  end
+  else
+  begin
+    CarryFlag := Flag[A, 0];
+    FWRegister := FileMap[A] shr 1;
+    if C then
+      FWRegister := FWRegister or $80;
+  end;
 end;
 
 procedure TProcessor.InstructionSUBWF(AInstruction: TInstruction);
