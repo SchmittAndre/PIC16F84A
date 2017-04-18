@@ -332,6 +332,7 @@ type
     class function ExtractFileAdress(AInstruction: TInstruction): TFileAdress; static;
     class function ExtractProgramCounter(AInstruction: TInstruction): TProgramCounter; static;
     class function ExtractDestIsFile(AInstruction: TInstruction): Boolean; static;
+    class function ExtractBit(AInstruction: TInstruction): TBitIndex; static;
 
     function DoAdd(A, B: Byte): Byte;
     function DoSub(A, B: Byte): Byte;
@@ -409,10 +410,10 @@ type
     {$ENDREGION}
 
     {$REGION --- Bit-Oriented File Register Operations --- }
-    // TODO: procedure InstructionBCF(AInstruction: TInstruction);
-    // TODO: procedure InstructionBSF(AInstruction: TInstruction);
-    // TODO: procedure InstructionBTFSC(AInstruction: TInstruction);
-    // TODO: procedure InstructionBTFSS(AInstruction: TInstruction);
+    procedure InstructionBCF(AInstruction: TInstruction);
+    procedure InstructionBSF(AInstruction: TInstruction);
+    procedure InstructionBTFSC(AInstruction: TInstruction);
+    procedure InstructionBTFSS(AInstruction: TInstruction);
     {$ENDREGION}
 
     {$REGION --- Literal and Control Operations --- }
@@ -570,16 +571,20 @@ end;
 function TProcessor.GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
 begin
   try
-  case AType of
-    mtRAM:
-      Result := RAM[APos];
-    mtProgram:
-      Result := ProgramMem[APos];
-    mtROM:
-      Result := ROM[APos];
-    mtProgramCounterStack:
-      Result := PCStackMem[APos];
-  end;
+    case AType of
+      mtRAM:
+        Result := RAM[APos];
+      mtProgram:
+        Result := ProgramMem[APos];
+      mtROM:
+        Result := ROM[APos];
+      mtProgramCounterStack:
+        Result := PCStackMem[APos];
+      else
+      begin
+        Assert(False, 'Unhandled TMemoryType in GetMemory');
+      end;
+    end;
   except
     on ERangeError do
       Result := 0;
@@ -656,6 +661,11 @@ begin
     begin
       Result := False;
     end;
+    else
+    begin
+      Result := False;
+      Assert(False, 'Unhandled TMemoryType in GetReadAsZero');
+    end;
   end;
 end;
 
@@ -702,6 +712,11 @@ end;
 class function TProcessor.ExtractDestIsFile(AInstruction: TInstruction): Boolean;
 begin
   Result := ((AInstruction shr 7) and 1) = 1;
+end;
+
+class function TProcessor.ExtractBit(AInstruction: TInstruction): TBitIndex;
+begin
+  Result := (AInstruction shr 7) and $07;
 end;
 
 function TProcessor.DoAdd(A, B: Byte): Byte;
@@ -823,11 +838,9 @@ begin
     if Assigned(FMethods[T]) then
       FMethods[T](AInstruction)
     else if ALine = -1 then
-      raise ENotImplemented.CreateFmt('Instruction "%s" not implemented',
-                                      [InstructionInfo[T].Name])
+      raise ENotImplemented.CreateFmt('Instruction "%s" not implemented', [InstructionInfo[T].Name])
     else
-      raise ENotImplemented.CreateFmt('Instruction "%s" (line %u) not implemented',
-                                      [InstructionInfo[T].Name, ALine]);
+      raise ENotImplemented.CreateFmt('Instruction "%s" (line %u) not implemented', [InstructionInfo[T].Name, ALine]);
   finally
     if FKeepProgramCounter then
     begin
@@ -1173,6 +1186,34 @@ begin
   begin
     FWRegister := FileMap[A] xor FWRegister;
     ZeroFlag := FWRegister = 0;
+  end;
+end;
+
+procedure TProcessor.InstructionBCF(AInstruction: TInstruction);
+begin
+  Flag[ExtractFileAdress(AInstruction), ExtractBit(AInstruction)] := False;
+end;
+
+procedure TProcessor.InstructionBSF(AInstruction: TInstruction);
+begin
+  Flag[ExtractFileAdress(AInstruction), ExtractBit(AInstruction)] := True;
+end;
+
+procedure TProcessor.InstructionBTFSC(AInstruction: TInstruction);
+begin
+  if not Flag[ExtractFileAdress(AInstruction), ExtractBit(AInstruction)] then
+  begin
+    AdvanceProgramCounter(2);
+    KeepProgramCounter;
+  end;
+end;
+
+procedure TProcessor.InstructionBTFSS(AInstruction: TInstruction);
+begin
+  if Flag[ExtractFileAdress(AInstruction), ExtractBit(AInstruction)] then
+  begin
+    AdvanceProgramCounter(2);
+    KeepProgramCounter;
   end;
 end;
 

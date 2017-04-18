@@ -129,9 +129,12 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
-    function synCompletionMeasureItem(const AKey: string; ACanvas: TCanvas; Selected: boolean; Index: integer): TPoint;
-    function synCompletionPaintItem(const AKey: string; ACanvas: TCanvas; X, Y: integer; Selected: boolean;
-      Index: integer): boolean;
+    procedure sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);
+    procedure sgMemViewPrepareCanvas(Sender: TObject; aCol, aRow: Integer; aState: TGridDrawState);
+    function synCompletionMeasureItem(const AKey: string; ACanvas: TCanvas; {%H-}Selected: boolean;
+      {%H-}Index: integer): TPoint;
+    function synCompletionPaintItem(const AKey: string; ACanvas: TCanvas; X, Y: integer; {%H-}Selected: boolean;
+      {%H-}Index: integer): boolean;
     procedure synCompletionSearchPosition(var APosition: integer);
     procedure synEditorChange(Sender: TObject);
     procedure synEditorClick(Sender: TObject);
@@ -165,6 +168,8 @@ type
     function GetMemViewType: TProcessor.TMemoryType;
     procedure SetMemViewType(AValue: TProcessor.TMemoryType);
 
+    function GetMemViewCellIndex(ACol, ARow: Integer): Integer;
+
     procedure SetCompiled(AValue: Boolean);
     procedure SetFlags(AValue: TProcessor.TCalcFlags);
 
@@ -183,6 +188,7 @@ type
     property WRegister: Byte read FWRegister write SetWRegister;
     property MemViewColumns: Cardinal read FMemViewColumns write SetMemViewColumns;
     property MemViewType: TProcessor.TMemoryType read GetMemViewType write SetMemViewType;
+    property MemViewCellIndex[ACol, ARow: Integer]: Integer read GetMemViewCellIndex;
     property LineFollowMode: TLineFollowMode read FLineFollowMode write SetLineFollowMode;
     property LineFollowRange: Cardinal read FLineFollowRange write SetLineFollowRange;
 
@@ -193,6 +199,9 @@ type
     procedure UpdateSynEditScroll;
 
     procedure IdleHandler(Sender: TObject; var ADone: Boolean);
+
+  protected
+    procedure UpdateActions; override;
 
   end;
 
@@ -206,7 +215,19 @@ implementation
 { TfrmMain }
 
 procedure TfrmMain.FormCreate(Sender: TObject);
+
+  procedure RecursiveDoubleBuffered(AComponent: TComponent);
+  var
+    C: TComponent;
+  begin
+    if AComponent is TWinControl then
+      TWinControl(AComponent).DoubleBuffered := True;
+    for C in AComponent do
+      RecursiveDoubleBuffered(C);
+  end;
+
 begin
+  RecursiveDoubleBuffered(Self);
   FProcessor := TProcessor.Create;
   FFileData := TStringList.Create;
   LineFollowRange := 3;
@@ -283,7 +304,6 @@ const
 var
   T: TLoadType;
   FileData: RawByteString;
-  X: TSystemCodePage;
 begin
   with TOpenDialog.Create(Self) do
   begin
@@ -528,8 +548,17 @@ begin
 end;
 
 procedure TfrmMain.cbMemorySelectionChange(Sender: TObject);
+var
+  Old: TMouseWheelOption;
 begin
   UpdateMemView;
+  // scroll back up to the first row
+  Old := sgMemView.MouseWheelOption;
+  sgMemView.MouseWheelOption := mwCursor;
+  sgMemView.Col := 1;
+  sgMemView.Row := 1;
+  sgMemView.Selection := Rect(1, 1, 1, 1);
+  sgMemView.MouseWheelOption := Old;
 end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: boolean);
@@ -547,6 +576,48 @@ end;
 procedure TfrmMain.FormDropFiles(Sender: TObject; const FileNames: array of String);
 begin
   // TODO: Load dropped file
+end;
+
+procedure TfrmMain.sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);
+var
+  I: Integer;
+begin
+  I := MemViewCellIndex[ACol, ARow];
+  if I <> -1 then
+  begin
+    HintText := Format('[0x%.4x]', [I]) + sLineBreak;
+    if FProcessor.ReadAsZero[MemViewType, I] then
+      HintText := HintText + 'unimplemented, read as zero'
+    else
+    begin
+      HintText := HintText + Format('Hex: 0x%.2x', [FProcessor.Memory[MemViewType, I]]) + sLineBreak;
+      HintText := HintText + Format('Dec: %d', [FProcessor.Memory[MemViewType, I]]) + sLineBreak;
+      HintText := HintText + Format('Oct: %s', [OctStr(FProcessor.Memory[MemViewType, I], 3)]) + sLineBreak;
+      HintText := HintText + Format('Bin: %s', [BinStr(FProcessor.Memory[MemViewType, I], 8)]);
+    end;
+  end;
+end;
+
+procedure TfrmMain.sgMemViewPrepareCanvas(Sender: TObject; aCol, aRow: Integer; aState: TGridDrawState);
+var
+  I: Integer;
+begin
+  if (sgMemView.Selection.Size = Size(0, 0)) or not (gdSelected in aState) then
+  begin
+    // Custom coloring here
+    I := MemViewCellIndex[aCol, aRow];
+    if (I <> -1) and FProcessor.ReadAsZero[MemViewType, I] then
+    begin
+      sgMemView.Canvas.Brush.Color := $DDDDDD;
+      sgMemView.Canvas.Font.Color := clGrayText;
+    end;
+  end
+  else
+  begin
+    // highlight selection, but only if selection is not singular
+    sgMemView.Canvas.Brush.Color := sgMemView.SelectedColor;
+    sgMemView.Canvas.Font.Color := clHighlightText;
+  end;
 end;
 
 function TfrmMain.synCompletionMeasureItem(const AKey: string; ACanvas: TCanvas; Selected: boolean;
@@ -743,9 +814,9 @@ procedure TfrmMain.UpdateSynEditScroll;
 begin
   case LineFollowMode of
     lfBorder:
-      synEditor.TopLine :=
-        Min(Max(synEditor.TopLine, FProcessor.CurrentInstruction.Line - synEditor.LinesInWindow + LineFollowRange),
-            FProcessor.CurrentInstruction.Line - LineFollowRange);
+      synEditor.TopLine := Min(Max(
+        synEditor.TopLine, FProcessor.CurrentInstruction.Line - synEditor.LinesInWindow + Integer(LineFollowRange)),
+        FProcessor.CurrentInstruction.Line - LineFollowRange);
     lfCenter:
       synEditor.TopLine := FProcessor.CurrentInstruction.Line - synEditor.LinesInWindow div 2;
   end;
@@ -757,6 +828,14 @@ begin
     Exit;
   cbMemorySelection.ItemIndex := Ord(AValue);
   UpdateMemView;
+end;
+
+function TfrmMain.GetMemViewCellIndex(ACol, ARow: Integer): Integer;
+begin
+  if (ACol < 1) or (ARow < 1) then
+    Result := -1
+  else
+    Result := (aRow - 1) * MemViewColumns + (aCol - 1);
 end;
 
 procedure TfrmMain.InitSynEdit;
@@ -846,7 +925,7 @@ end;
 
 procedure TfrmMain.UpdateMemView;
 var
-  R, C, P: Integer;
+  R, C, P: Cardinal;
 begin
   sgMemView.BeginUpdate;
   sgMemView.RowCount := Ceil(TProcessor.MemorySize[MemViewType] / MemViewColumns) + 1;
@@ -857,7 +936,7 @@ begin
     begin
       P := C + R * MemViewColumns;
       if FProcessor.ReadAsZero[MemViewType, P] then
-        sgMemView.Rows[R + 1][C + 1] := 'XX'
+        sgMemView.Rows[R + 1][C + 1] := '00'
       else
         sgMemView.Rows[R + 1][C + 1] := Format('%.2x', [FProcessor.Memory[MemViewType, P]]);
     end;
@@ -882,6 +961,12 @@ begin
   end
   else
     ADone := True;
+end;
+
+procedure TfrmMain.UpdateActions;
+begin
+  inherited UpdateActions;
+  cbMemorySelection.Enabled := not FProcessor.Running;
 end;
 
 procedure TfrmMain.ParseStringListFromLST(List: TStringList);

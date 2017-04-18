@@ -467,7 +467,7 @@ type
   TCardinalSet = class (TSet<Cardinal>)
   protected
     function GetKeyHash(AKey: Cardinal): Cardinal; override;
-    class function CantIndex(AKey: Cardinal): Boolean; override;
+    class function CantIndex({%H-}AKey: Cardinal): Boolean; override;
     class function KeysEqual(AKey1, AKey2: Cardinal): Boolean; override;
   end;
 
