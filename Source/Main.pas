@@ -341,7 +341,6 @@ begin
           end;
         end;
       end;
-
     finally
       Free;
     end;
@@ -460,13 +459,13 @@ begin
   begin
     FProcessor.Stop;
     UpdateALUInfo;
-    UpdateMemView;
     UpdateSynEditMarkup;
     UpdateSynEditScroll;
   end
   else
     FProcessor.Start;
   UpdateSynEditMarkup;
+  UpdateMemView;
   UpdateActions;
 end;
 
@@ -610,6 +609,27 @@ begin
     begin
       sgMemView.Canvas.Brush.Color := $DDDDDD;
       sgMemView.Canvas.Font.Color := clGrayText;
+    end;
+
+    case MemViewType of
+      mtRAM:
+      begin
+
+      end;
+      mtProgram:
+      begin
+        if not FProcessor.Running and (I <> -1) and (I div 2 = FProcessor.CurrentProgramPos) then
+          sgMemView.Canvas.Brush.Color := $3333FF;
+      end;
+      mtROM:
+      begin
+
+      end;
+      mtProgramCounterStack:
+      begin
+        if not FProcessor.Running and (I <> -1) and (I div 2 = FProcessor.PCStackPos - 1) then
+          sgMemView.Canvas.Brush.Color := $3333FF;
+      end;
     end;
   end
   else

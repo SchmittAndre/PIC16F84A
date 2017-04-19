@@ -6,7 +6,7 @@ object frmMain: TfrmMain
   ActiveControl = sgSpecialFunction
   AllowDropFiles = True
   Caption = 'PIC16F84A Emulator'
-  ClientHeight = 643
+  ClientHeight = 618
   ClientWidth = 1150
   Constraints.MinHeight = 643
   Menu = mmMainMenu
@@ -17,23 +17,22 @@ object frmMain: TfrmMain
   PopupMenu = pmMain
   Position = poDesktopCenter
   LCLVersion = '1.6.4.0'
-  Visible = False
   object gbMemory: TGroupBox
     Left = 944
-    Height = 590
+    Height = 579
     Top = 5
     Width = 201
     Align = alRight
     BorderSpacing.Around = 5
     Caption = 'Memory'
-    ClientHeight = 570
+    ClientHeight = 554
     ClientWidth = 197
     Constraints.MinWidth = 201
     TabOrder = 3
     object sgMemView: TStringGrid
       Left = 5
-      Height = 532
-      Top = 33
+      Height = 511
+      Top = 38
       Width = 187
       Align = alClient
       AutoEdit = False
@@ -62,12 +61,12 @@ object frmMain: TfrmMain
     end
     object cbMemorySelection: TComboBox
       Left = 5
-      Height = 23
+      Height = 28
       Top = 5
       Width = 187
       Align = alTop
       BorderSpacing.Around = 5
-      ItemHeight = 15
+      ItemHeight = 20
       ItemIndex = 0
       Items.Strings = (
         'RAM'
@@ -82,12 +81,12 @@ object frmMain: TfrmMain
   end
   object pnlCenter: TPanel
     Left = 170
-    Height = 600
+    Height = 589
     Top = 0
     Width = 759
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 600
+    ClientHeight = 589
     ClientWidth = 759
     TabOrder = 1
     object gbPeripherals: TGroupBox
@@ -104,7 +103,7 @@ object frmMain: TfrmMain
     end
     inline synEditor: TSynEdit
       Left = 5
-      Height = 450
+      Height = 439
       Top = 145
       Width = 598
       Align = alClient
@@ -645,7 +644,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'File'
-        ClientHeight = 129
+        ClientHeight = 124
         ClientWidth = 130
         TabOrder = 0
         object btnSave: TButton
@@ -697,7 +696,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'Control'
-        ClientHeight = 161
+        ClientHeight = 156
         ClientWidth = 130
         TabOrder = 1
         object btnStartStop: TButton
@@ -759,7 +758,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'State-Info'
-        ClientHeight = 77
+        ClientHeight = 72
         ClientWidth = 130
         TabOrder = 2
         object pnlWRegister: TPanel
@@ -776,7 +775,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 14
+            Width = 17
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'W:'
@@ -784,10 +783,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbWRegister: TLabel
-            Left = 19
+            Left = 22
             Height = 25
             Top = 0
-            Width = 106
+            Width = 103
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -810,7 +809,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 30
+            Width = 37
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Flags:'
@@ -818,10 +817,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbFlags: TLabel
-            Left = 35
+            Left = 42
             Height = 25
             Top = 0
-            Width = 90
+            Width = 83
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -844,7 +843,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 37
+            Width = 44
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Cycles:'
@@ -852,10 +851,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbCycles: TLabel
-            Left = 42
+            Left = 49
             Height = 25
             Top = 0
-            Width = 83
+            Width = 76
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -869,19 +868,19 @@ object frmMain: TfrmMain
   end
   object gbPorts: TGroupBox
     Left = 5
-    Height = 590
+    Height = 579
     Top = 5
     Width = 150
     Align = alLeft
     BorderSpacing.Around = 5
     Caption = 'Ports'
-    ClientHeight = 570
+    ClientHeight = 554
     ClientWidth = 146
     Constraints.MinWidth = 150
     TabOrder = 0
     object sgSpecialFunction: TStringGrid
       Left = 5
-      Height = 560
+      Height = 544
       Top = 5
       Width = 136
       Align = alClient
@@ -895,13 +894,13 @@ object frmMain: TfrmMain
   end
   object spltPorts: TSplitter
     Left = 160
-    Height = 600
+    Height = 589
     Top = 0
     Width = 10
   end
   object spltMemory: TSplitter
     Left = 929
-    Height = 600
+    Height = 589
     Top = 0
     Width = 10
     Align = alRight
@@ -909,8 +908,8 @@ object frmMain: TfrmMain
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 23
-    Top = 600
+    Height = 29
+    Top = 589
     Width = 1150
     Panels = <>
   end
@@ -1069,18 +1068,21 @@ object frmMain: TfrmMain
       Caption = 'Open...'
       OnExecute = actOpenFileExecute
       OnUpdate = actOpenFileUpdate
+      ShortCut = 16463
     end
     object actSaveFile: TAction
       Category = 'File'
       Caption = 'Save'
       OnExecute = actSaveFileExecute
       OnUpdate = actSaveFileUpdate
+      ShortCut = 16467
     end
     object actSaveFileAs: TAction
       Category = 'File'
       Caption = 'Save as...'
       OnExecute = actSaveFileAsExecute
       OnUpdate = actSaveFileAsUpdate
+      ShortCut = 24659
     end
     object actExit: TAction
       Category = 'File'

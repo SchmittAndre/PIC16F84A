@@ -36,7 +36,7 @@ type
   public type
     {$REGION TRegisterBank}
     TRegisterBank0 = (
-      b0IndirectAddr,
+      b0INDF,
       b0TMR0,
       b0PCL,
       b0STATUS,
@@ -75,7 +75,7 @@ type
     );
     {$ENDREGION}
 
-    {$REGION Custom Rangers}
+    {$REGION Custom Ranges}
     TProgramCounter = $0 .. $1FFF;
     TProgramCounterStackPos = 0 .. StackSize - 1;
     TProgramCounterStackPointer = 0 .. StackSize * 2 - 1;
@@ -157,7 +157,7 @@ type
   public const
     {$REGION RegisterBank Mapped Parts}
     RegisterBank0Mapped: set of TRegisterBank0 = [
-      b0IndirectAddr,
+      b0INDF,
       b0PCL,
       b0STATUS,
       b0FSR,
@@ -288,6 +288,7 @@ type
     function GetBreakpoint(ALine: Cardinal): Boolean;
     function GetCalcFlags: TCalcFlags;
     function GetCurrentInstruction: TLineInstruction;
+    function GetCurrentProgramPos: TProgramMemPos;
     function GetDataMem(P: TROMPointer): Byte;
     function GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
     function GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
@@ -368,12 +369,14 @@ type
 
     property ProgramMem[P: TProgramMemPointer]: Byte read GetProgramMem;
     property Code[P: TProgramCounter]: TLineInstruction read GetCode;
+    property CurrentProgramPos: TProgramMemPos read GetCurrentProgramPos;
     property CurrentInstruction: TLineInstruction read GetCurrentInstruction;
     property WRegister: Byte read FWRegister;
     property RegisterBank0[S: TRegisterBank0]: Byte read GetRegisterBank0;
     property RegisterBank1[S: TRegisterBank1]: Byte read GetRegisterBank1;
     property RAM[P: TRAMPointer]: Byte read GetRAM;
     property ROM[P: TROMPointer]: Byte read GetDataMem;
+    property PCStackPos: TProgramCounterStackPos read FProgramCounterStackPos;
     property PCStack[P: TProgramCounterStackPos]: TProgramCounter read GetPCStack;
     property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
     property CalcFlags: TCalcFlags read GetCalcFlags;
@@ -476,12 +479,19 @@ end;
 
 function TProcessor.GetFileMap(P: TRAMPointer): Byte;
 begin
-  Result := FRAM[NormalizeRAMPointer(P)];
+  P := NormalizeRAMPointer(P);
+  if P = Ord(b0INDF) then
+  begin
+    // indirect adressing
+    Result := FRAM[NormalizeRAMPointer(FileMap[b0FSR])];
+  end
+  else
+    Result := FRAM[P];
 end;
 
 function TProcessor.GetFlag(P: TRAMPointer; ABit: TBitIndex): Boolean;
 begin
-  Result := ((FRAM[NormalizeRAMPointer(P)] shr ABit) and 1) = 1;
+  Result := ((FileMap[P] shr ABit) and 1) = 1;
 end;
 
 function TProcessor.GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean;
@@ -516,15 +526,25 @@ end;
 
 procedure TProcessor.SetFileMap(P: TRAMPointer; AValue: Byte);
 begin
-  FRAM[NormalizeRAMPointer(P)] := AValue;
+  P := NormalizeRAMPointer(P);
+  if P = Ord(b0INDF) then
+  begin
+    // indirect adressing
+    P := NormalizeRAMPointer(FileMap[n0FSR]);
+    if P <> 0 then
+      FRAM[P] := AValue;
+    // writing indirect to INDF => "NOP"
+  end
+  else
+    FRAM[P] := AValue;
 end;
 
 procedure TProcessor.SetFlag(P: TRAMPointer; ABit: TBitIndex; AValue: Boolean);
 begin
   if AValue then // set
-    FRAM[P] := FRAM[P] or (1 shl ABit)
+    FileMap[P] := FileMap[P] or (1 shl ABit)
   else           // clear
-    FRAM[P] := FRAM[P] and not (1 shl ABit);
+    FileMap[P] := FileMap[P] and not (1 shl ABit);
 end;
 
 procedure TProcessor.SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean);
@@ -550,6 +570,11 @@ end;
 function TProcessor.GetCurrentInstruction: TLineInstruction;
 begin
   Result := Code[FProgramCounter];
+end;
+
+function TProcessor.GetCurrentProgramPos: TProgramMemPos;
+begin
+  Result := FProgramCounter mod ProgramMemorySize;
 end;
 
 function TProcessor.GetBreakpoint(ALine: Cardinal): Boolean;
