@@ -906,7 +906,7 @@ object frmMain: TfrmMain
     Align = alRight
     ResizeAnchor = akRight
   end
-  object StatusBar1: TStatusBar
+  object sbStatus: TStatusBar
     Left = 0
     Height = 29
     Top = 589

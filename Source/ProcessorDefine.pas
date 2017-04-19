@@ -139,12 +139,23 @@ type
     );
     {$ENDREGION}
 
+    TInstructionParameter = (
+      ipDT,  // Destination
+      ipFA,  // FileAdress
+      ipBI,  // BitIndex
+      ipBL,  // ByteLiteral
+      ipPC   // ProgramCounter
+    );
+
+    TInstructionParameters = set of TInstructionParameter;
+
     TCalcFlags = set of TCalcFlag;
 
     TInstructionInfo = record
       Name: String;
       SignificantBits: Byte;
       Instruction: TInstruction;
+      Params: TInstructionParameters;
     end;
 
     TInstructionMethod = procedure (AInstruction: TInstruction) of object;
@@ -201,44 +212,44 @@ type
 
     {$REGION Instructions}
     InstructionInfo: array [TInstructionType] of TInstructionInfo = (
-      (Name: 'ADDWF';  SignificantBits: 6;  Instruction: $0700),
-      (Name: 'ANDWF';  SignificantBits: 6;  Instruction: $0500),
-      (Name: 'CLRF';   SignificantBits: 7;  Instruction: $0180),
-      (Name: 'CLRW';   SignificantBits: 7;  Instruction: $0100),
-      (Name: 'COMF';   SignificantBits: 6;  Instruction: $0900),
-      (Name: 'DECF';   SignificantBits: 6;  Instruction: $0300),
-      (Name: 'DECFSZ'; SignificantBits: 6;  Instruction: $0B00),
-      (Name: 'INCF';   SignificantBits: 6;  Instruction: $0A00),
-      (Name: 'INCFSZ'; SignificantBits: 6;  Instruction: $0F00),
-      (Name: 'IORWF';  SignificantBits: 6;  Instruction: $0400),
-      (Name: 'MOVF';   SignificantBits: 6;  Instruction: $0800),
-      (Name: 'MOVWF';  SignificantBits: 7;  Instruction: $0080),
-      (Name: 'NOP';    SignificantBits: 14; Instruction: $0000),
-      (Name: 'NOP';    SignificantBits: 14; Instruction: $0020),
-      (Name: 'NOP';    SignificantBits: 14; Instruction: $0040),
-      (Name: 'NOP';    SignificantBits: 14; Instruction: $0060),
-      (Name: 'RLF';    SignificantBits: 6;  Instruction: $0D00),
-      (Name: 'RRF';    SignificantBits: 6;  Instruction: $0C00),
-      (Name: 'SUBWF';  SignificantBits: 6;  Instruction: $0200),
-      (Name: 'SWAPF';  SignificantBits: 6;  Instruction: $0E00),
-      (Name: 'XORWF';  SignificantBits: 6;  Instruction: $0600),
-      (Name: 'BCF';    SignificantBits: 4;  Instruction: $1000),
-      (Name: 'BSF';    SignificantBits: 4;  Instruction: $1400),
-      (Name: 'BTFSC';  SignificantBits: 4;  Instruction: $1800),
-      (Name: 'BTFSS';  SignificantBits: 4;  Instruction: $1C00),
-      (Name: 'ADDLW';  SignificantBits: 5;  Instruction: $3E00),
-      (Name: 'ANDLW';  SignificantBits: 6;  Instruction: $3900),
-      (Name: 'CALL';   SignificantBits: 3;  Instruction: $2000),
-      (Name: 'CLRWDT'; SignificantBits: 14; Instruction: $0064),
-      (Name: 'GOTO';   SignificantBits: 3;  Instruction: $2800),
-      (Name: 'IORLW';  SignificantBits: 6;  Instruction: $3800),
-      (Name: 'MOVLW';  SignificantBits: 4;  Instruction: $3000),
-      (Name: 'RETFIE'; SignificantBits: 14; Instruction: $0009),
-      (Name: 'RETLW';  SignificantBits: 4;  Instruction: $3400),
-      (Name: 'RETURN'; SignificantBits: 14; Instruction: $0008),
-      (Name: 'SLEEP';  SignificantBits: 14; Instruction: $0063),
-      (Name: 'SUBLW';  SignificantBits: 5;  Instruction: $3C00),
-      (Name: 'XORLW';  SignificantBits: 6;  Instruction: $3A00)
+      (Name: 'addwf';  SignificantBits: 6;  Instruction: $0700; Params: [ipDT, ipFA]),
+      (Name: 'andwf';  SignificantBits: 6;  Instruction: $0500; Params: [ipDT, ipFA]),
+      (Name: 'clrf';   SignificantBits: 7;  Instruction: $0180; Params: [ipFA]),
+      (Name: 'clrw';   SignificantBits: 7;  Instruction: $0100; Params: []),
+      (Name: 'comf';   SignificantBits: 6;  Instruction: $0900; Params: [ipDT, ipFA]),
+      (Name: 'decf';   SignificantBits: 6;  Instruction: $0300; Params: [ipDT, ipFA]),
+      (Name: 'decfsz'; SignificantBits: 6;  Instruction: $0B00; Params: [ipDT, ipFA]),
+      (Name: 'incf';   SignificantBits: 6;  Instruction: $0A00; Params: [ipDT, ipFA]),
+      (Name: 'incfsz'; SignificantBits: 6;  Instruction: $0F00; Params: [ipDT, ipFA]),
+      (Name: 'iorwf';  SignificantBits: 6;  Instruction: $0400; Params: [ipDT, ipFA]),
+      (Name: 'movf';   SignificantBits: 6;  Instruction: $0800; Params: [ipDT, ipFA]),
+      (Name: 'movwf';  SignificantBits: 7;  Instruction: $0080; Params: [ipFA]),
+      (Name: 'nop';    SignificantBits: 14; Instruction: $0000; Params: []),
+      (Name: 'nop';    SignificantBits: 14; Instruction: $0020; Params: []),
+      (Name: 'nop';    SignificantBits: 14; Instruction: $0040; Params: []),
+      (Name: 'nop';    SignificantBits: 14; Instruction: $0060; Params: []),
+      (Name: 'rlf';    SignificantBits: 6;  Instruction: $0D00; Params: [ipDT, ipFA]),
+      (Name: 'rrf';    SignificantBits: 6;  Instruction: $0C00; Params: [ipDT, ipFA]),
+      (Name: 'subwf';  SignificantBits: 6;  Instruction: $0200; Params: [ipDT, ipFA]),
+      (Name: 'swapf';  SignificantBits: 6;  Instruction: $0E00; Params: [ipDT, ipFA]),
+      (Name: 'xorwf';  SignificantBits: 6;  Instruction: $0600; Params: [ipDT, ipFA]),
+      (Name: 'bcf';    SignificantBits: 4;  Instruction: $1000; Params: [ipBI, ipFA]),
+      (Name: 'bsf';    SignificantBits: 4;  Instruction: $1400; Params: [ipBI, ipFA]),
+      (Name: 'btfsc';  SignificantBits: 4;  Instruction: $1800; Params: [ipBI, ipFA]),
+      (Name: 'btfss';  SignificantBits: 4;  Instruction: $1C00; Params: [ipBI, ipFA]),
+      (Name: 'addlw';  SignificantBits: 5;  Instruction: $3E00; Params: [ipBL]),
+      (Name: 'andlw';  SignificantBits: 6;  Instruction: $3900; Params: [ipBL]),
+      (Name: 'call';   SignificantBits: 3;  Instruction: $2000; Params: [ipPC]),
+      (Name: 'clrwdt'; SignificantBits: 14; Instruction: $0064; Params: [ipBL]),
+      (Name: 'goto';   SignificantBits: 3;  Instruction: $2800; Params: [ipPC]),
+      (Name: 'iorlw';  SignificantBits: 6;  Instruction: $3800; Params: [ipBL]),
+      (Name: 'movlw';  SignificantBits: 4;  Instruction: $3000; Params: [ipBL]),
+      (Name: 'retfie'; SignificantBits: 14; Instruction: $0009; Params: [ipBL]),
+      (Name: 'retlw';  SignificantBits: 4;  Instruction: $3400; Params: [ipBL]),
+      (Name: 'return'; SignificantBits: 14; Instruction: $0008; Params: [ipBL]),
+      (Name: 'sleep';  SignificantBits: 14; Instruction: $0063; Params: [ipBL]),
+      (Name: 'sublw';  SignificantBits: 5;  Instruction: $3C00; Params: [ipBL]),
+      (Name: 'xorlw';  SignificantBits: 6;  Instruction: $3A00; Params: [ipBL])
     );
     {$ENDREGION}
 
@@ -295,9 +306,6 @@ type
     function GetCode(P: TProgramCounter): TLineInstruction;
     function GetPCStackMem(P: TProgramCounterStackPointer): Byte;
     function GetProgramMem(P: TProgramMemPointer): Byte;
-    function GetRAM(P: TRAMPointer): Byte;
-    function GetRegisterBank0(S: TRegisterBank0): Byte;
-    function GetRegisterBank1(S: TRegisterBank1): Byte;
     function GetTimeBehind: Single;
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
     function GetCarryFlag: Boolean;
@@ -319,8 +327,8 @@ type
     procedure SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean); overload;
     procedure SetFlag(P: TRegisterBank1; ABit: TBitIndex; AValue: Boolean); overload;
     procedure SetZeroFlag(AValue: Boolean);
-
-    function NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
+    function GetBank1Selected: Boolean;
+    procedure SetBank1Selected(AValue: Boolean);
 
     procedure SetSpeedFactor(AValue: Single);
 
@@ -329,15 +337,20 @@ type
     property CarryFlag: Boolean read GetCarryFlag write SetCarryFlag;
     property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
+    property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
 
     // help-functions
     procedure KeepProgramCounter;
 
-    class function ExtractByteLiteral(AInstruction: TInstruction): Byte; static;
     class function ExtractFileAdress(AInstruction: TInstruction): TFileAdress; static;
+    class function ExtractByteLiteral(AInstruction: TInstruction): Byte; static;
     class function ExtractProgramCounter(AInstruction: TInstruction): TProgramCounter; static;
     class function ExtractDestIsFile(AInstruction: TInstruction): Boolean; static;
-    class function ExtractBit(AInstruction: TInstruction): TBitIndex; static;
+    class function ExtractBitIndex(AInstruction: TInstruction): TBitIndex; static;
+
+    function ExtractRAMPointer(AInstruction: TInstruction): TRAMPointer;
+
+    function AdressToRAMPointer(AAdress: TFileAdress): TRAMPointer;
 
     function DoAdd(A, B: Byte): Byte;
     function DoSub(A, B: Byte): Byte;
@@ -365,6 +378,8 @@ type
 
     procedure ResetSyncTime;
 
+    function NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
+
     procedure StepIn;
     function StepOver: TStepInfo;
     function StepOut: TStepInfo;
@@ -376,9 +391,7 @@ type
     property CurrentProgramPos: TProgramMemPos read GetCurrentProgramPos;
     property CurrentInstruction: TLineInstruction read GetCurrentInstruction;
     property WRegister: Byte read FWRegister;
-    property RegisterBank0[S: TRegisterBank0]: Byte read GetRegisterBank0;
-    property RegisterBank1[S: TRegisterBank1]: Byte read GetRegisterBank1;
-    property RAM[P: TRAMPointer]: Byte read GetRAM;
+    property RAM[P: TRAMPointer]: Byte read GetFileMap;
     property ROM[P: TROMPointer]: Byte read GetDataMem;
     property PCStackPos: TProgramCounterStackPos read FProgramCounterStackPos;
     property PCStack[P: TProgramCounterStackPos]: TProgramCounter read GetPCStack;
@@ -393,6 +406,8 @@ type
     property SpeedFactor: Single read FSpeedFactor write SetSpeedFactor;
 
     property Breakpoint[ALine: Cardinal]: Boolean read GetBreakpoint write SetBreakpoint;
+
+    class function FormatInstruction(AInstruction: TInstruction): String;
 
   published
     {$REGION --- Byte-Oriented File Register Operations --- }
@@ -469,6 +484,16 @@ begin
       FInstructionArray[InstructionInfo[T].Instruction or I] := T;
     end;
   end;
+end;
+
+function TProcessor.GetBank1Selected: Boolean;
+begin
+  Result := Flag[b0STATUS, 5];
+end;
+
+procedure TProcessor.SetBank1Selected(AValue: Boolean);
+begin
+  Flag[b0STATUS, 5] := AValue;
 end;
 
 function TProcessor.GetCarryFlag: Boolean;
@@ -666,21 +691,6 @@ begin
     Result := FProgramMem[P div 2].Instruction and $FF;
 end;
 
-function TProcessor.GetRAM(P: TRAMPointer): Byte;
-begin
-  Result := FRAM[NormalizeRAMPointer(P)];
-end;
-
-function TProcessor.GetRegisterBank0(S: TRegisterBank0): Byte;
-begin
-  Result := FRAM[TRAMPointer(S)];
-end;
-
-function TProcessor.GetRegisterBank1(S: TRegisterBank1): Byte;
-begin
-  Result := FRAM[NormalizeRAMPointer(TRAMPointer(S))];
-end;
-
 function TProcessor.GetTimeBehind: Single;
 var
   T: Int64;
@@ -735,6 +745,11 @@ begin
   FKeepProgramCounter := True;
 end;
 
+class function TProcessor.ExtractFileAdress(AInstruction: TInstruction): TFileAdress;
+begin
+  Result := AInstruction and High(TFileAdress);
+end;
+
 procedure TProcessor.SetSpeedFactor(AValue: Single);
 begin
   if FSpeedFactor = AValue then
@@ -748,9 +763,9 @@ begin
   Result := AInstruction and High(Byte);
 end;
 
-class function TProcessor.ExtractFileAdress(AInstruction: TInstruction): TFileAdress;
+function TProcessor.ExtractRAMPointer(AInstruction: TInstruction): TRAMPointer;
 begin
-  Result := AInstruction and High(TFileAdress);
+  Result := AdressToRAMPointer(ExtractFileAdress(AInstruction));
 end;
 
 class function TProcessor.ExtractProgramCounter(AInstruction: TInstruction): TProgramCounter;
@@ -763,9 +778,17 @@ begin
   Result := ((AInstruction shr 7) and 1) = 1;
 end;
 
-class function TProcessor.ExtractBit(AInstruction: TInstruction): TBitIndex;
+class function TProcessor.ExtractBitIndex(AInstruction: TInstruction): TBitIndex;
 begin
   Result := (AInstruction shr 7) and $07;
+end;
+
+function TProcessor.AdressToRAMPointer(AAdress: TFileAdress): TRAMPointer;
+begin
+  if Bank1Selected then
+    Result := AAdress + FileMapOffset
+  else
+    Result := AAdress;
 end;
 
 function TProcessor.DoAdd(A, B: Byte): Byte;
@@ -965,39 +988,59 @@ begin
   Result := False;
 end;
 
+class function TProcessor.FormatInstruction(AInstruction: TInstruction): String;
+var
+  I: TInstructionType;
+  Info: TInstructionInfo;
+begin
+  I := FInstructionArray[AInstruction];
+  Info := InstructionInfo[I];
+  Result := Info.Name;
+  if (ipFA in Info.Params) then
+    Result := Result + Format(' %.2xh', [ExtractFileAdress(AInstruction)]);
+  if (ipBL in Info.Params) then
+    Result := Result + Format(' %.2xh', [ExtractByteLiteral(AInstruction)]);
+  if (ipPC in Info.Params) then
+    Result := Result + Format(' %.3xh', [ExtractProgramCounter(AInstruction)]);
+  if (ipBI in Info.Params) then
+    Result := Result + Format(', %d', [ExtractBitIndex(AInstruction)]);
+  if (ipDT in Info.Params) and not ExtractDestIsFile(AInstruction) then
+    Result := Result + ', w';
+end;
+
 {$REGION METHODS}
 
 procedure TProcessor.InstructionADDWF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
-    FileMap[A] := DoAdd(FileMap[A], FWRegister)
+    FileMap[P] := DoAdd(FileMap[P], FWRegister)
   else
-    FWRegister := DoAdd(FileMap[A], FWRegister);
+    FWRegister := DoAdd(FileMap[P], FWRegister);
 end;
 
 procedure TProcessor.InstructionANDWF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := FileMap[A] and FWRegister;
-    ZeroFlag := FileMap[A] = 0;
+    FileMap[P] := FileMap[P] and FWRegister;
+    ZeroFlag := FileMap[P] = 0;
   end
   else
   begin
-    FWRegister := FileMap[A] and FWRegister;
+    FWRegister := FileMap[P] and FWRegister;
     ZeroFlag := FWRegister = 0;
   end;
 end;
 
 procedure TProcessor.InstructionCLRF(AInstruction: TInstruction);
 begin
-  FileMap[ExtractFileAdress(AInstruction)] := 0;
+  FileMap[ExtractRAMPointer(AInstruction)] := 0;
   ZeroFlag := True;
 end;
 
@@ -1009,47 +1052,47 @@ end;
 
 procedure TProcessor.InstructionCOMF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := not FileMap[A];
-    ZeroFlag := FileMap[A] = 0;
+    FileMap[P] := not FileMap[P];
+    ZeroFlag := FileMap[P] = 0;
   end
   else
   begin
-    FWRegister := not FileMap[A];
+    FWRegister := not FileMap[P];
     ZeroFlag := FWRegister = 0;
   end;
 end;
 
 procedure TProcessor.InstructionDECF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := (FileMap[A] - 1) and $FF;
-    ZeroFlag := FileMap[A] = 0;
+    FileMap[P] := (FileMap[P] - 1) and $FF;
+    ZeroFlag := FileMap[P] = 0;
   end
   else
   begin
-    FWRegister := (FileMap[A] - 1) and $FF;
+    FWRegister := (FileMap[P] - 1) and $FF;
     ZeroFlag := FWRegister = 0;
   end;
 end;
 
 procedure TProcessor.InstructionDECFSZ(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := (FileMap[A] - 1) and $FF;
-    if FileMap[A] = 0 then
+    FileMap[P] := (FileMap[P] - 1) and $FF;
+    if FileMap[P] = 0 then
     begin
       AdvanceProgramCounter(2);
       KeepProgramCounter;
@@ -1057,8 +1100,8 @@ begin
   end
   else
   begin
-    FWRegister := (FileMap[A] - 1) and $FF;
-    if FileMap[A] = 0 then
+    FWRegister := (FileMap[P] - 1) and $FF;
+    if FileMap[P] = 0 then
     begin
       AdvanceProgramCounter(2);
       KeepProgramCounter;
@@ -1068,30 +1111,30 @@ end;
 
 procedure TProcessor.InstructionINCF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := (FileMap[A] + 1) and $FF;
-    ZeroFlag := FileMap[A] = 0;
+    FileMap[P] := (FileMap[P] + 1) and $FF;
+    ZeroFlag := FileMap[P] = 0;
   end
   else
   begin
-    FWRegister := (FileMap[A] + 1) and $FF;
+    FWRegister := (FileMap[P] + 1) and $FF;
     ZeroFlag := FWRegister = 0;
   end;
 end;
 
 procedure TProcessor.InstructionINCFSZ(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := (FileMap[A] + 1) and $FF;
-    if FileMap[A] = 0 then
+    FileMap[P] := (FileMap[P] + 1) and $FF;
+    if FileMap[P] = 0 then
     begin
       AdvanceProgramCounter(2);
       KeepProgramCounter;
@@ -1099,8 +1142,8 @@ begin
   end
   else
   begin
-    FWRegister := (FileMap[A] + 1) and $FF;
-    if FileMap[A] = 0 then
+    FWRegister := (FileMap[P] + 1) and $FF;
+    if FileMap[P] = 0 then
     begin
       AdvanceProgramCounter(2);
       KeepProgramCounter;
@@ -1110,40 +1153,40 @@ end;
 
 procedure TProcessor.InstructionIORWF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := FileMap[A] or FWRegister;
-    ZeroFlag := FileMap[A] = 0;
+    FileMap[P] := FileMap[P] or FWRegister;
+    ZeroFlag := FileMap[P] = 0;
   end
   else
   begin
-    FWRegister := FileMap[A] or FWRegister;
+    FWRegister := FileMap[P] or FWRegister;
     ZeroFlag := FWRegister = 0;
   end;
 end;
 
 procedure TProcessor.InstructionMOVF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    ZeroFlag := FileMap[A] = 0;
+    ZeroFlag := FileMap[P] = 0;
   end
   else
   begin
-    FWRegister := FileMap[A];
+    FWRegister := FileMap[P];
     ZeroFlag := FWRegister = 0;
   end;
 end;
 
 procedure TProcessor.InstructionMOVWF(AInstruction: TInstruction);
 begin
-  FileMap[ExtractFileAdress(AInstruction)] := FWRegister;
+  FileMap[ExtractRAMPointer(AInstruction)] := FWRegister;
 end;
 
 procedure TProcessor.InstructionNOP(AInstruction: TInstruction);
@@ -1153,21 +1196,21 @@ end;
 
 procedure TProcessor.InstructionRLF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
   C: Boolean;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   C := CarryFlag;
   if ExtractDestIsFile(AInstruction) then
   begin
-    CarryFlag := Flag[A, 7];
-    FileMap[A] := (FileMap[A] shl 1) and $FF;
-    Flag[A, 0] := C;
+    CarryFlag := Flag[P, 7];
+    FileMap[P] := (FileMap[P] shl 1) and $FF;
+    Flag[P, 0] := C;
   end
   else
   begin
-    CarryFlag := Flag[A, 7];
-    FWRegister := (FileMap[A] shl 1) and $FF;
+    CarryFlag := Flag[P, 7];
+    FWRegister := (FileMap[P] shl 1) and $FF;
     if C then
       FWRegister := FWRegister or $01;
   end;
@@ -1175,21 +1218,21 @@ end;
 
 procedure TProcessor.InstructionRRF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
   C: Boolean;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   C := CarryFlag;
   if ExtractDestIsFile(AInstruction) then
   begin
-    CarryFlag := Flag[A, 0];
-    FileMap[A] := FileMap[A] shr 1;
-    Flag[A, 7] := C;
+    CarryFlag := Flag[P, 0];
+    FileMap[P] := FileMap[P] shr 1;
+    Flag[P, 7] := C;
   end
   else
   begin
-    CarryFlag := Flag[A, 0];
-    FWRegister := FileMap[A] shr 1;
+    CarryFlag := Flag[P, 0];
+    FWRegister := FileMap[P] shr 1;
     if C then
       FWRegister := FWRegister or $80;
   end;
@@ -1197,60 +1240,60 @@ end;
 
 procedure TProcessor.InstructionSUBWF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := DoSub(FileMap[A], FWRegister);
+    FileMap[P] := DoSub(FileMap[P], FWRegister);
   end
   else
   begin
-    FWRegister := DoSub(FileMap[A], FWRegister);
+    FWRegister := DoSub(FileMap[P], FWRegister);
   end;
 end;
 
 procedure TProcessor.InstructionSWAPF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
-    FileMap[A] := (FileMap[A] shr 4) or ((FileMap[A] shl 4) and $FF)
+    FileMap[P] := (FileMap[P] shr 4) or ((FileMap[P] shl 4) and $FF)
   else
-    FWRegister := (FileMap[A] shr 4) or ((FileMap[A] shl 4) and $FF);
+    FWRegister := (FileMap[P] shr 4) or ((FileMap[P] shl 4) and $FF);
 end;
 
 procedure TProcessor.InstructionXORWF(AInstruction: TInstruction);
 var
-  A: TFileAdress;
+  P: TRAMPointer;
 begin
-  A := ExtractFileAdress(AInstruction);
+  P := ExtractRAMPointer(AInstruction);
   if ExtractDestIsFile(AInstruction) then
   begin
-    FileMap[A] := FileMap[A] xor FWRegister;
-    ZeroFlag := FileMap[A] = 0;
+    FileMap[P] := FileMap[P] xor FWRegister;
+    ZeroFlag := FileMap[P] = 0;
   end
   else
   begin
-    FWRegister := FileMap[A] xor FWRegister;
+    FWRegister := FileMap[P] xor FWRegister;
     ZeroFlag := FWRegister = 0;
   end;
 end;
 
 procedure TProcessor.InstructionBCF(AInstruction: TInstruction);
 begin
-  Flag[ExtractFileAdress(AInstruction), ExtractBit(AInstruction)] := False;
+  Flag[ExtractRAMPointer(AInstruction), ExtractBitIndex(AInstruction)] := False;
 end;
 
 procedure TProcessor.InstructionBSF(AInstruction: TInstruction);
 begin
-  Flag[ExtractFileAdress(AInstruction), ExtractBit(AInstruction)] := True;
+  Flag[ExtractRAMPointer(AInstruction), ExtractBitIndex(AInstruction)] := True;
 end;
 
 procedure TProcessor.InstructionBTFSC(AInstruction: TInstruction);
 begin
-  if not Flag[ExtractFileAdress(AInstruction), ExtractBit(AInstruction)] then
+  if not Flag[ExtractRAMPointer(AInstruction), ExtractBitIndex(AInstruction)] then
   begin
     AdvanceProgramCounter(2);
     KeepProgramCounter;
@@ -1259,7 +1302,7 @@ end;
 
 procedure TProcessor.InstructionBTFSS(AInstruction: TInstruction);
 begin
-  if Flag[ExtractFileAdress(AInstruction), ExtractBit(AInstruction)] then
+  if Flag[ExtractRAMPointer(AInstruction), ExtractBitIndex(AInstruction)] then
   begin
     AdvanceProgramCounter(2);
     KeepProgramCounter;

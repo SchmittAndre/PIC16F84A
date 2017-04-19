@@ -94,7 +94,7 @@ type
     spltPorts: TSplitter;
     spltMemory: TSplitter;
     spltPeripherals: TSplitter;
-    StatusBar1: TStatusBar;
+    sbStatus: TStatusBar;
     sgSpecialFunction: TStringGrid;
     synEditor: TSynEdit;
     sgMemView: TStringGrid;
@@ -584,15 +584,28 @@ begin
   I := MemViewCellIndex[ACol, ARow];
   if I <> -1 then
   begin
-    HintText := Format('[0x%.4x]', [I]) + sLineBreak;
-    if FProcessor.ReadAsZero[MemViewType, I] then
-      HintText := HintText + 'unimplemented, read as zero'
-    else
-    begin
-      HintText := HintText + Format('Hex: 0x%.2x', [FProcessor.Memory[MemViewType, I]]) + sLineBreak;
-      HintText := HintText + Format('Dec: %d', [FProcessor.Memory[MemViewType, I]]) + sLineBreak;
-      HintText := HintText + Format('Oct: %s', [OctStr(FProcessor.Memory[MemViewType, I], 3)]) + sLineBreak;
-      HintText := HintText + Format('Bin: %s', [BinStr(FProcessor.Memory[MemViewType, I], 8)]);
+    case MemViewType of
+      mtRAM, mtROM:
+      begin
+        HintText := Format('[0x%.4x]', [I]) + sLineBreak;
+        if FProcessor.ReadAsZero[MemViewType, I] then
+          HintText := HintText + 'unimplemented, read as zero'
+        else
+        begin
+          HintText := HintText + Format('Hex: 0x%.2x', [FProcessor.Memory[MemViewType, I]]) + sLineBreak;
+          HintText := HintText + Format('Dec: %d', [FProcessor.Memory[MemViewType, I]]) + sLineBreak;
+          HintText := HintText + Format('Oct: %s', [OctStr(FProcessor.Memory[MemViewType, I], 3)]) + sLineBreak;
+          HintText := HintText + Format('Bin: %s', [BinStr(FProcessor.Memory[MemViewType, I], 8)]);
+        end;
+      end;
+      mtProgram:
+      begin
+        HintText := TProcessor.FormatInstruction(FProcessor.Code[I div 2].Instruction);
+      end;
+      mtProgramCounterStack:
+      begin
+
+      end;
     end;
   end;
 end;
@@ -614,7 +627,12 @@ begin
     case MemViewType of
       mtRAM:
       begin
-
+        if not FProcessor.Running and (I <> -1) and (I = FProcessor.RAM[b0FSR]) then
+          sgMemView.Canvas.Brush.Color := $55DD55
+        else if I = 0 then
+          sgMemView.Canvas.Brush.Color := $44AA44
+        else if I = FProcessor.NormalizeRAMPointer(Ord(b0FSR)) then
+          sgMemView.Canvas.Brush.Color := $44DDDD;
       end;
       mtProgram:
       begin
