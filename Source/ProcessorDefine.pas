@@ -302,7 +302,9 @@ type
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
     function GetCarryFlag: Boolean;
     function GetDigitCarryFlag: Boolean;
-    function GetFileMap(P: TRAMPointer): Byte;
+    function GetFileMap(P: TRAMPointer): Byte; overload;
+    function GetFileMap(P: TRegisterBank0): Byte; overload;
+    function GetFileMap(P: TRegisterBank1): Byte; overload;
     function GetFlag(P: TRAMPointer; ABit: TBitIndex): Boolean; overload;
     function GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean; overload;
     function GetFlag(P: TRegisterBank1; ABit: TBitIndex): Boolean; overload;
@@ -310,7 +312,9 @@ type
     procedure SetBreakpoint(ALine: Cardinal; AValue: Boolean);
     procedure SetCarryFlag(AValue: Boolean);
     procedure SetDigitCarryFlag(AValue: Boolean);
-    procedure SetFileMap(P: TRAMPointer; AValue: Byte);
+    procedure SetFileMap(P: TRAMPointer; AValue: Byte); overload;
+    procedure SetFileMap(P: TRegisterBank0; AValue: Byte); overload;
+    procedure SetFileMap(P: TRegisterBank1; AValue: Byte); overload;
     procedure SetFlag(P: TRAMPointer; ABit: TBitIndex; AValue: Boolean); overload;
     procedure SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean); overload;
     procedure SetFlag(P: TRegisterBank1; ABit: TBitIndex; AValue: Boolean); overload;
@@ -489,6 +493,16 @@ begin
     Result := FRAM[P];
 end;
 
+function TProcessor.GetFileMap(P: TRegisterBank0): Byte;
+begin
+  Result := FileMap[Ord(P)];
+end;
+
+function TProcessor.GetFileMap(P: TRegisterBank1): Byte;
+begin
+  Result := FileMap[Ord(P)];
+end;
+
 function TProcessor.GetFlag(P: TRAMPointer; ABit: TBitIndex): Boolean;
 begin
   Result := ((FileMap[P] shr ABit) and 1) = 1;
@@ -530,13 +544,23 @@ begin
   if P = Ord(b0INDF) then
   begin
     // indirect adressing
-    P := NormalizeRAMPointer(FileMap[n0FSR]);
+    P := NormalizeRAMPointer(FileMap[b0FSR]);
     if P <> 0 then
       FRAM[P] := AValue;
     // writing indirect to INDF => "NOP"
   end
   else
     FRAM[P] := AValue;
+end;
+
+procedure TProcessor.SetFileMap(P: TRegisterBank0; AValue: Byte);
+begin
+  FileMap[Ord(P)] := AValue;
+end;
+
+procedure TProcessor.SetFileMap(P: TRegisterBank1; AValue: Byte);
+begin
+  FileMap[Ord(P)] := AValue;
 end;
 
 procedure TProcessor.SetFlag(P: TRAMPointer; ABit: TBitIndex; AValue: Boolean);
