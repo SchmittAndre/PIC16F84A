@@ -84,7 +84,6 @@ type
     miPlaceholder: TMenuItem;
     miFile: TMenuItem;
     mmMainMenu: TMainMenu;
-    Panel1: TPanel;
     pnlControl: TPanel;
     pnlCycles: TPanel;
     pnlWRegister: TPanel;
@@ -154,7 +153,6 @@ type
 
     procedure InitSynEdit;
     procedure InitMemView;
-    procedure InitSpecialFunktions;
 
     procedure ParseStringListFromLST(List: TStringList);
 
@@ -194,8 +192,7 @@ type
     property LineFollowMode: TLineFollowMode read FLineFollowMode write SetLineFollowMode;
     property LineFollowRange: Cardinal read FLineFollowRange write SetLineFollowRange;
 
-    procedure RefreshMemView;
-    procedure RefreshSpecialFunkttions;
+    procedure UpdateMemView;
     procedure UpdateSynEditMarkup;
     procedure UpdateCycles;
     procedure UpdateALUInfo;
@@ -237,7 +234,6 @@ begin
   LineFollowMode := lfBorder;
   InitSynEdit;
   InitMemView;
-  InitSpecialFunktions;
   Application.OnIdle := IdleHandler;
 end;
 
@@ -871,30 +867,6 @@ begin
   sgMemView.AutoSizeColumns;
 end;
 
-procedure TfrmMain.InitSpecialFunktions;
-type
-
-    {$REGION TSpecialFunktions}
-    TSpecialFunktions = (
-      sfPCL,
-      sfStatus,
-      sfPortA,
-      sfPortB
-    );
-    {$ENDREGION}
-var
-  FSFColl, I: Integer;
-begin
-  FSFColl := 9;
-  for I := 0 to FSFColl - 1 do
-    with sgSpecialFunction.Columns.Add do
-    begin
-      Title.Caption := Format('%d', [I]);
-    end;
-  sgSpecialFunction.Invalidate;
-  sgSpecialFunction.AutoSizeColumns;
-end;
-
 function TfrmMain.GetPeripheralsVisible: Boolean;
 begin
   Result := gbPeripherals.Visible;
@@ -970,12 +942,6 @@ begin
     end;
   end;
   sgMemView.EndUpdate;
-end;
-
-procedure TfrmMain.RefreshSpecialFunkttions;
-  sg
-begin
-
 end;
 
 procedure TfrmMain.IdleHandler(Sender: TObject; var ADone: Boolean);

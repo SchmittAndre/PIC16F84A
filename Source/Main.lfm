@@ -871,7 +871,7 @@ object frmMain: TfrmMain
     Left = 5
     Height = 590
     Top = 5
-    Width = 184
+    Width = 150
     Align = alLeft
     BorderSpacing.Around = 5
     Caption = 'Ports'
@@ -889,25 +889,15 @@ object frmMain: TfrmMain
       ColCount = 1
       DefaultColWidth = 50
       DefaultRowHeight = 20
-      RangeSelectMode = rsmSingle
       RowCount = 1
       TabOrder = 0
-    end
-    object Panel1: TPanel
-      Left = 0
-      Height = 269
-      Top = 376
-      Width = 180
-      Align = alBottom
-      Caption = 'Panel1'
-      TabOrder = 1
     end
   end
   object spltPorts: TSplitter
     Left = 160
     Height = 600
     Top = 0
-    Width = 6
+    Width = 10
   end
   object spltMemory: TSplitter
     Left = 929
@@ -925,7 +915,7 @@ object frmMain: TfrmMain
     Panels = <>
   end
   object mmMainMenu: TMainMenu
-    left = 264
+    left = 208
     top = 32
     object miFile: TMenuItem
       Caption = 'File'
@@ -998,7 +988,7 @@ object frmMain: TfrmMain
     end
   end
   object pmMain: TPopupMenu
-    left = 320
+    left = 280
     top = 32
     object miPlaceholder: TMenuItem
       Caption = 'Placeholder'
