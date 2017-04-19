@@ -362,6 +362,8 @@ type
     procedure SetZeroFlag(AValue: Boolean);
     function GetBank1Selected: Boolean;
     procedure SetBank1Selected(AValue: Boolean);
+    function GetExtClockSrc: Boolean;
+    procedure SetExtClockSrc(AValue: Boolean);
 
     procedure SetSpeedFactor(AValue: Single);
 
@@ -370,6 +372,7 @@ type
     property CarryFlag: Boolean read GetCarryFlag write SetCarryFlag;
     property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
+    property ExtClockSrc: Boolean read GetExtClockSrc write SetExtClockSrc;
     property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
 
     // help-functions
@@ -416,7 +419,7 @@ type
     procedure StepIn;
     function StepOver: TStepInfo;
     function StepOut: TStepInfo;
-    function CatchUp: Boolean;
+    procedure CatchUp;
     property TimeBehind: Single read GetTimeBehind;
 
     property ProgramMem[P: TProgramMemPointer]: Byte read GetProgramMem;
@@ -518,6 +521,16 @@ begin
       FInstructionArray[InstructionInfo[T].Instruction or I] := T;
     end;
   end;
+end;
+
+function TProcessor.GetExtClockSrc: Boolean;
+begin
+  Result := Flag[b1OPTION, 5];
+end;
+
+procedure TProcessor.SetExtClockSrc(AValue: Boolean);
+begin
+  Flag[b1OPTION, 5] := AValue;
 end;
 
 procedure TProcessor.ResetPowerON;
@@ -979,6 +992,14 @@ end;
 
 procedure TProcessor.StepIn;
 begin
+  if not ExtClockSrc then
+  begin
+    FileMap[b0TMR0] := (FileMap[b0TMR0] + 1) and High(Byte);
+    if FileMap[b0TMR0] = 0 then
+    begin
+      // overflow occured
+    end;
+  end;
   ProcessInstruction(CurrentInstruction);
 end;
 
@@ -1011,7 +1032,7 @@ begin
     Result := StepOver;
 end;
 
-function TProcessor.CatchUp: Boolean;
+procedure TProcessor.CatchUp;
 begin
   while TimeBehind > 0 do
   begin
@@ -1020,10 +1041,9 @@ begin
        FHelpBreakpointEnabled and (FProgramCounterStackPos = FHelpBreakpointDepth) then
     begin
       Stop;
-      Exit(True);
+      Break;
     end;
   end;
-  Result := False;
 end;
 
 class function TProcessor.FormatInstruction(AInstruction: TInstruction): String;

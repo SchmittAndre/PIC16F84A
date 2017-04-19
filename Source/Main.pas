@@ -357,7 +357,7 @@ end;
 
 procedure TfrmMain.actResetExecute(Sender: TObject);
 begin
-  FProcessor.;
+  FProcessor.ResetPowerON;
   UpdateMemView;
   UpdateSynEditMarkup;
   UpdateALUInfo;
@@ -1035,13 +1035,16 @@ procedure TfrmMain.IdleHandler(Sender: TObject; var ADone: Boolean);
 begin
   if FProcessor.Running then
   begin
-    if FProcessor.CatchUp then
+    FProcessor.CatchUp;
+
+    if not FProcessor.Running then
     begin
       UpdateALUInfo;
       UpdateMemView;
       UpdateSynEditMarkup;
       UpdateSynEditScroll;
     end;
+
     UpdateCycles;
     Sleep(5);
     ADone := False;
