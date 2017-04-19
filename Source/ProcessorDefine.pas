@@ -52,7 +52,7 @@ type
 
     TRegisterBank1 = (
       b1IndirectAddr = $80,
-      b1OPTION_REG,
+      b1OPTION,
       b1PCL,
       b1STATUS,
       b1FSR,
@@ -202,6 +202,40 @@ type
     );
     {$ENDREGION}
 
+    {$REGION Special Funktions}
+      RegisterBank0Name: array [TRegisterBank0] of String = (
+        'INDF',
+        'TMR0',
+        'PCL',
+        'STATUS',
+        'FSR',
+        'PORTA',
+        'PORTB',
+        '-',
+        'EEDATA',
+        'EEADR',
+        'PCLATH',
+        'INTCOUNT'
+      );
+      RegisterBank1Name: array [TRegisterBank1] of String = (
+        'INDF',
+        'OPTION',
+        'PCL',
+        'STATUS',
+        'FSR',
+        'TRISA',
+        'TRISB',
+        '-',
+        'EECON1',
+        'EECON2',
+        'PCLATH',
+        'INTCON'
+      );
+
+
+
+    {$ENDREGION}
+
     {$REGION CalcFlag Names}
     CalcFlagName: array [TCalcFlag] of String = (
       'Z',
@@ -295,7 +329,6 @@ type
 
     FHelpBreakpointDepth: TProgramCounterStackPos;
     FHelpBreakpointEnabled: Boolean;
-
     function GetBreakpoint(ALine: Cardinal): Boolean;
     function GetCalcFlags: TCalcFlags;
     function GetCurrentInstruction: TLineInstruction;
@@ -367,8 +400,8 @@ type
     destructor Destroy; override;
 
     procedure LoadProgram(AFileData: TStrings);
-    procedure Initialize;
     procedure ResetROM;
+    procedure ResetPowerON;
 
     procedure Start;
     procedure Stop;
@@ -391,6 +424,7 @@ type
     property CurrentProgramPos: TProgramMemPos read GetCurrentProgramPos;
     property CurrentInstruction: TLineInstruction read GetCurrentInstruction;
     property WRegister: Byte read FWRegister;
+    property RAMBit[P: TRAMPointer; ABit: TBitIndex]: Boolean read GetFlag;
     property RAM[P: TRAMPointer]: Byte read GetFileMap;
     property ROM[P: TROMPointer]: Byte read GetDataMem;
     property PCStackPos: TProgramCounterStackPos read FProgramCounterStackPos;
@@ -484,6 +518,20 @@ begin
       FInstructionArray[InstructionInfo[T].Instruction or I] := T;
     end;
   end;
+end;
+
+procedure TProcessor.ResetPowerON;
+begin
+  FillByte(FProgramCounterStack, SizeOf(FProgramCounterStack), 0);
+  FillByte(FRAM, SizeOf(FRAM), 0);
+  FProgramCounter := 0;
+  FProgramCounterStackPos := 0;
+  FCycles := 0;
+  FWRegister := 0;
+  FileMap[b0STATUS] := $18;
+  FileMap[b1OPTION] := $FF;
+  FileMap[b1TRISA] := $1F;
+  FileMap[b1TRISB] := $FF;
 end;
 
 function TProcessor.GetBank1Selected: Boolean;
@@ -855,7 +903,7 @@ var
 begin
   FillByte(FProgramMem, SizeOf(FProgramMem), 0);
   FBreakpoints.Clear;
-  Initialize;
+  ResetPowerON;
   for Counter := 0 to AFileData.Count - 1 do
   begin
     if not AFileData[Counter].StartsWith(' ') then
@@ -871,16 +919,6 @@ begin
       FProgramMem[CodePos].Line := Counter + 1;
     end;
   end;
-end;
-
-procedure TProcessor.Initialize;
-begin
-  FProgramCounter := 0;
-  FProgramCounterStackPos := 0;
-  FillByte(FProgramCounterStack, SizeOf(FProgramCounterStack), 0);
-  FillByte(FRAM, SizeOf(FRAM), 0);
-  FWRegister := 0;
-  FCycles := 0;
 end;
 
 procedure TProcessor.ResetROM;

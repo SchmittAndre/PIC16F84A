@@ -152,6 +152,7 @@ type
     FLineFollowRange: Cardinal;
 
     procedure InitSynEdit;
+    procedure InitSpecialFunction;
     procedure InitMemView;
 
     procedure ParseStringListFromLST(List: TStringList);
@@ -193,6 +194,7 @@ type
     property LineFollowRange: Cardinal read FLineFollowRange write SetLineFollowRange;
 
     procedure UpdateMemView;
+    procedure UpdateSpecialFunction;
     procedure UpdateSynEditMarkup;
     procedure UpdateCycles;
     procedure UpdateALUInfo;
@@ -234,6 +236,7 @@ begin
   LineFollowMode := lfBorder;
   InitSynEdit;
   InitMemView;
+  InitSpecialFunction;
   Application.OnIdle := IdleHandler;
 end;
 
@@ -354,7 +357,7 @@ end;
 
 procedure TfrmMain.actResetExecute(Sender: TObject);
 begin
-  FProcessor.Initialize;
+  FProcessor.;
   UpdateMemView;
   UpdateSynEditMarkup;
   UpdateALUInfo;
@@ -882,6 +885,21 @@ begin
   synCompletion.TheForm.Font.Bold := True;
 end;
 
+procedure TfrmMain.InitSpecialFunction;
+var
+  I: Integer;
+begin
+  sgSpecialFunction.TitleFont := Font;
+  sgSpecialFunction.Rows[0][0] := 'Adress';
+  for I := 0 to 7 do
+    with sgSpecialFunction.Columns.Add do
+    begin
+      Title.Caption := Format('%.2x', [I]);
+    end;
+  UpdateSpecialFunction;
+  sgSpecialFunction.AutoSizeColumns;
+end;
+
 procedure TfrmMain.InitMemView;
 var
   I: Integer;
@@ -980,6 +998,37 @@ begin
     end;
   end;
   sgMemView.EndUpdate;
+end;
+
+procedure TfrmMain.UpdateSpecialFunction;
+var
+
+  C: Cardinal;
+  test: Integer;
+  R0: TProcessor.TRegisterBank0;
+  R1: TProcessor.TRegisterBank1;
+begin
+  sgSpecialFunction.BeginUpdate;
+  sgSpecialFunction.RowCount := 24;
+  for R0 := Low(R0) to High(R0) do
+  begin
+    sgSpecialFunction.Rows[Ord(R0) + 1][0] := TProcessor.RegisterBank0Name[R0];
+    test := sgSpecialFunction.ColCount;
+    for C := 1 to test - 1 do
+    begin
+      sgSpecialFunction.Rows[Ord(R0) + 1][C] := '0';
+    end;
+  end;
+  for R1 := Low(R1) to High(R1) do
+  begin
+    sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(TProcessor.TRegisterBank1)) + Ord(High(R0)) + 1][0] := FProcessor.RegisterBank1Name[R1];
+    test := sgSpecialFunction.ColCount;
+    for C := 1 to test - 1 do
+    begin
+      sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(TProcessor.TRegisterBank1)) + Ord(High(R0)) + 1][C] := '0';
+    end;
+  end;
+  sgSpecialFunction.EndUpdate;
 end;
 
 procedure TfrmMain.IdleHandler(Sender: TObject; var ADone: Boolean);
