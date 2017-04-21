@@ -5,7 +5,7 @@ unit ProcessorDefine;
 interface
 
 uses
-  Classes, windows, SysUtils, Dialogs, Lists;
+  Classes, windows, SysUtils, Dialogs, Lists, PinDefine;
 
 type
 
@@ -86,6 +86,8 @@ type
     TRAMPointer = $0 .. $FF;
     TROMPointer = 0 .. ROMSize - 1;
     TBitIndex = 0 .. 7;
+    TPortAPin = 0 .. 4;
+    TPortBPin = 0 .. 7;
     {$ENDREGION}
 
     {$REGION TInstructionType}
@@ -165,6 +167,11 @@ type
       siMultiple
     );
 
+    TPreScalerAssignment = (
+      paTimer0,
+      paWatchdog
+    );
+
   public const
     {$REGION RegisterBank Mapped Parts}
     RegisterBank0Mapped: set of TRegisterBank0 = [
@@ -231,9 +238,6 @@ type
         'PCLATH',
         'INTCON'
       );
-
-
-
     {$ENDREGION}
 
     {$REGION CalcFlag Names}
@@ -310,9 +314,16 @@ type
     // Banks + RAM
     FRAM: array [TRAMPointer] of Byte;
     FWRegister: Byte;
+    FPreScaler: Byte;
+    FInhibitTimer0: Cardinal;
 
     // EEPROM
     FROM: array [TROMPointer] of Byte;
+
+    // Pins
+    FPortA: array [TPortAPin] of TPin;
+    FPortB: array [TPortBPin] of TPin;
+    FMasterClear: TPin;
 
     // Function Pointer
     FMethods: array [TInstructionType] of TInstructionMethod;
@@ -329,6 +340,7 @@ type
 
     FHelpBreakpointDepth: TProgramCounterStackPos;
     FHelpBreakpointEnabled: Boolean;
+
     function GetBreakpoint(ALine: Cardinal): Boolean;
     function GetCalcFlags: TCalcFlags;
     function GetCurrentInstruction: TLineInstruction;
@@ -338,6 +350,8 @@ type
     function GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
     function GetCode(P: TProgramCounter): TLineInstruction;
     function GetPCStackMem(P: TProgramCounterStackPointer): Byte;
+    function GetPortA(APin: TPortAPin): TPin;
+    function GetPortB(APin: TPortBPin): TPin;
     function GetProgramMem(P: TProgramMemPointer): Byte;
     function GetTimeBehind: Single;
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
@@ -364,6 +378,9 @@ type
     procedure SetBank1Selected(AValue: Boolean);
     function GetExtClockSrc: Boolean;
     procedure SetExtClockSrc(AValue: Boolean);
+    function GetPreScalerAssignment: TPreScalerAssignment;
+    function GetPreScalerMax: Byte;
+    procedure SetPreScalerAssignment(AValue: TPreScalerAssignment);
 
     procedure SetSpeedFactor(AValue: Single);
 
@@ -374,6 +391,9 @@ type
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
     property ExtClockSrc: Boolean read GetExtClockSrc write SetExtClockSrc;
     property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
+    property PreScalerAssignment: TPreScalerAssignment read GetPreScalerAssignment write SetPreScalerAssignment;
+
+    property PreScalerMax: Byte read GetPreScalerMax; // returns 0 instead of 256, as the byte perfectly overflows
 
     // help-functions
     procedure KeepProgramCounter;
@@ -397,6 +417,12 @@ type
 
     procedure PushStack(AProgramCounter: TProgramCounter);
     function PopStack: TProgramCounter;
+
+    procedure ProcessTimer(ACount: Cardinal = 1);
+
+    // Pin-Reader
+    function OnReadPortA(APin: Cardinal): Boolean;
+    function OnReadPortB(APin: Cardinal): Boolean;
 
   public
     constructor Create;
@@ -428,12 +454,17 @@ type
     property CurrentInstruction: TLineInstruction read GetCurrentInstruction;
     property WRegister: Byte read FWRegister;
     property RAMBit[P: TRAMPointer; ABit: TBitIndex]: Boolean read GetFlag;
+    property PreScaler: Byte read FPreScaler;
     property RAM[P: TRAMPointer]: Byte read GetFileMap;
     property ROM[P: TROMPointer]: Byte read GetDataMem;
     property PCStackPos: TProgramCounterStackPos read FProgramCounterStackPos;
     property PCStack[P: TProgramCounterStackPos]: TProgramCounter read GetPCStack;
     property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
     property CalcFlags: TCalcFlags read GetCalcFlags;
+
+    property PortA[APin: TPortAPin]: TPin read GetPortA;
+    property PortB[APin: TPortBPin]: TPin read GetPortB;
+    property MasterClear: TPin read FMasterClear;
 
     property ReadAsZero[AType: TMemoryType; APos: Cardinal]: Boolean read GetReadAsZero;
     property Memory[AType: TMemoryType; APos: Cardinal]: Byte read GetMemory;
@@ -521,6 +552,23 @@ begin
       FInstructionArray[InstructionInfo[T].Instruction or I] := T;
     end;
   end;
+end;
+
+function TProcessor.GetPreScalerAssignment: TPreScalerAssignment;
+begin
+  Result := TPreScalerAssignment(Flag[b1OPTION, 3]);
+end;
+
+function TProcessor.GetPreScalerMax: Byte;
+begin
+  Result := 1 shl (FileMap[b1OPTION] and $07);
+  if PreScalerAssignment = paTimer0 then
+    Result := (Result shl 1) and $FF;
+end;
+
+procedure TProcessor.SetPreScalerAssignment(AValue: TPreScalerAssignment);
+begin
+  Flag[b1OPTION, 3] := Boolean(AValue);
 end;
 
 function TProcessor.GetExtClockSrc: Boolean;
@@ -627,6 +675,13 @@ end;
 procedure TProcessor.SetFileMap(P: TRAMPointer; AValue: Byte);
 begin
   P := NormalizeRAMPointer(P);
+
+  if P = Ord(b1TRISA) then
+  begin
+    // Update write/read direction
+
+  end;
+
   if P = Ord(b0INDF) then
   begin
     // indirect adressing
@@ -637,6 +692,13 @@ begin
   end
   else
     FRAM[P] := AValue;
+
+  if (P = Ord(b0TMR0)) and (PreScalerAssignment = paTimer0) then
+  begin
+    // all assignments to TMR0 will clear the prescaler
+    FPreScaler := 0;
+    FInhibitTimer0 := 2;
+  end;
 end;
 
 procedure TProcessor.SetFileMap(P: TRegisterBank0; AValue: Byte);
@@ -742,6 +804,16 @@ begin
     Result := (FProgramCounterStack[P div 2] shr 8) and $FF
   else
     Result := FProgramCounterStack[P div 2] and $FF;
+end;
+
+function TProcessor.GetPortA(APin: TPortAPin): TPin;
+begin
+  Result := FPortA[APin];
+end;
+
+function TProcessor.GetPortB(APin: TPortBPin): TPin;
+begin
+  Result := FPortB[APin];
 end;
 
 function TProcessor.GetProgramMem(P: TProgramMemPointer): Byte;
@@ -885,10 +957,66 @@ begin
   Result := FProgramCounterStack[FProgramCounterStackPos];
 end;
 
+procedure TProcessor.ProcessTimer(ACount: Cardinal);
+var
+  I: Integer;
+begin
+  for I := 0 to ACount - 1 do
+  begin
+    if PreScalerAssignment = paTimer0 then
+    begin
+      // use PreScaler for Timer0
+      if not ExtClockSrc or ExtClockSrc and False then // TODO: check for rising/falling edge
+      begin
+        if not ExtClockSrc and (FInhibitTimer0 > 0) then
+          Dec(FInhibitTimer0)
+        else
+        begin
+          FPreScaler := (FPreScaler + 1) and High(Byte);
+          if FPreScaler = PreScalerMax then
+          begin
+            FPreScaler := 0;
+            // using FileMap here will set the inhibit
+            FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+          end;
+        end;
+      end;
+
+      // TODO: inc WDT without PreScaler
+    end
+    else
+    begin
+      // process Timer0 without PreScaler
+      if not ExtClockSrc or ExtClockSrc and False then // TODO: check for rising/falling edge
+      begin
+        if not ExtClockSrc and (FInhibitTimer0 > 0) then
+          Dec(FInhibitTimer0)
+        else
+          // using FileMap here will set the inhibit
+          FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+      end;
+
+      // TODO: WDT selected for PreScaler
+    end;
+  end;
+end;
+
+function TProcessor.OnReadPortA(APin: Cardinal): Boolean;
+begin
+  Result := Flag[b0PORTA, APin];
+end;
+
+function TProcessor.OnReadPortB(APin: Cardinal): Boolean;
+begin
+  Result := Flag[b0PORTB, APin];
+end;
+
 constructor TProcessor.Create;
 var
   T: TInstructionType;
   M: TMethod;
+  A: TPortAPin;
+  B: TPortBPin;
 begin
   FBreakpoints := TCardinalSet.Create;
   M.Data := Self;
@@ -900,11 +1028,24 @@ begin
   end;
   QueryPerformanceFrequency(FFrequency);
   FSpeedFactor := 1;
+  for A := Low(A) to High(A) do
+    FPortA[A] := TPin.Create(A);
+  for B := Low(B) to High(B) do
+    FPortB[B] := TPin.Create(B);
+  FMasterClear := TPin.Create(0, True);
 end;
 
 destructor TProcessor.Destroy;
+var
+  A: TPortAPin;
+  B: TPortBPin;
 begin
   FBreakpoints.Free;
+  for A := Low(A) to High(A) do
+    FPortA[A].Free;
+  for B := Low(B) to High(B) do
+    FPortB[B].Free;
+  FMasterClear.Free;
   inherited;
 end;
 
@@ -970,11 +1111,13 @@ begin
       // program counter changed, this needs 2 cycles
       FKeepProgramCounter := False;
       AdvanceCycles(2);
+      ProcessTimer(2);
     end
     else
     begin
       AdvanceProgramCounter;
       AdvanceCycles;
+      ProcessTimer;
     end;
   end;
 end;
@@ -992,14 +1135,6 @@ end;
 
 procedure TProcessor.StepIn;
 begin
-  if not ExtClockSrc then
-  begin
-    FileMap[b0TMR0] := (FileMap[b0TMR0] + 1) and High(Byte);
-    if FileMap[b0TMR0] = 0 then
-    begin
-      // overflow occured
-    end;
-  end;
   ProcessInstruction(CurrentInstruction);
 end;
 

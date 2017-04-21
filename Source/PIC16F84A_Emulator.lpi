@@ -161,7 +161,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="3">
+    <Units Count="4">
       <Unit0>
         <Filename Value="PIC16F84A_Emulator.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -177,6 +177,10 @@
         <Filename Value="ProcessorDefine.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit2>
+      <Unit3>
+        <Filename Value="PinDefine.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit3>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

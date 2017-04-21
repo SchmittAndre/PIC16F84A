@@ -54,6 +54,8 @@ type
     ilMarker: TImageList;
     lbCycles: TLabel;
     lbCyclesTitle: TLabel;
+    lbPreScaler: TLabel;
+    lbPreScalerTitle: TLabel;
     lbWRegister: TLabel;
     lbFlags: TLabel;
     lbWRegisterTitle: TLabel;
@@ -86,12 +88,12 @@ type
     mmMainMenu: TMainMenu;
     pnlControl: TPanel;
     pnlCycles: TPanel;
+    pnlPreScaler: TPanel;
     pnlWRegister: TPanel;
     pnlInfo: TPanel;
     pnlCenter: TPanel;
     pmMain: TPopupMenu;
     pnlFlags: TPanel;
-    spltPorts: TSplitter;
     spltMemory: TSplitter;
     spltPeripherals: TSplitter;
     sbStatus: TStatusBar;
@@ -141,6 +143,9 @@ type
     procedure synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
       Markup: TSynSelectedColor);
   private
+    FPreScaler: Byte;
+    procedure SetPreScaler(AValue: Byte);
+  private
     FMemViewColumns: Cardinal;
     FCycles: Cardinal;
     FWRegister: Byte;
@@ -186,6 +191,7 @@ type
     property Compiled: Boolean read FCompiled write SetCompiled;
     property Cycles: Cardinal read FCycles write SetCycles;
     property Flags: TProcessor.TCalcFlags read FFlags write SetFlags;
+    property PreScaler: Byte read FPreScaler write SetPreScaler;
     property WRegister: Byte read FWRegister write SetWRegister;
     property MemViewColumns: Cardinal read FMemViewColumns write SetMemViewColumns;
     property MemViewType: TProcessor.TMemoryType read GetMemViewType write SetMemViewType;
@@ -512,7 +518,7 @@ end;
 
 procedure TfrmMain.actStepOutUpdate(Sender: TObject);
 begin
-  actStepOut.Enabled := Compiled and not FProcessor.Running;
+  actStepOut.Enabled := Compiled and not FProcessor.Running and (FProcessor.PCStackPos <> 0);
 end;
 
 procedure TfrmMain.actStepOverExecute(Sender: TObject);
@@ -779,6 +785,14 @@ begin
   end;
 end;
 
+procedure TfrmMain.SetPreScaler(AValue: Byte);
+begin
+  if FPreScaler = AValue then
+    Exit;
+  FPreScaler := AValue;
+  lbPreScaler.Caption := Format('%.2x/%d', [PreScaler, PreScaler]);
+end;
+
 procedure TfrmMain.SetLineFollowMode(AValue: TLineFollowMode);
 begin
   if FLineFollowMode = AValue then
@@ -849,6 +863,7 @@ procedure TfrmMain.UpdateALUInfo;
 begin
   WRegister := FProcessor.WRegister;
   Flags := FProcessor.CalcFlags;
+  PreScaler := FProcessor.PreScaler;
 end;
 
 procedure TfrmMain.UpdateSynEditScroll;
@@ -889,13 +904,10 @@ procedure TfrmMain.InitSpecialFunction;
 var
   I: Integer;
 begin
-  sgSpecialFunction.TitleFont := Font;
-  sgSpecialFunction.Rows[0][0] := 'Adress';
+  sgSpecialFunction.Columns.Add.Title.Caption := 'Register';
   for I := 0 to 7 do
-    with sgSpecialFunction.Columns.Add do
-    begin
-      Title.Caption := Format('%.2x', [I]);
-    end;
+    sgSpecialFunction.Columns.Add.Title.Caption := Format('%d', [I]);
+
   UpdateSpecialFunction;
   sgSpecialFunction.AutoSizeColumns;
 end;
@@ -909,10 +921,7 @@ begin
   sgMemView.TitleFont := Font;
   sgMemView.Columns.Add.Title.Caption := 'Adress';
   for I := 0 to MemViewColumns - 1 do
-    with sgMemView.Columns.Add do
-    begin
-      Title.Caption := Format('%.2x', [I]);
-    end;
+    sgMemView.Columns.Add.Title.Caption := Format('%.2x', [I]);
 
   cbMemorySelection.Clear;
   for T := Low(T) to High(T) do
@@ -951,7 +960,6 @@ begin
   DisableAlign;
   gbPorts.Visible := AValue;
   actTogglePortsVisible.Checked := AValue;
-  spltPorts.Visible := AValue;
   EnableAlign;
 end;
 
@@ -1002,30 +1010,39 @@ end;
 
 procedure TfrmMain.UpdateSpecialFunction;
 var
-
-  C: Cardinal;
-  test: Integer;
+  B: Cardinal;
   R0: TProcessor.TRegisterBank0;
   R1: TProcessor.TRegisterBank1;
 begin
   sgSpecialFunction.BeginUpdate;
-  sgSpecialFunction.RowCount := 24;
+  sgSpecialFunction.RowCount := 1;
   for R0 := Low(R0) to High(R0) do
   begin
-    sgSpecialFunction.Rows[Ord(R0) + 1][0] := TProcessor.RegisterBank0Name[R0];
-    test := sgSpecialFunction.ColCount;
-    for C := 1 to test - 1 do
+    if R0 = b0Unused then
+      Continue;
+    sgSpecialFunction.RowCount := sgSpecialFunction.RowCount + 1;
+    sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][0] := TProcessor.RegisterBank0Name[R0];
+    for B := 0 to 7 do
     begin
-      sgSpecialFunction.Rows[Ord(R0) + 1][C] := '0';
+      if FProcessor.RAMBit[R0, B] then
+        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][B + 1] := '1'
+      else
+        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][B + 1] := '0';
     end;
   end;
   for R1 := Low(R1) to High(R1) do
   begin
-    sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(TProcessor.TRegisterBank1)) + Ord(High(R0)) + 1][0] := FProcessor.RegisterBank1Name[R1];
-    test := sgSpecialFunction.ColCount;
-    for C := 1 to test - 1 do
+    if (R1 = b1Unused) or (R1 in TProcessor.RegisterBank1Mapped) then
+      Continue;
+    sgSpecialFunction.RowCount := sgSpecialFunction.RowCount + 1;
+    sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][0] :=
+      FProcessor.RegisterBank1Name[R1];
+    for B := 0 to 7 do
     begin
-      sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(TProcessor.TRegisterBank1)) + Ord(High(R0)) + 1][C] := '0';
+      if FProcessor.RAMBit[R1, B] then
+        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][B + 1] := '1'
+      else
+        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][B + 1] := '0';
     end;
   end;
   sgSpecialFunction.EndUpdate;
