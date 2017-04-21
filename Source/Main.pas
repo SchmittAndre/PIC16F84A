@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
   StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny,
-  Types, LCLType, SynEditMiscClasses, Math, LazUTF8;
+  Types, LCLType, PairSplitter, SynEditMiscClasses, Math, LazUTF8;
 
 type
 
@@ -335,6 +335,7 @@ begin
             UpdateMemView;
             UpdateCycles;
             UpdateALUInfo;
+            UpdateSpecialFunction;
             UpdateSynEditScroll;
             UpdateSynEditMarkup;
           end;
@@ -359,6 +360,7 @@ procedure TfrmMain.actResetExecute(Sender: TObject);
 begin
   FProcessor.ResetPowerON;
   UpdateMemView;
+  UpdateSpecialFunction;
   UpdateSynEditMarkup;
   UpdateALUInfo;
   UpdateCycles;
@@ -469,6 +471,7 @@ begin
     FProcessor.Start;
   UpdateSynEditMarkup;
   UpdateMemView;
+  UpdateSpecialFunction;
   UpdateActions;
 end;
 
@@ -487,6 +490,7 @@ begin
   UpdateCycles;
   UpdateALUInfo;
   UpdateMemView;
+  UpdateSpecialFunction;
   UpdateSynEditMarkup;
   UpdateSynEditScroll;
 end;
@@ -503,6 +507,7 @@ begin
     UpdateCycles;
     UpdateALUInfo;
     UpdateMemView;
+    UpdateSpecialFunction;
     UpdateSynEditMarkup;
     UpdateSynEditScroll;
   end
@@ -522,6 +527,7 @@ begin
     UpdateCycles;
     UpdateALUInfo;
     UpdateMemView;
+    UpdateSpecialFunction;
     UpdateSynEditMarkup;
     UpdateSynEditScroll;
   end
@@ -1004,29 +1010,56 @@ procedure TfrmMain.UpdateSpecialFunction;
 var
 
   C: Cardinal;
-  test: Integer;
   R0: TProcessor.TRegisterBank0;
   R1: TProcessor.TRegisterBank1;
+  Testbit: Boolean;
+  correctionvalue: Integer;
 begin
   sgSpecialFunction.BeginUpdate;
-  sgSpecialFunction.RowCount := 24;
+  sgSpecialFunction.RowCount := 16;
+  correctionvalue := 0;
   for R0 := Low(R0) to High(R0) do
   begin
-    sgSpecialFunction.Rows[Ord(R0) + 1][0] := TProcessor.RegisterBank0Name[R0];
-    test := sgSpecialFunction.ColCount;
-    for C := 1 to test - 1 do
+    if R0 <> b0Unused then
     begin
-      sgSpecialFunction.Rows[Ord(R0) + 1][C] := '0';
-    end;
+      sgSpecialFunction.Rows[Ord(R0) + 1 - correctionvalue][0] := TProcessor.RegisterBank0Name[R0];
+      for C := 1 to sgSpecialFunction.ColCount-1 do
+      begin
+        Testbit := FProcessor.RAMBit[R0,TProcessor.TBitIndex(C-1)];
+        if Testbit = true then
+        begin
+          sgSpecialFunction.Rows[Ord(R0) + 1 - correctionvalue][C] := '1'
+        end
+        else
+        begin
+          sgSpecialFunction.Rows[Ord(R0) + 1 - correctionvalue][C] := '0';
+        end;
+      end;
+    end
+    else
+    correctionvalue := correctionvalue + 1;
   end;
   for R1 := Low(R1) to High(R1) do
   begin
-    sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(TProcessor.TRegisterBank1)) + Ord(High(R0)) + 1][0] := FProcessor.RegisterBank1Name[R1];
-    test := sgSpecialFunction.ColCount;
-    for C := 1 to test - 1 do
+    if (R1 <> b1Unused) and (R1 <> b1STATUS) and (R1 <> b1IndirectAddr) and (R1 <> b1FSR) and (R1 <> b1INTCON)
+    and (R1 <> b1PCL) and (R1 <> b1PCLATH)then
     begin
-      sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(TProcessor.TRegisterBank1)) + Ord(High(R0)) + 1][C] := '0';
-    end;
+      sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(R1)) + Ord(High(R0)) + 1 - correctionvalue][0] := TProcessor.RegisterBank1Name[R1];
+      for C := 1 to sgSpecialFunction.ColCount - 1 do
+      begin
+        Testbit := FProcessor.RAMBit[R1,TProcessor.TBitIndex(C)];
+        if Testbit = true then
+        begin
+          sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(R1)) + Ord(High(R0)) + 1 - correctionvalue][C] := '1'
+        end
+        else
+        begin
+          sgSpecialFunction.Rows[Ord(R1)-Ord(LOW(R1)) + Ord(High(R0)) + 1 - correctionvalue][C] := '0';
+        end;
+      end;
+    end
+    else
+      correctionvalue := correctionvalue + 1;
   end;
   sgSpecialFunction.EndUpdate;
 end;
