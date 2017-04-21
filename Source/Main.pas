@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
   StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny,
-  Types, LCLType, SynEditMiscClasses, Math, LazUTF8;
+  Types, LCLType, PairSplitter, SynEditMiscClasses, Math, LazUTF8;
 
 type
 
@@ -341,6 +341,7 @@ begin
             UpdateMemView;
             UpdateCycles;
             UpdateALUInfo;
+            UpdateSpecialFunction;
             UpdateSynEditScroll;
             UpdateSynEditMarkup;
           end;
@@ -365,6 +366,7 @@ procedure TfrmMain.actResetExecute(Sender: TObject);
 begin
   FProcessor.ResetPowerON;
   UpdateMemView;
+  UpdateSpecialFunction;
   UpdateSynEditMarkup;
   UpdateALUInfo;
   UpdateCycles;
@@ -475,6 +477,7 @@ begin
     FProcessor.Start;
   UpdateSynEditMarkup;
   UpdateMemView;
+  UpdateSpecialFunction;
   UpdateActions;
 end;
 
@@ -493,6 +496,7 @@ begin
   UpdateCycles;
   UpdateALUInfo;
   UpdateMemView;
+  UpdateSpecialFunction;
   UpdateSynEditMarkup;
   UpdateSynEditScroll;
 end;
@@ -509,6 +513,7 @@ begin
     UpdateCycles;
     UpdateALUInfo;
     UpdateMemView;
+    UpdateSpecialFunction;
     UpdateSynEditMarkup;
     UpdateSynEditScroll;
   end
@@ -528,6 +533,7 @@ begin
     UpdateCycles;
     UpdateALUInfo;
     UpdateMemView;
+    UpdateSpecialFunction;
     UpdateSynEditMarkup;
     UpdateSynEditScroll;
   end

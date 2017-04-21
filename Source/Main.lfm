@@ -84,17 +84,17 @@ object frmMain: TfrmMain
     Left = 208
     Height = 617
     Top = 0
-    Width = 721
+    Width = 728
     Align = alClient
     BevelOuter = bvNone
     ClientHeight = 617
-    ClientWidth = 721
+    ClientWidth = 728
     TabOrder = 1
     object gbPeripherals: TGroupBox
       Left = 5
       Height = 120
       Top = 5
-      Width = 711
+      Width = 718
       Align = alTop
       BorderSpacing.Around = 5
       Caption = 'Peripherals'
@@ -106,7 +106,7 @@ object frmMain: TfrmMain
       Left = 5
       Height = 467
       Top = 145
-      Width = 560
+      Width = 567
       Align = alClient
       BlockTabIndent = 2
       BorderSpacing.Around = 5
@@ -622,12 +622,12 @@ object frmMain: TfrmMain
       Left = 0
       Height = 10
       Top = 130
-      Width = 721
+      Width = 728
       Align = alTop
       ResizeAnchor = akTop
     end
     object pnlControl: TPanel
-      Left = 570
+      Left = 577
       Height = 467
       Top = 145
       Width = 146
@@ -931,10 +931,10 @@ object frmMain: TfrmMain
     end
   end
   object spltMemory: TSplitter
-    Left = 929
+    Left = 936
     Height = 617
     Top = 0
-    Width = 10
+    Width = 3
     Align = alRight
     ResizeAnchor = akRight
   end
