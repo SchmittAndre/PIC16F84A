@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
   StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny,
-  Types, LCLType, PairSplitter, SynEditMiscClasses, Math, LazUTF8;
+  Types, LCLType, SynEditMiscClasses, Math, LazUTF8;
 
 type
 
