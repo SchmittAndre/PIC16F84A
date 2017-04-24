@@ -89,6 +89,7 @@ type
     pnlControl: TPanel;
     pnlCycles: TPanel;
     pnlPreScaler: TPanel;
+    pnlPeripherals: TPanel;
     pnlWRegister: TPanel;
     pnlInfo: TPanel;
     pnlCenter: TPanel;
@@ -131,6 +132,8 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
+    procedure pnlPeripheralsMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure pnlPeripheralsPaint(Sender: TObject);
     procedure sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);
     procedure sgMemViewPrepareCanvas(Sender: TObject; aCol, aRow: Integer; aState: TGridDrawState);
     function synCompletionMeasureItem(const AKey: string; ACanvas: TCanvas; {%H-}Selected: boolean;
@@ -590,6 +593,61 @@ end;
 procedure TfrmMain.FormDropFiles(Sender: TObject; const FileNames: array of String);
 begin
   // TODO: Load dropped file
+end;
+
+procedure TfrmMain.pnlPeripheralsMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+begin
+
+end;
+
+procedure TfrmMain.pnlPeripheralsPaint(Sender: TObject);
+
+type
+  TRing = (rnBlue, rnYellow, rnBlack, rnGreen, rnRed);
+
+const
+  RingColor: array [TRing] of TColor = ($C88500, $00C3F3, $000000, $3D9E00, $2400E0);
+  RingPos: array [TRing] of TPoint = (
+    (X: 10; Y: 10),
+    (X: 40; Y: 40),
+    (X: 70; Y: 10),
+    (X: 100; Y: 40),
+    (X: 130; Y: 10)
+  );
+  RingSliceA: array [TRing] of array [0 .. 1] of Integer = (
+    (-1, ),
+    (),
+    (),
+    (),
+    ()
+  );
+  RingSliceB: array [TRing] of array [0 .. 1] of Integer = (
+    (),
+    (),
+    (),
+    (),
+    ()
+  );
+
+var
+  R: TRing;
+begin
+  with pnlPeripherals.Canvas do
+  begin
+    Brush.Style := bsClear;
+    Pen.Width := 5;
+    Pen.Style := psSolid;
+    for R := Low(R) to High(R) do
+    begin
+      Pen.Color := RingColor[R];
+      Arc(RingPos[R].X, RingPos[R].Y, RingPos[R].X + 50, RingPos[R].Y + 50, RingSliceA[R] * 720, RingSliceA[R] * 720);
+    end;
+    for R := Low(R) to High(R) do
+    begin
+      Pen.Color := RingColor[R];
+      Arc(RingPos[R].X, RingPos[R].Y, RingPos[R].X + 50, RingPos[R].Y + 50, RingSliceB[R] * 720, RingSliceB[R] * 720);
+    end;
+  end;
 end;
 
 procedure TfrmMain.sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);

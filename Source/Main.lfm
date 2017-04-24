@@ -20,20 +20,20 @@ object frmMain: TfrmMain
   Visible = False
   object gbMemory: TGroupBox
     Left = 944
-    Height = 612
+    Height = 601
     Top = 5
     Width = 201
     Align = alRight
     BorderSpacing.Around = 5
     Caption = 'Memory'
-    ClientHeight = 592
+    ClientHeight = 576
     ClientWidth = 197
     Constraints.MinWidth = 201
     TabOrder = 2
     object sgMemView: TStringGrid
       Left = 5
-      Height = 554
-      Top = 33
+      Height = 533
+      Top = 38
       Width = 187
       Align = alClient
       AutoEdit = False
@@ -62,12 +62,12 @@ object frmMain: TfrmMain
     end
     object cbMemorySelection: TComboBox
       Left = 5
-      Height = 23
+      Height = 28
       Top = 5
       Width = 187
       Align = alTop
       BorderSpacing.Around = 5
-      ItemHeight = 15
+      ItemHeight = 20
       ItemIndex = 0
       Items.Strings = (
         'RAM'
@@ -82,12 +82,12 @@ object frmMain: TfrmMain
   end
   object pnlCenter: TPanel
     Left = 208
-    Height = 622
+    Height = 611
     Top = 0
     Width = 728
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 622
+    ClientHeight = 611
     ClientWidth = 728
     TabOrder = 1
     object gbPeripherals: TGroupBox
@@ -98,13 +98,27 @@ object frmMain: TfrmMain
       Align = alTop
       BorderSpacing.Around = 5
       Caption = 'Peripherals'
+      ClientHeight = 95
+      ClientWidth = 714
       Constraints.MinHeight = 120
       ParentBidiMode = False
       TabOrder = 0
+      object pnlPeripherals: TPanel
+        Left = 0
+        Height = 95
+        Top = 0
+        Width = 714
+        Align = alClient
+        BevelOuter = bvNone
+        ParentColor = False
+        TabOrder = 0
+        OnMouseMove = pnlPeripheralsMouseMove
+        OnPaint = pnlPeripheralsPaint
+      end
     end
     inline synEditor: TSynEdit
       Left = 5
-      Height = 472
+      Height = 461
       Top = 145
       Width = 567
       Align = alClient
@@ -645,7 +659,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'File'
-        ClientHeight = 129
+        ClientHeight = 124
         ClientWidth = 130
         TabOrder = 0
         object btnSave: TButton
@@ -697,7 +711,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'Control'
-        ClientHeight = 161
+        ClientHeight = 156
         ClientWidth = 130
         TabOrder = 1
         object btnStartStop: TButton
@@ -759,7 +773,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'State-Info'
-        ClientHeight = 100
+        ClientHeight = 95
         ClientWidth = 130
         TabOrder = 2
         object pnlWRegister: TPanel
@@ -776,7 +790,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 14
+            Width = 17
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'W:'
@@ -784,10 +798,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbWRegister: TLabel
-            Left = 19
+            Left = 22
             Height = 25
             Top = 0
-            Width = 106
+            Width = 103
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -810,7 +824,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 30
+            Width = 37
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Flags:'
@@ -818,10 +832,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbFlags: TLabel
-            Left = 35
+            Left = 42
             Height = 25
             Top = 0
-            Width = 90
+            Width = 83
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -844,7 +858,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 37
+            Width = 44
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Cycles:'
@@ -852,10 +866,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbCycles: TLabel
-            Left = 42
+            Left = 49
             Height = 25
             Top = 0
-            Width = 83
+            Width = 76
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -878,7 +892,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 50
+            Width = 62
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Prescaler:'
@@ -886,10 +900,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbPreScaler: TLabel
-            Left = 55
+            Left = 67
             Height = 25
             Top = 0
-            Width = 70
+            Width = 58
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -903,13 +917,13 @@ object frmMain: TfrmMain
   end
   object gbPorts: TGroupBox
     Left = 5
-    Height = 612
+    Height = 601
     Top = 5
     Width = 198
     Align = alLeft
     BorderSpacing.Around = 5
     Caption = 'Ports'
-    ClientHeight = 592
+    ClientHeight = 576
     ClientWidth = 194
     TabOrder = 0
     object sgSpecialFunction: TStringGrid
@@ -932,7 +946,7 @@ object frmMain: TfrmMain
   end
   object spltMemory: TSplitter
     Left = 936
-    Height = 622
+    Height = 611
     Top = 0
     Width = 3
     Align = alRight
@@ -940,8 +954,8 @@ object frmMain: TfrmMain
   end
   object sbStatus: TStatusBar
     Left = 0
-    Height = 23
-    Top = 622
+    Height = 29
+    Top = 611
     Width = 1150
     Panels = <>
   end
