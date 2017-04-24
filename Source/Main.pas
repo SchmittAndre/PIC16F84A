@@ -969,7 +969,7 @@ var
   I: Integer;
 begin
   sgSpecialFunction.Columns.Add.Title.Caption := 'Register';
-  for I := 0 to 7 do
+  for I := 7 downto 0 do
     sgSpecialFunction.Columns.Add.Title.Caption := Format('%d', [I]);
 
   UpdateSpecialFunction;
@@ -1089,9 +1089,9 @@ begin
     for B := 0 to 7 do
     begin
       if FProcessor.RAMBit[R0, B] then
-        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][B + 1] := '1'
+        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][(7 - B) + 1] := '1'
       else
-        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][B + 1] := '0';
+        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][(7 - B) + 1] := '0';
     end;
   end;
   for R1 := Low(R1) to High(R1) do
@@ -1104,9 +1104,9 @@ begin
     for B := 0 to 7 do
     begin
       if FProcessor.RAMBit[R1, B] then
-        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][B + 1] := '1'
+        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][(7 - B) + 1] := '1'
       else
-        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][B + 1] := '0';
+        sgSpecialFunction.Rows[sgSpecialFunction.RowCount - 1][(7 - B) + 1] := '0';
     end;
   end;
   sgSpecialFunction.EndUpdate;

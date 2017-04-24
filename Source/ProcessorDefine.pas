@@ -18,6 +18,8 @@ type
     StackSize = 8;
     // Program Memory
     ProgramMemorySize = $400;
+    //Intersrupt entry ardress
+    InterruptEntryAdress = $004;
     // Ram
     FileMapOffset = $80;
     RAMStart = $0C;
@@ -209,7 +211,7 @@ type
     );
     {$ENDREGION}
 
-    {$REGION Special Funktions}
+    {$REGION Special Functions}
       RegisterBank0Name: array [TRegisterBank0] of String = (
         'INDF',
         'TMR0',
@@ -222,7 +224,7 @@ type
         'EEDATA',
         'EEADR',
         'PCLATH',
-        'INTCOUNT'
+        'INTCOUN'
       );
       RegisterBank1Name: array [TRegisterBank1] of String = (
         'INDF',
@@ -301,7 +303,8 @@ type
     FInstructionArray: array [TInstruction] of TInstructionType;
 
     class constructor Create;
-
+    function GetEEWriteDoneInterruptFlag: Boolean;
+    procedure SetEEWriteDoneInterruptFlag(AValue: Boolean);
   private
     // Program
     FProgramCounter: TProgramCounter;
@@ -364,6 +367,22 @@ type
     function GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean; overload;
     function GetFlag(P: TRegisterBank1; ABit: TBitIndex): Boolean; overload;
     function GetZeroFlag: Boolean;
+    function GetGlobalInterruptEnable: Boolean;
+    procedure SetGlobalInterruptEnable(AValue: Boolean);
+    function GetEEWriteDoneInterruptEnable: Boolean;
+    function GetExternalInterruptEnable: Boolean;
+    function GetExternalInterruptFlag: Boolean;
+    function GetPortBInterruptChangeEnable: Boolean;
+    function GetPortBInterruptChangeFlag: Boolean;
+    function GetTimer0InterruptEnable: Boolean;
+    function GetTimer0InterruptFlag: Boolean;
+    procedure SetEEWriteDoneInterruptEnable(AValue: Boolean);
+    procedure SetExternalInterruptEnable(AValue: Boolean);
+    procedure SetExternalInterruptFlag(AValue: Boolean);
+    procedure SetPortBInterruptChangeEnable(AValue: Boolean);
+    procedure SetPortBInterruptChangeFlag(AValue: Boolean);
+    procedure SetTimer0InterruptEnable(AValue: Boolean);
+    procedure SetTimer0InterruptFlag(AValue: Boolean);
     procedure SetBreakpoint(ALine: Cardinal; AValue: Boolean);
     procedure SetCarryFlag(AValue: Boolean);
     procedure SetDigitCarryFlag(AValue: Boolean);
@@ -392,6 +411,15 @@ type
     property ExtClockSrc: Boolean read GetExtClockSrc write SetExtClockSrc;
     property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
     property PreScalerAssignment: TPreScalerAssignment read GetPreScalerAssignment write SetPreScalerAssignment;
+    property GlobalInterruptEnable: Boolean read GetGlobalInterruptEnable write SetGlobalInterruptEnable;
+    property EEWriteDoneInterruptEnable: Boolean read GetEEWriteDoneInterruptEnable write SetEEWriteDoneInterruptEnable;
+    property Timer0InterruptEnable: Boolean read GetTimer0InterruptEnable write SetTimer0InterruptEnable;
+    property ExternalInterruptEnable: Boolean read GetExternalInterruptEnable write SetExternalInterruptEnable;
+    property PortBInterruptChangeEnable: Boolean read GetPortBInterruptChangeEnable write SetPortBInterruptChangeEnable;
+    property Timer0InterruptFlag: Boolean read GetTimer0InterruptFlag write SetTimer0InterruptFlag;
+    property ExternalInterruptFlag: Boolean read GetExternalInterruptFlag write SetExternalInterruptFlag;
+    property PortBInterruptChangeFlag: Boolean read GetPortBInterruptChangeFlag write SetPortBInterruptChangeFlag;
+    property EEWriteDoneInterruptFlag: Boolean read GetEEWriteDoneInterruptFlag write SetEEWriteDoneInterruptFlag;
 
     property PreScalerMax: Byte read GetPreScalerMax; // returns 0 instead of 256, as the byte perfectly overflows
 
@@ -419,6 +447,7 @@ type
     function PopStack: TProgramCounter;
 
     procedure ProcessTimer(ACount: Cardinal = 1);
+    procedure CheckTimer0Overflow;
 
     // Pin-Reader
     function OnReadPortA(APin: Cardinal): Boolean;
@@ -514,7 +543,7 @@ type
     procedure InstructionGOTO(AInstruction: TInstruction);
     procedure InstructionIORLW(AInstruction: TInstruction);
     procedure InstructionMOVLW(AInstruction: TInstruction);
-    // TODO: procedure InstructionRETFIE(AInstruction: TInstruction);
+    procedure InstructionRETFIE(AInstruction: TInstruction);
     procedure InstructionRETLW(AInstruction: TInstruction);
     procedure InstructionRETURN({%H-}AInstruction: TInstruction);
     // TODO: procedure InstructionSLEEP(AInstruction: TInstruction);
@@ -552,6 +581,96 @@ begin
       FInstructionArray[InstructionInfo[T].Instruction or I] := T;
     end;
   end;
+end;
+
+function TProcessor.GetEEWriteDoneInterruptFlag: Boolean;
+begin
+  Result := Flag[b1EECON1, 4];
+end;
+
+procedure TProcessor.SetEEWriteDoneInterruptFlag(AValue: Boolean);
+begin
+  Flag[b1EECON1, 4] := AValue;
+end;
+
+function TProcessor.GetEEWriteDoneInterruptEnable: Boolean;
+begin
+  Result := Flag[b0INTCON, 6];
+end;
+
+function TProcessor.GetExternalInterruptEnable: Boolean;
+begin
+  Result := Flag[b0INTCON, 4];
+end;
+
+function TProcessor.GetExternalInterruptFlag: Boolean;
+begin
+  Result := Flag[b0INTCON, 1];
+end;
+
+function TProcessor.GetPortBInterruptChangeEnable: Boolean;
+begin
+  Result := Flag[b0INTCON, 3];
+end;
+
+function TProcessor.GetPortBInterruptChangeFlag: Boolean;
+begin
+  Result := Flag[b0INTCON, 0];
+end;
+
+function TProcessor.GetTimer0InterruptEnable: Boolean;
+begin
+  Result := Flag[b0INTCON, 5];
+end;
+
+function TProcessor.GetTimer0InterruptFlag: Boolean;
+begin
+  Result := Flag[b0INTCON, 2];
+end;
+
+procedure TProcessor.SetEEWriteDoneInterruptEnable(AValue: Boolean);
+begin
+  Flag[b0INTCON, 6] := AValue;
+end;
+
+procedure TProcessor.SetExternalInterruptEnable(AValue: Boolean);
+begin
+  Flag[b0INTCON, 4] := AValue;
+end;
+
+procedure TProcessor.SetExternalInterruptFlag(AValue: Boolean);
+begin
+  Flag[b0INTCON, 1] := AValue;
+end;
+
+procedure TProcessor.SetPortBInterruptChangeEnable(AValue: Boolean);
+begin
+  Flag[b0INTCON, 3] := AValue;
+end;
+
+procedure TProcessor.SetPortBInterruptChangeFlag(AValue: Boolean);
+begin
+  Flag[b0INTCON, 0] := AValue;
+end;
+
+procedure TProcessor.SetTimer0InterruptEnable(AValue: Boolean);
+begin
+  Flag[b0INTCON, 5] := AValue;
+end;
+
+procedure TProcessor.SetTimer0InterruptFlag(AValue: Boolean);
+begin
+  Flag[b0INTCON, 2] := AValue;
+end;
+
+function TProcessor.GetGlobalInterruptEnable: Boolean;
+begin
+  Result := Flag[b0INTCON, 7];
+end;
+
+procedure TProcessor.SetGlobalInterruptEnable(AValue: Boolean);
+begin
+  Flag[b0INTCON, 7] := AValue;
 end;
 
 function TProcessor.GetPreScalerAssignment: TPreScalerAssignment;
@@ -977,7 +1096,8 @@ begin
           begin
             FPreScaler := 0;
             // using FileMap here will set the inhibit
-            FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+              FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+              CheckTimer0Overflow;
           end;
         end;
       end;
@@ -992,13 +1112,23 @@ begin
         if not ExtClockSrc and (FInhibitTimer0 > 0) then
           Dec(FInhibitTimer0)
         else
+        begin
           // using FileMap here will set the inhibit
           FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+          CheckTimer0Overflow;
+        end;
+
       end;
 
       // TODO: WDT selected for PreScaler
     end;
   end;
+end;
+
+procedure TProcessor.CheckTimer0Overflow;
+begin
+  if FRAM[Ord(b0TMR0)] = 0 then
+    Timer0InterruptFlag := True;
 end;
 
 function TProcessor.OnReadPortA(APin: Cardinal): Boolean;
@@ -1135,6 +1265,19 @@ end;
 
 procedure TProcessor.StepIn;
 begin
+  if GlobalInterruptEnable then
+  begin
+    if (EEWriteDoneInterruptEnable and EEWriteDoneInterruptFlag) or
+       (Timer0InterruptEnable and Timer0InterruptFlag) or
+       (ExternalInterruptEnable and ExternalInterruptFlag) or
+       (PortBInterruptChangeEnable and PortBInterruptChangeFlag)
+    then
+    begin
+      GlobalInterruptEnable := False;
+      PushStack(FProgramCounter);
+      FProgramCounter := InterruptEntryAdress;
+    end;
+  end;
   ProcessInstruction(CurrentInstruction);
 end;
 
@@ -1537,6 +1680,12 @@ procedure TProcessor.InstructionMOVLW(AInstruction: TInstruction);
 begin
   FWRegister := ExtractByteLiteral(AInstruction);
   ZeroFlag := FWRegister = 0;
+end;
+
+procedure TProcessor.InstructionRETFIE(AInstruction: TInstruction);
+begin
+  FProgramCounter := PopStack;
+  GlobalInterruptEnable:= True;
 end;
 
 procedure TProcessor.InstructionRETLW(AInstruction: TInstruction);
