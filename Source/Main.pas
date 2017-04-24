@@ -614,21 +614,6 @@ const
     (X: 100; Y: 40),
     (X: 130; Y: 10)
   );
-  RingSliceA: array [TRing] of array [0 .. 1] of Integer = (
-    (-1, ),
-    (),
-    (),
-    (),
-    ()
-  );
-  RingSliceB: array [TRing] of array [0 .. 1] of Integer = (
-    (),
-    (),
-    (),
-    (),
-    ()
-  );
-
 var
   R: TRing;
 begin
@@ -640,12 +625,7 @@ begin
     for R := Low(R) to High(R) do
     begin
       Pen.Color := RingColor[R];
-      Arc(RingPos[R].X, RingPos[R].Y, RingPos[R].X + 50, RingPos[R].Y + 50, RingSliceA[R] * 720, RingSliceA[R] * 720);
-    end;
-    for R := Low(R) to High(R) do
-    begin
-      Pen.Color := RingColor[R];
-      Arc(RingPos[R].X, RingPos[R].Y, RingPos[R].X + 50, RingPos[R].Y + 50, RingSliceB[R] * 720, RingSliceB[R] * 720);
+      Ellipse(RingPos[R].X, RingPos[R].Y, RingPos[R].X + 50, RingPos[R].Y + 50);
     end;
   end;
 end;
