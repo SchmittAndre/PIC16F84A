@@ -211,7 +211,7 @@ type
     );
     {$ENDREGION}
 
-    {$REGION Special Funktions}
+    {$REGION Special Functions}
       RegisterBank0Name: array [TRegisterBank0] of String = (
         'INDF',
         'TMR0',
@@ -224,7 +224,7 @@ type
         'EEDATA',
         'EEADR',
         'PCLATH',
-        'INTCOUNT'
+        'INTCOUN'
       );
       RegisterBank1Name: array [TRegisterBank1] of String = (
         'INDF',
@@ -447,6 +447,7 @@ type
     function PopStack: TProgramCounter;
 
     procedure ProcessTimer(ACount: Cardinal = 1);
+    procedure CheckTimer0Overflow;
 
     // Pin-Reader
     function OnReadPortA(APin: Cardinal): Boolean;
@@ -1095,7 +1096,8 @@ begin
           begin
             FPreScaler := 0;
             // using FileMap here will set the inhibit
-            FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+              FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+              CheckTimer0Overflow;
           end;
         end;
       end;
@@ -1110,13 +1112,23 @@ begin
         if not ExtClockSrc and (FInhibitTimer0 > 0) then
           Dec(FInhibitTimer0)
         else
+        begin
           // using FileMap here will set the inhibit
           FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+          CheckTimer0Overflow;
+        end;
+
       end;
 
       // TODO: WDT selected for PreScaler
     end;
   end;
+end;
+
+procedure TProcessor.CheckTimer0Overflow;
+begin
+  if FRAM[Ord(b0TMR0)] = 0 then
+    Timer0InterruptFlag := True;
 end;
 
 function TProcessor.OnReadPortA(APin: Cardinal): Boolean;
