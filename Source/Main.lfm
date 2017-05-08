@@ -6,7 +6,7 @@ object frmMain: TfrmMain
   ActiveControl = sgSpecialFunction
   AllowDropFiles = True
   Caption = 'PIC16F84A Emulator'
-  ClientHeight = 665
+  ClientHeight = 645
   ClientWidth = 1150
   Constraints.MinHeight = 665
   Menu = mmMainMenu
@@ -17,7 +17,6 @@ object frmMain: TfrmMain
   PopupMenu = pmMain
   Position = poDesktopCenter
   LCLVersion = '1.6.4.0'
-  Visible = False
   object gbMemory: TGroupBox
     Left = 944
     Height = 612
@@ -1031,6 +1030,12 @@ object frmMain: TfrmMain
         Action = actStepOut
       end
     end
+    object miHelpHeader: TMenuItem
+      Caption = 'Help'
+      object miHelp: TMenuItem
+        Action = actHelp
+      end
+    end
   end
   object pmMain: TPopupMenu
     left = 360
@@ -1142,6 +1147,10 @@ object frmMain: TfrmMain
       OnExecute = actCompileExecute
       OnUpdate = actCompileUpdate
       ShortCut = 16504
+    end
+    object actHelp: TAction
+      Caption = 'Help'
+      OnExecute = actHelpExecute
     end
   end
   object synCompletion: TSynCompletion
