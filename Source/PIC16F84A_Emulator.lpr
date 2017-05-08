@@ -6,7 +6,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, Main, ProcessorDefine, PinDefine
+  Forms, Main, ProcessorDefine, PinDefine, PeripheralFormDefine, PeripheralLEDArray
   { you can add units after this };
 
 {$R *.res}

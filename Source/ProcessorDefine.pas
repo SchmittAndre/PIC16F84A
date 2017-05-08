@@ -303,8 +303,7 @@ type
     FInstructionArray: array [TInstruction] of TInstructionType;
 
     class constructor Create;
-    function GetEEWriteDoneInterruptFlag: Boolean;
-    procedure SetEEWriteDoneInterruptFlag(AValue: Boolean);
+
   private
     // Program
     FProgramCounter: TProgramCounter;
@@ -324,9 +323,9 @@ type
     FROM: array [TROMPointer] of Byte;
 
     // Pins
-    FPortA: array [TPortAPin] of TPin;
-    FPortB: array [TPortBPin] of TPin;
-    FMasterClear: TPin;
+    FPortAPin: array [TPortAPin] of TPin;
+    FPortBPin: array [TPortBPin] of TPin;
+    FMasterClearPin: TPin;
 
     // Function Pointer
     FMethods: array [TInstructionType] of TInstructionMethod;
@@ -353,8 +352,8 @@ type
     function GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
     function GetCode(P: TProgramCounter): TLineInstruction;
     function GetPCStackMem(P: TProgramCounterStackPointer): Byte;
-    function GetPortA(APin: TPortAPin): TPin;
-    function GetPortB(APin: TPortBPin): TPin;
+    function GetPortAPin(APin: TPortAPin): TPin;
+    function GetPortBPin(APin: TPortBPin): TPin;
     function GetProgramMem(P: TProgramMemPointer): Byte;
     function GetTimeBehind: Single;
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
@@ -400,11 +399,14 @@ type
     function GetPreScalerAssignment: TPreScalerAssignment;
     function GetPreScalerMax: Byte;
     procedure SetPreScalerAssignment(AValue: TPreScalerAssignment);
+    function GetEEWriteDoneInterruptFlag: Boolean;
+    procedure SetEEWriteDoneInterruptFlag(AValue: Boolean);
 
     procedure SetSpeedFactor(AValue: Single);
 
     property FileMap[P: TRAMPointer]: Byte read GetFileMap write SetFileMap;
     property Flag[P: TRAMPointer; ABit: TBitIndex]: Boolean read GetFlag write SetFlag;
+
     property CarryFlag: Boolean read GetCarryFlag write SetCarryFlag;
     property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
@@ -449,9 +451,8 @@ type
     procedure ProcessTimer(ACount: Cardinal = 1);
     procedure CheckTimer0Overflow;
 
-    // Pin-Reader
-    function OnReadPortA(APin: Cardinal): Boolean;
-    function OnReadPortB(APin: Cardinal): Boolean;
+    procedure OnPortAChanged(APin: Cardinal);
+    procedure OnPortBChanged(APin: Cardinal);
 
   public
     constructor Create;
@@ -491,9 +492,9 @@ type
     property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
     property CalcFlags: TCalcFlags read GetCalcFlags;
 
-    property PortA[APin: TPortAPin]: TPin read GetPortA;
-    property PortB[APin: TPortBPin]: TPin read GetPortB;
-    property MasterClear: TPin read FMasterClear;
+    property PortAPin[APin: TPortAPin]: TPin read GetPortAPin;
+    property PortBPin[APin: TPortBPin]: TPin read GetPortBPin;
+    property MasterClearPin: TPin read FMasterClearPin;
 
     property ReadAsZero[AType: TMemoryType; APos: Cardinal]: Boolean read GetReadAsZero;
     property Memory[AType: TMemoryType; APos: Cardinal]: Byte read GetMemory;
@@ -792,13 +793,25 @@ begin
 end;
 
 procedure TProcessor.SetFileMap(P: TRAMPointer; AValue: Byte);
+var
+  B: TBitIndex;
+  Diff: Byte;
 begin
   P := NormalizeRAMPointer(P);
 
   if P = Ord(b1TRISA) then
   begin
-    // Update write/read direction
-
+    Diff := FileMap[P] xor AValue;
+    for B := Low(B) to High(B) do
+      if Diff shr B and $01 = 1 then
+        PortAPin[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
+  end
+  else if P = Ord(b1TRISB) then
+  begin
+    Diff := FileMap[P] xor AValue;
+    for B := Low(B) to High(B) do
+      if Diff shr B and $01 = 1 then
+        PortBPin[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
   end;
 
   if P = Ord(b0INDF) then
@@ -925,14 +938,14 @@ begin
     Result := FProgramCounterStack[P div 2] and $FF;
 end;
 
-function TProcessor.GetPortA(APin: TPortAPin): TPin;
+function TProcessor.GetPortAPin(APin: TPortAPin): TPin;
 begin
-  Result := FPortA[APin];
+  Result := FPortAPin[APin];
 end;
 
-function TProcessor.GetPortB(APin: TPortBPin): TPin;
+function TProcessor.GetPortBPin(APin: TPortBPin): TPin;
 begin
-  Result := FPortB[APin];
+  Result := FPortBPin[APin];
 end;
 
 function TProcessor.GetProgramMem(P: TProgramMemPointer): Byte;
@@ -1131,14 +1144,14 @@ begin
     Timer0InterruptFlag := True;
 end;
 
-function TProcessor.OnReadPortA(APin: Cardinal): Boolean;
+procedure TProcessor.OnPortAChanged(APin: Cardinal);
 begin
-  Result := Flag[b0PORTA, APin];
+  Flag[b0PORTA, APin] := PortAPin[APin].State;
 end;
 
-function TProcessor.OnReadPortB(APin: Cardinal): Boolean;
+procedure TProcessor.OnPortBChanged(APin: Cardinal);
 begin
-  Result := Flag[b0PORTB, APin];
+  Flag[b0PORTB, APin] := PortBPin[APin].State;
 end;
 
 constructor TProcessor.Create;
@@ -1159,23 +1172,22 @@ begin
   QueryPerformanceFrequency(FFrequency);
   FSpeedFactor := 1;
   for A := Low(A) to High(A) do
-    FPortA[A] := TPin.Create(A);
+    FPortAPin[A] := TPin.Create(A, OnPortAChanged);
   for B := Low(B) to High(B) do
-    FPortB[B] := TPin.Create(B);
-  FMasterClear := TPin.Create(0, True);
+    FPortBPin[B] := TPin.Create(B, OnPortBChanged);
+  FMasterClearPin := TPin.Create;
 end;
 
 destructor TProcessor.Destroy;
 var
-  A: TPortAPin;
-  B: TPortBPin;
+  Pin: TPin;
 begin
   FBreakpoints.Free;
-  for A := Low(A) to High(A) do
-    FPortA[A].Free;
-  for B := Low(B) to High(B) do
-    FPortB[B].Free;
-  FMasterClear.Free;
+  for Pin in FPortAPin do
+    Pin.Free;
+  for Pin in FPortBPin do
+    Pin.Free;
+  FMasterClearPin.Free;
   inherited;
 end;
 

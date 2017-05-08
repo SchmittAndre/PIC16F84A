@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
   StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny,
-  Types, LCLType, SynEditMiscClasses, Math, LazUTF8;
+  Types, LCLType, SynEditMiscClasses, Math, LazUTF8, Lists, PeripheralLEDArray;
 
 type
 
@@ -17,7 +17,7 @@ type
 
   { TfrmMain }
 
-  TfrmMain = class(TForm)
+  TfrmMain = class (TForm)
     actExit: TAction;
     actCompile: TAction;
     actNew: TAction;
@@ -44,6 +44,7 @@ type
     btnStep: TButton;
     btnStepOver: TButton;
     btnStepOut: TButton;
+    Button1: TButton;
     cbMemorySelection: TComboBox;
     gbControl: TGroupBox;
     gbMemory: TGroupBox;
@@ -127,6 +128,7 @@ type
     procedure actToggleMemoryVisibleExecute(Sender: TObject);
     procedure actTogglePeripheralsVisibleExecute(Sender: TObject);
     procedure actTogglePortsVisibleExecute(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
     procedure cbMemorySelectionChange(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormCreate(Sender: TObject);
@@ -562,6 +564,11 @@ end;
 procedure TfrmMain.actTogglePortsVisibleExecute(Sender: TObject);
 begin
   PortsVisible := not PortsVisible;
+end;
+
+procedure TfrmMain.Button1Click(Sender: TObject);
+begin
+  TPeripheralLEDArray.Create(Self).SetProcessor(FProcessor);
 end;
 
 procedure TfrmMain.cbMemorySelectionChange(Sender: TObject);

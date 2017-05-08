@@ -2,49 +2,159 @@ unit PinDefine;
 
 interface
 
+uses
+  SysUtils, Lists;
+
 type
+
+  { EPinNotWriteable }
+
+  EPinNotWriteable = class (Exception)
+    constructor Create;
+  end;
+
+  { EPinNoChangeHandler }
+
+  EPinNoChangeHandler = class (Exception)
+    constructor Create;
+  end;
 
   { TPin }
 
   TPin = class
   public type
-    TReadEvent = function(AIndex: Cardinal): Boolean of object;
+
+    TOnChange = procedure (AIndex: Cardinal) of object;
+
+    type
+      TPinDirection = (pdWrite, pdRead);
 
   private
-    FDefaultState: Boolean;
-    FOnRead: TReadEvent;
+    FOnChange: TOnChange;
     FIndex: Cardinal;
+    FPinDirection: TPinDirection;
+    FState: Boolean;
+    FConnections: TObjectSet<TPin>;
 
-    function GetConnected: Boolean;
     function GetState: Boolean;
+    procedure SetPinDirection(AValue: TPinDirection);
+    procedure SetState(AValue: Boolean);
+
+    procedure TestForChanges;
 
   public
-    constructor Create(AIndex: Cardinal = 0; ADefaultState: Boolean = False);
+    constructor Create(AIndex: Cardinal = 0; AOnChange: TOnChange = nil);
+    destructor Destroy; override;
 
-    property State: Boolean read GetState;
-    property DefaultState: Boolean read FDefaultState write FDefaultState;
-    property OnRead: TReadEvent read FOnRead write FOnRead;
-    property Connected: Boolean read GetConnected;
+    procedure Connect(APin: TPin);
+    procedure Disconnect(APin: TPin);
+
+    property PinDirection: TPinDirection read FPinDirection write SetPinDirection;
+
+    property State: Boolean read GetState write SetState;
+
   end;
 
 implementation
 
+{ EPinNoChangeHandler }
+
+constructor EPinNoChangeHandler.Create;
+begin
+  inherited Create('Pin cannot be set to "read" without an OnChange-handler');
+end;
+
+{ EPinNotWriteable }
+
+constructor EPinNotWriteable.Create;
+begin
+  inherited Create('Pin is not writeable');
+end;
+
 { TPin }
 
+procedure TPin.SetState(AValue: Boolean);
+var
+  Pin: TPin;
+begin
+  if FState = AValue then
+    Exit;
+  if PinDirection <> pdWrite then
+    raise EPinNotWriteable.Create;
+  FState := AValue;
+  for Pin in FConnections do
+    if Pin.PinDirection = pdRead then
+      Pin.TestForChanges;
+end;
+
+procedure TPin.TestForChanges;
+var
+  FNewState: Boolean;
+begin
+  FNewState := State;
+  if FState <> FNewState then
+  begin
+    FState := FNewState;
+    FOnChange(FIndex);
+  end;
+end;
+
 function TPin.GetState: Boolean;
+var
+  Pin: TPin;
 begin
-  Result := Connected and OnRead(FIndex) or not Connected and FDefaultState;
+  case PinDirection of
+    pdRead:
+    begin
+      for Pin in FConnections do
+        if (Pin.PinDirection = pdWrite) and Pin.FState then
+          Exit(True);
+      Result := False;
+    end;
+    pdWrite:
+      Result := FState;
+  end;
 end;
 
-function TPin.GetConnected: Boolean;
+procedure TPin.SetPinDirection(AValue: TPinDirection);
 begin
-  Result := Assigned(FOnRead);
+  if FPinDirection = AValue then
+    Exit;
+  if not Assigned(FOnChange) and (AValue = pdRead) then
+    raise EPinNoChangeHandler.Create;
+  FPinDirection := AValue;
+  FState := False;
 end;
 
-constructor TPin.Create(AIndex: Cardinal; ADefaultState: Boolean);
+constructor TPin.Create(AIndex: Cardinal; AOnChange: TOnChange);
 begin
   FIndex := AIndex;
-  FDefaultState := ADefaultState;
+  FOnChange := AOnChange;
+  if Assigned(AOnChange) then
+    FPinDirection := pdRead
+  else
+    FPinDirection := pdWrite;
+  FConnections := TObjectSet<TPin>.Create(True);
+end;
+
+destructor TPin.Destroy;
+begin
+  FConnections.Free;
+  inherited Destroy;
+end;
+
+procedure TPin.Connect(APin: TPin);
+begin
+  FConnections.Add(APin);
+  APin.FConnections.Add(Self);
+  APin.TestForChanges;
+end;
+
+procedure TPin.Disconnect(APin: TPin);
+begin
+  FConnections.Del(APin);
+  APin.FConnections.Del(Self);
+  APin.TestForChanges;
 end;
 
 end.
