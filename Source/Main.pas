@@ -20,6 +20,7 @@ type
   TfrmMain = class (TForm)
     actExit: TAction;
     actCompile: TAction;
+    actHelp: TAction;
     actNew: TAction;
     actSaveFileAs: TAction;
     actStepOut: TAction;
@@ -66,6 +67,8 @@ type
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem4: TMenuItem;
+    miHelp: TMenuItem;
+    miHelpHeader: TMenuItem;
     miNew: TMenuItem;
     miFileSplitter1: TMenuItem;
     miCompile: TMenuItem;
@@ -107,6 +110,7 @@ type
     procedure actCompileExecute(Sender: TObject);
     procedure actCompileUpdate(Sender: TObject);
     procedure actExitExecute(Sender: TObject);
+    procedure actHelpExecute(Sender: TObject);
     procedure actHideAllExecute(Sender: TObject);
     procedure actOpenFileExecute(Sender: TObject);
     procedure actOpenFileUpdate(Sender: TObject);
@@ -273,6 +277,11 @@ end;
 procedure TfrmMain.actExitExecute(Sender: TObject);
 begin
   Close;
+end;
+
+procedure TfrmMain.actHelpExecute(Sender: TObject);
+begin
+   raise ENotImplemented.Create('Help is not Implemented');
 end;
 
 procedure TfrmMain.actCompileExecute(Sender: TObject);
