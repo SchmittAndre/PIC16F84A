@@ -14,12 +14,14 @@ type
     FPins: TObjectArray<TPin>;
     FVisiblePinArrays: TObjectArray<TPinArray>;
     FName: String;
+    FSkipUnregister: Boolean;
 
     FOnChange: TPin.TOnChange;
 
     function GetCount: Integer;
     function GetPin(AIndex: Integer): TPin;
     function GetVisiblePinArray(AIndex: Integer): TPinArray;
+    function GetVisiblePinArrayCount: Integer;
     procedure SetCount(AValue: Integer);
 
   public
@@ -28,15 +30,17 @@ type
 
     property Name: String read FName;
 
-    property Pins[AIndex: Integer]: TPin read GetPin;
+    property Pins[AIndex: Integer]: TPin read GetPin; default;
     property Count: Integer read GetCount write SetCount;
 
     property VisiblePinArrays[AIndex: Integer]: TPinArray read GetVisiblePinArray;
-    property VisiblePinArrayCount: Integer read GetCount;
+    property VisiblePinArrayCount: Integer read GetVisiblePinArrayCount;
 
     procedure AddVisiblePinArray(APinArray: TPinArray);
     procedure DelVisiblePinArray(APinArray: TPinArray);
     procedure DelAllVisiblePinArrays;
+
+    procedure SkipUnregister;
   end;
 
   { TfrmVisiblePinSelection }
@@ -52,13 +56,22 @@ type
   private
     FPinArrays: TObjectArray<TPinArray>;
 
+    function GetPinArray(AIndex: Integer): TPinArray;
+    function GetPinArrayCount: Integer;
     procedure LoadPinDevice(APinArray: TPinArray);
     procedure SavePinDevice(APinArray: TPinArray);
+
   public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+
     procedure Execute(APinDevice: TPinArray);
 
     procedure RegisterArray(APinArray: TPinArray);
     procedure UnregisterArray(APinArray: TPinArray);
+
+    property PinArrayCount: Integer read GetPinArrayCount;
+    property PinArrays[AIndex: Integer]: TPinArray read GetPinArray;
   end;
 
 var
@@ -85,6 +98,11 @@ begin
   Result := FVisiblePinArrays[AIndex];
 end;
 
+function TPinArray.GetVisiblePinArrayCount: Integer;
+begin
+  Result := FVisiblePinArrays.Count;
+end;
+
 procedure TPinArray.SetCount(AValue: Integer);
 begin
   while Count > AValue do
@@ -105,7 +123,8 @@ end;
 
 destructor TPinArray.Destroy;
 begin
-  frmVisiblePinSelection.UnregisterArray(Self);
+  if not FSkipUnregister then
+    frmVisiblePinSelection.UnregisterArray(Self);
   FPins.Free;
   FVisiblePinArrays.Free;
   inherited Destroy;
@@ -126,6 +145,11 @@ begin
   FVisiblePinArrays.DelAll;
 end;
 
+procedure TPinArray.SkipUnregister;
+begin
+  FSkipUnregister := True;
+end;
+
 { TfrmVisiblePinSelection }
 
 procedure TfrmVisiblePinSelection.LoadPinDevice(APinArray: TPinArray);
@@ -136,6 +160,16 @@ begin
   clbVisiblePinArrays.Clear;
   for PinArray in FPinArrays do
     clbVisiblePinArrays.AddItem(PinArray.Name, PinArray);
+end;
+
+function TfrmVisiblePinSelection.GetPinArrayCount: Integer;
+begin
+  Result := FPinArrays.Count;
+end;
+
+function TfrmVisiblePinSelection.GetPinArray(AIndex: Integer): TPinArray;
+begin
+  Result := FPinArrays[AIndex];
 end;
 
 procedure TfrmVisiblePinSelection.SavePinDevice(APinArray: TPinArray);
@@ -150,6 +184,22 @@ begin
   end;
 end;
 
+constructor TfrmVisiblePinSelection.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FPinArrays := TObjectArray<TPinArray>.Create(True);
+end;
+
+destructor TfrmVisiblePinSelection.Destroy;
+var
+  PinArray: TPinArray;
+begin
+  for PinArray in FPinArrays do
+    PinArray.SkipUnregister;
+  FPinArrays.Free;
+  inherited Destroy;
+end;
+
 procedure TfrmVisiblePinSelection.Execute(APinDevice: TPinArray);
 begin
   LoadPinDevice(APinDevice);
@@ -159,12 +209,12 @@ end;
 
 procedure TfrmVisiblePinSelection.RegisterArray(APinArray: TPinArray);
 begin
-
+  FPinArrays.Add(APinArray);
 end;
 
 procedure TfrmVisiblePinSelection.UnregisterArray(APinArray: TPinArray);
 begin
-
+  FPinArrays.DelObject(APinArray);
 end;
 
 end.

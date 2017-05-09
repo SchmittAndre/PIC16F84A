@@ -4,7 +4,7 @@ object PeripheralForm: TPeripheralForm
   Top = 0
   Width = 429
   BorderStyle = bsSizeToolWin
-  Caption = 'Peripheral'
+  Caption = 'Peripherals'
   ClientHeight = 331
   ClientWidth = 429
   FormStyle = fsStayOnTop
@@ -29,16 +29,15 @@ object PeripheralForm: TPeripheralForm
     Align = alBottom
     BorderSpacing.Around = 5
     Caption = 'Pin Connections'
-    ClientHeight = 69
+    ClientHeight = 74
     ClientWidth = 415
     TabOrder = 0
     object pbPins: TPaintBox
-      Left = 5
-      Height = 59
-      Top = 5
-      Width = 405
+      Left = 0
+      Height = 74
+      Top = 0
+      Width = 415
       Align = alClient
-      BorderSpacing.Around = 5
       OnDblClick = pbPinsDblClick
       OnPaint = pbPinsPaint
     end

@@ -3,7 +3,7 @@ unit PeripheralFormDefine;
 interface
 
 uses
-  Forms, Classes, SysUtils, FileUtil, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls, ProcessorDefine, PinDefine,
+  Forms, Classes, SysUtils, FileUtil, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls, ProcessorDefine,
   VisiblePinSelectionDefine;
 
 type
@@ -20,6 +20,7 @@ type
     procedure pbPinsPaint(Sender: TObject);
   private
     FPinArray: TPinArray;
+    FPeripheralName: String;
 
     function GetDrawSurfaceHeight: Integer;
     function GetDrawSurfaceWidth: Integer;
@@ -27,22 +28,29 @@ type
     function GetPinSurfaceWidth: Integer;
     procedure SetDrawSurfaceHeight(AValue: Integer);
     procedure SetDrawSurfaceWidth(AValue: Integer);
+    procedure SetPeripheralName(AValue: String);
     procedure SetPinSurfaceHeight(AValue: Integer);
     procedure SetPinSurfaceWidth(AValue: Integer);
 
+    function MakeUniqueName(AName: String): String;
+
   protected
     procedure DrawPeripheral; virtual;
-
-    function GetName: String; virtual; abstract;
+    function GetDefaultPeripheralName: String; virtual; abstract;
+    procedure OnPinChanges({%H-}APinIndex: Cardinal); virtual;
+    property PinArray: TPinArray read FPinArray;
 
   public
     constructor Create(TheOwner: TComponent); override;
+    destructor Destroy; override;
 
     property DrawSurfaceWidth: Integer read GetDrawSurfaceWidth write SetDrawSurfaceWidth;
     property DrawSurfaceHeight: Integer read GetDrawSurfaceHeight write SetDrawSurfaceHeight;
 
     property PinSurfaceWidth: Integer read GetPinSurfaceWidth write SetPinSurfaceWidth;
     property PinSurfaceHeight: Integer read GetPinSurfaceHeight write SetPinSurfaceHeight;
+
+    property PeripheralName: String read FPeripheralName write SetPeripheralName;
 
   end;
 
@@ -64,7 +72,73 @@ begin
 end;
 
 procedure TPeripheralForm.pbPinsPaint(Sender: TObject);
+
+  procedure InitPin;
+  begin
+    with pbPins.Canvas do
+    begin
+      Brush.Style := bsSolid;
+      Brush.Color := $FF4F1F;
+      Pen.Style := psSolid;
+      Pen.Width := 2;
+      Pen.Color := $CF3F1F;
+    end;
+  end;
+
+  procedure InitCaptions;
+  begin
+    with pbPins.Canvas do
+    begin
+      Brush.Style := bsClear;
+      Font.Style := [];
+      Font.Color := clBlack;
+      Font.Name := 'Consolas';
+      Font.Height := 20;
+    end;
+  end;
+
+  procedure DrawPin(X, Y: Integer);
+  begin
+    pbPins.Canvas.Ellipse(X - 6, Y - 6, X + 7, Y + 7);
+  end;
+
+  procedure DrawCaption(X, Y: Integer; ACaption: String);
+  begin
+    pbPins.Canvas.TextOut(X - pbPins.Canvas.TextWidth(ACaption) div 2, Y, ACaption);
+  end;
+
+var
+  I, L, J: Integer;
 begin
+  InitPin;
+  for I := 0 to FPinArray.Count - 1 do
+    DrawPin(15 + I * 30, 30);
+
+  L := 15;
+  for I := 0 to FPinArray.VisiblePinArrayCount - 1 do
+  begin
+    for J := 0 to FPinArray.VisiblePinArrays[I].Count - 1 do
+    begin
+      DrawPin(L, pbPins.Height - 30);
+      L := L + 30;
+    end;
+    L := L + 10;
+  end;
+
+  InitCaptions;
+  for I := 0 to FPinArray.Count - 1 do
+    DrawCaption(15 + I * 30, 0, I.ToString);
+
+  L := 15;
+  for I := 0 to FPinArray.VisiblePinArrayCount - 1 do
+  begin
+    for J := 0 to FPinArray.VisiblePinArrays[I].Count - 1 do
+    begin
+      DrawCaption(L, pbPins.Height - 20, J.ToString);
+      L := L + 30;
+    end;
+    L := L + 10;
+  end;
 
 end;
 
@@ -103,6 +177,15 @@ begin
   Width := Width - DrawSurfaceWidth + AValue;
 end;
 
+procedure TPeripheralForm.SetPeripheralName(AValue: String);
+begin
+  AValue := MakeUniqueName(AValue);
+  if FPeripheralName = AValue then
+    Exit;
+  FPeripheralName := AValue;
+  Caption := 'Perpiheral - ' + PeripheralName;
+end;
+
 procedure TPeripheralForm.SetPinSurfaceHeight(AValue: Integer);
 var
   HeightDiff: Integer;
@@ -121,6 +204,29 @@ begin
   gbPins.Width := gbPins.Width + WidthDiff;
 end;
 
+function TPeripheralForm.MakeUniqueName(AName: String): String;
+var
+  Suffix, I: Integer;
+  Unique: Boolean;
+begin
+  Result := AName;
+  Suffix := 0;
+  repeat
+    Unique := True;
+    for I := 0 to frmVisiblePinSelection.PinArrayCount - 1 do
+    begin
+      if (frmVisiblePinSelection.PinArrays[I] <> FPinArray) and
+         (frmVisiblePinSelection.PinArrays[I].Name = Result) then
+      begin
+        Inc(Suffix);
+        Result := AName + ' [' + Suffix.ToString + ']';
+        Unique := False;
+        Break;
+      end;
+    end;
+  until Unique;
+end;
+
 procedure TPeripheralForm.DrawPeripheral;
 begin
   pbDrawSurface.Canvas.Pen.Style := psClear;
@@ -129,11 +235,23 @@ begin
   pbDrawSurface.Canvas.Rectangle(0, 0, DrawSurfaceWidth, DrawSurfaceHeight);
 end;
 
+procedure TPeripheralForm.OnPinChanges(APinIndex: Cardinal);
+begin
+  // nothing by default
+end;
+
 constructor TPeripheralForm.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
-  Caption := Name;
-  PinSurfaceHeight := 50;
+  PeripheralName := GetDefaultPeripheralName;
+  PinSurfaceHeight := 100;
+  FPinArray := TPinArray.Create(PeripheralName, OnPinChanges, 4);
+end;
+
+destructor TPeripheralForm.Destroy;
+begin
+  FPinArray.Free;
+  inherited Destroy;
 end;
 
 end.

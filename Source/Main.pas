@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
   StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses,
-  Math, LazUTF8, PeripheralLEDArray;
+  Math, LazUTF8, PeripheralLEDArray, PeripheralFormDefine;
 
 type
 
@@ -30,7 +30,6 @@ type
     actSaveFile: TAction;
     actShowAll: TAction;
     actHideAll: TAction;
-    actTogglePeripheralsVisible: TAction;
     actTogglePortsVisible: TAction;
     actStartStop: TAction;
     actToggleMemoryVisible: TAction;
@@ -50,7 +49,6 @@ type
     gbControl: TGroupBox;
     gbMemory: TGroupBox;
     gbPorts: TGroupBox;
-    gbPeripherals: TGroupBox;
     gbFile: TGroupBox;
     gbStateInfo: TGroupBox;
     ilMarker: TImageList;
@@ -82,7 +80,6 @@ type
     miShowAll: TMenuItem;
     miHideAll: TMenuItem;
     miViewSplit1: TMenuItem;
-    miPeripherals: TMenuItem;
     miMemory: TMenuItem;
     miPorts: TMenuItem;
     miView: TMenuItem;
@@ -93,14 +90,12 @@ type
     pnlControl: TPanel;
     pnlCycles: TPanel;
     pnlPreScaler: TPanel;
-    pnlPeripherals: TPanel;
     pnlWRegister: TPanel;
     pnlInfo: TPanel;
     pnlCenter: TPanel;
     pmMain: TPopupMenu;
     pnlFlags: TPanel;
     spltMemory: TSplitter;
-    spltPeripherals: TSplitter;
     sbStatus: TStatusBar;
     sgSpecialFunction: TStringGrid;
     synEditor: TSynEdit;
@@ -130,7 +125,6 @@ type
     procedure actStepOverExecute(Sender: TObject);
     procedure actStepOverUpdate(Sender: TObject);
     procedure actToggleMemoryVisibleExecute(Sender: TObject);
-    procedure actTogglePeripheralsVisibleExecute(Sender: TObject);
     procedure actTogglePortsVisibleExecute(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure cbMemorySelectionChange(Sender: TObject);
@@ -138,8 +132,6 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
-    procedure pnlPeripheralsMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-    procedure pnlPeripheralsPaint(Sender: TObject);
     procedure sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);
     procedure sgMemViewPrepareCanvas(Sender: TObject; aCol, aRow: Integer; aState: TGridDrawState);
     function synCompletionMeasureItem(const AKey: string; ACanvas: TCanvas; {%H-}Selected: boolean;
@@ -188,14 +180,11 @@ type
     procedure SetCompiled(AValue: Boolean);
     procedure SetFlags(AValue: TProcessor.TCalcFlags);
 
-    function GetPeripheralsVisible: Boolean;
     function GetPortsVisible: Boolean;
-    procedure SetPeripheralsVisible(AValue: Boolean);
     procedure SetPortsVisible(AValue: Boolean);
 
     property MemoryVisible: Boolean read GetMemoryVisible write SetMemoryVisible;
     property PortsVisible: Boolean read GetPortsVisible write SetPortsVisible;
-    property PeripheralsVisible: Boolean read GetPeripheralsVisible write SetPeripheralsVisible;
 
     property Compiled: Boolean read FCompiled write SetCompiled;
     property Cycles: Cardinal read FCycles write SetCycles;
@@ -302,7 +291,6 @@ end;
 procedure TfrmMain.actHideAllExecute(Sender: TObject);
 begin
   MemoryVisible := False;
-  PeripheralsVisible := False;
   PortsVisible := False;
 end;
 
@@ -474,7 +462,6 @@ end;
 procedure TfrmMain.actShowAllExecute(Sender: TObject);
 begin
   MemoryVisible := True;
-  PeripheralsVisible := True;
   PortsVisible := True;
 end;
 
@@ -565,11 +552,6 @@ begin
   MemoryVisible := not MemoryVisible;
 end;
 
-procedure TfrmMain.actTogglePeripheralsVisibleExecute(Sender: TObject);
-begin
-  PeripheralsVisible := not PeripheralsVisible;
-end;
-
 procedure TfrmMain.actTogglePortsVisibleExecute(Sender: TObject);
 begin
   PortsVisible := not PortsVisible;
@@ -611,11 +593,7 @@ begin
   // TODO: Load dropped file
 end;
 
-procedure TfrmMain.pnlPeripheralsMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-begin
-
-end;
-
+{
 procedure TfrmMain.pnlPeripheralsPaint(Sender: TObject);
 
 type
@@ -645,6 +623,7 @@ begin
     end;
   end;
 end;
+}
 
 procedure TfrmMain.sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);
 var
@@ -992,25 +971,9 @@ begin
   sgMemView.AutoSizeColumns;
 end;
 
-function TfrmMain.GetPeripheralsVisible: Boolean;
-begin
-  Result := gbPeripherals.Visible;
-end;
-
 function TfrmMain.GetPortsVisible: Boolean;
 begin
   Result := gbPorts.Visible;
-end;
-
-procedure TfrmMain.SetPeripheralsVisible(AValue: Boolean);
-begin
-  if PeripheralsVisible = AValue then
-    Exit;
-  DisableAlign;
-  gbPeripherals.Visible := AValue;
-  actTogglePeripheralsVisible.Checked := AValue;
-  spltPeripherals.Visible := AValue;
-  EnableAlign;
 end;
 
 procedure TfrmMain.SetPortsVisible(AValue: Boolean);
