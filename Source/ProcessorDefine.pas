@@ -11,7 +11,7 @@ type
 
   { TProcessor }
 
-  TProcessor = class
+  TProcessor = class (TInterfacedObject)
   public const
     {$REGION Simple Numerical Constants for Size and such}
     // Stack
@@ -544,7 +544,7 @@ type
     procedure InstructionGOTO(AInstruction: TInstruction);
     procedure InstructionIORLW(AInstruction: TInstruction);
     procedure InstructionMOVLW(AInstruction: TInstruction);
-    procedure InstructionRETFIE(AInstruction: TInstruction);
+    procedure InstructionRETFIE({%H-}AInstruction: TInstruction);
     procedure InstructionRETLW(AInstruction: TInstruction);
     procedure InstructionRETURN({%H-}AInstruction: TInstruction);
     // TODO: procedure InstructionSLEEP(AInstruction: TInstruction);

@@ -4,8 +4,8 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
-  StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny,
-  Types, LCLType, SynEditMiscClasses, Math, LazUTF8, Lists, PeripheralLEDArray;
+  StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses,
+  Math, LazUTF8, PeripheralLEDArray;
 
 type
 
@@ -577,7 +577,7 @@ end;
 
 procedure TfrmMain.Button1Click(Sender: TObject);
 begin
-  TPeripheralLEDArray.Create(Self).SetProcessor(FProcessor);
+  TPeripheralLEDArray.Create(Self);
 end;
 
 procedure TfrmMain.cbMemorySelectionChange(Sender: TObject);

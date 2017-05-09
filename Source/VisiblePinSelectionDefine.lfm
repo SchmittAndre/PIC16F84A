@@ -1,0 +1,106 @@
+object frmVisiblePinSelection: TfrmVisiblePinSelection
+  Left = 0
+  Height = 300
+  Top = 0
+  Width = 250
+  ActiveControl = btnCancel
+  BorderStyle = bsToolWindow
+  Caption = 'Visible Pin Selection'
+  ClientHeight = 300
+  ClientWidth = 250
+  Constraints.MinHeight = 300
+  Constraints.MinWidth = 250
+  Position = poOwnerFormCenter
+  LCLVersion = '1.6.4.0'
+  Visible = False
+  object Panel1: TPanel
+    Left = 5
+    Height = 25
+    Top = 270
+    Width = 240
+    Align = alBottom
+    BorderSpacing.Around = 5
+    BevelOuter = bvNone
+    ClientHeight = 25
+    ClientWidth = 240
+    TabOrder = 0
+    object btnCancel: TButton
+      Left = 165
+      Height = 25
+      Top = 0
+      Width = 75
+      Align = alRight
+      BorderSpacing.Left = 5
+      Cancel = True
+      Caption = 'Cancel'
+      ModalResult = 2
+      TabOrder = 0
+    end
+    object btnOK: TButton
+      Left = 85
+      Height = 25
+      Top = 0
+      Width = 75
+      Align = alRight
+      BorderSpacing.Left = 5
+      Caption = 'OK'
+      Default = True
+      ModalResult = 1
+      TabOrder = 1
+    end
+    object btnUp: TButton
+      Left = 0
+      Height = 25
+      Top = 0
+      Width = 25
+      Align = alLeft
+      BorderSpacing.Right = 5
+      Caption = '▲'
+      TabOrder = 2
+    end
+    object btnDown: TButton
+      Left = 30
+      Height = 25
+      Top = 0
+      Width = 25
+      Align = alLeft
+      BorderSpacing.Right = 5
+      Caption = '▼'
+      TabOrder = 3
+    end
+  end
+  object lbHeader: TLabel
+    Left = 5
+    Height = 20
+    Top = 5
+    Width = 240
+    Align = alTop
+    Alignment = taCenter
+    BorderSpacing.Around = 5
+    Caption = 'I want to connect the [...] to:'
+    ParentColor = False
+    WordWrap = True
+  end
+  object clbVisiblePinArrays: TCheckListBox
+    Left = 5
+    Height = 235
+    Top = 30
+    Width = 240
+    Align = alClient
+    BorderSpacing.Around = 5
+    Items.Strings = (
+      '▼ THIS IS JUST A MOCKUP ▼'
+      'LED-Array'
+      'Stepper Motor'
+      'Button Panel'
+      'Processor PortA'
+      'Processor PortB'
+      'Processor MCLR'
+    )
+    ItemHeight = 21
+    TabOrder = 1
+    Data = {
+      0700000000000000000000
+    }
+  end
+end

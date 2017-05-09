@@ -6,7 +6,8 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, Main, ProcessorDefine, PinDefine, PeripheralFormDefine, PeripheralLEDArray
+  Forms, Main, ProcessorDefine, PinDefine, PeripheralFormDefine, PeripheralLEDArray, LEDDefine, 
+VisiblePinSelectionDefine
   { you can add units after this };
 
 {$R *.res}
@@ -18,6 +19,7 @@ begin
   RequireDerivedFormResource:=True;
   Application.Initialize;
   Application.CreateForm(TfrmMain, frmMain);
+  Application.CreateForm(TfrmVisiblePinSelection, frmVisiblePinSelection);
   Application.Run;
 end.
 

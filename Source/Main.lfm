@@ -1,6 +1,6 @@
 object frmMain: TfrmMain
   Left = 418
-  Height = 665
+  Height = 645
   Top = 206
   Width = 1150
   ActiveControl = sgSpecialFunction
@@ -17,21 +17,22 @@ object frmMain: TfrmMain
   PopupMenu = pmMain
   Position = poDesktopCenter
   LCLVersion = '1.6.4.0'
+  Visible = False
   object gbMemory: TGroupBox
     Left = 944
-    Height = 601
+    Height = 581
     Top = 5
     Width = 201
     Align = alRight
     BorderSpacing.Around = 5
     Caption = 'Memory'
-    ClientHeight = 576
+    ClientHeight = 556
     ClientWidth = 197
     Constraints.MinWidth = 201
     TabOrder = 2
     object sgMemView: TStringGrid
       Left = 5
-      Height = 533
+      Height = 513
       Top = 38
       Width = 187
       Align = alClient
@@ -81,12 +82,12 @@ object frmMain: TfrmMain
   end
   object pnlCenter: TPanel
     Left = 208
-    Height = 611
+    Height = 591
     Top = 0
     Width = 728
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 611
+    ClientHeight = 591
     ClientWidth = 728
     TabOrder = 1
     object gbPeripherals: TGroupBox
@@ -117,7 +118,7 @@ object frmMain: TfrmMain
     end
     inline synEditor: TSynEdit
       Left = 5
-      Height = 461
+      Height = 441
       Top = 145
       Width = 567
       Align = alClient
@@ -916,13 +917,13 @@ object frmMain: TfrmMain
   end
   object gbPorts: TGroupBox
     Left = 5
-    Height = 601
+    Height = 581
     Top = 5
     Width = 198
     Align = alLeft
     BorderSpacing.Around = 5
     Caption = 'Ports'
-    ClientHeight = 576
+    ClientHeight = 556
     ClientWidth = 194
     TabOrder = 0
     object sgSpecialFunction: TStringGrid
@@ -954,7 +955,7 @@ object frmMain: TfrmMain
   end
   object spltMemory: TSplitter
     Left = 936
-    Height = 611
+    Height = 591
     Top = 0
     Width = 3
     Align = alRight
@@ -963,7 +964,7 @@ object frmMain: TfrmMain
   object sbStatus: TStatusBar
     Left = 0
     Height = 29
-    Top = 611
+    Top = 591
     Width = 1150
     Panels = <>
   end
@@ -1158,6 +1159,7 @@ object frmMain: TfrmMain
       ShortCut = 16504
     end
     object actHelp: TAction
+      Category = 'Help'
       Caption = 'Help'
       OnExecute = actHelpExecute
     end

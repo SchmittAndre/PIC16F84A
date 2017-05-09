@@ -138,7 +138,15 @@ begin
 end;
 
 destructor TPin.Destroy;
+var
+  Pin: TPin;
 begin
+  for Pin in FConnections do
+  begin
+    Pin.FConnections.Del(Self);
+    if Pin.PinDirection = pdRead then
+      Pin.TestForChanges;
+  end;
   FConnections.Free;
   inherited Destroy;
 end;

@@ -1,12 +1,12 @@
 object PeripheralForm: TPeripheralForm
   Left = 0
-  Height = 283
+  Height = 331
   Top = 0
-  Width = 256
+  Width = 429
   BorderStyle = bsSizeToolWin
   Caption = 'Peripheral'
-  ClientHeight = 283
-  ClientWidth = 256
+  ClientHeight = 331
+  ClientWidth = 429
   FormStyle = fsStayOnTop
   OnClose = FormClose
   Position = poDesktopCenter
@@ -14,21 +14,33 @@ object PeripheralForm: TPeripheralForm
   Visible = True
   object pbDrawSurface: TPaintBox
     Left = 5
-    Height = 192
+    Height = 222
     Top = 5
-    Width = 246
+    Width = 419
     Align = alClient
     BorderSpacing.Around = 5
     OnPaint = pbDrawSurfacePaint
   end
   object gbPins: TGroupBox
     Left = 5
-    Height = 76
-    Top = 202
-    Width = 246
+    Height = 94
+    Top = 232
+    Width = 419
     Align = alBottom
     BorderSpacing.Around = 5
     Caption = 'Pin Connections'
+    ClientHeight = 69
+    ClientWidth = 415
     TabOrder = 0
+    object pbPins: TPaintBox
+      Left = 5
+      Height = 59
+      Top = 5
+      Width = 405
+      Align = alClient
+      BorderSpacing.Around = 5
+      OnDblClick = pbPinsDblClick
+      OnPaint = pbPinsPaint
+    end
   end
 end
