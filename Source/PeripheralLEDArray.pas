@@ -17,7 +17,7 @@ type
     procedure DrawPeripheral; override;
     function GetDefaultPeripheralName: String; override;
 
-    procedure OnPinChanges(APinIndex: Cardinal); override;
+    procedure OnPinChanged(APinIndex: Cardinal); override;
 
   public
     constructor Create(TheOwner: TComponent); override;
@@ -42,7 +42,7 @@ begin
   Result := 'LED-Array';
 end;
 
-procedure TPeripheralLEDArray.OnPinChanges(APinIndex: Cardinal);
+procedure TPeripheralLEDArray.OnPinChanged(APinIndex: Cardinal);
 begin
   FLEDs[APinIndex].State := PinArray[APinIndex].State;
 end;

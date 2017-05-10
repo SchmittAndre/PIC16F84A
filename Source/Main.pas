@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
   StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses,
-  Math, LazUTF8, PeripheralLEDArray, PeripheralFormDefine;
+  Math, LazUTF8, PeripheralLEDArray, VisiblePinSelectionDefine;
 
 type
 
@@ -144,10 +144,8 @@ type
     procedure synEditorSpecialLineMarkup(Sender: TObject; Line: integer; var Special: boolean;
       Markup: TSynSelectedColor);
   private
-    FPreScaler: Byte;
-    procedure SetPreScaler(AValue: Byte);
-  private
     FMemViewColumns: Cardinal;
+    FPreScaler: Byte;
     FCycles: Cardinal;
     FWRegister: Byte;
     FProcessor: TProcessor;
@@ -166,6 +164,7 @@ type
     procedure SetMemViewColumns(AValue: Cardinal);
     procedure SetCycles(AValue: Cardinal);
     procedure SetWRegister(AValue: Byte);
+    procedure SetPreScaler(AValue: Byte);
 
     procedure SetLineFollowMode(AValue: TLineFollowMode);
     procedure SetLineFollowRange(AValue: Cardinal);
@@ -233,6 +232,7 @@ procedure TfrmMain.FormCreate(Sender: TObject);
   end;
 
 begin
+  frmVisiblePinSelection := TfrmVisiblePinSelection.Create(Self);
   RecursiveDoubleBuffered(Self);
   FProcessor := TProcessor.Create;
   FFileData := TStringList.Create;

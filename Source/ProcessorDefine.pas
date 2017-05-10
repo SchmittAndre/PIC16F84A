@@ -5,7 +5,7 @@ unit ProcessorDefine;
 interface
 
 uses
-  Classes, windows, SysUtils, Dialogs, Lists, PinDefine;
+  Classes, windows, SysUtils, Dialogs, Lists, VisiblePinSelectionDefine, PinDefine;
 
 type
 
@@ -33,6 +33,9 @@ type
     // Timing
     OperationTime = 1e-6;
     OperationFrequeny = 1 / OperationTime;
+    // Ports
+    PortACount = 5;
+    PortBCount = 8;
     {$ENDREGION}
 
   public type
@@ -88,8 +91,6 @@ type
     TRAMPointer = $0 .. $FF;
     TROMPointer = 0 .. ROMSize - 1;
     TBitIndex = 0 .. 7;
-    TPortAPin = 0 .. 4;
-    TPortBPin = 0 .. 7;
     {$ENDREGION}
 
     {$REGION TInstructionType}
@@ -323,9 +324,9 @@ type
     FROM: array [TROMPointer] of Byte;
 
     // Pins
-    FPortAPin: array [TPortAPin] of TPin;
-    FPortBPin: array [TPortBPin] of TPin;
-    FMasterClearPin: TPin;
+    FPortAPins: TPinArray;
+    FPortBPins: TPinArray;
+    FMasterClearPin: TPinArray;
 
     // Function Pointer
     FMethods: array [TInstructionType] of TInstructionMethod;
@@ -352,8 +353,6 @@ type
     function GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
     function GetCode(P: TProgramCounter): TLineInstruction;
     function GetPCStackMem(P: TProgramCounterStackPointer): Byte;
-    function GetPortAPin(APin: TPortAPin): TPin;
-    function GetPortBPin(APin: TPortBPin): TPin;
     function GetProgramMem(P: TProgramMemPointer): Byte;
     function GetTimeBehind: Single;
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
@@ -453,6 +452,7 @@ type
 
     procedure OnPortAChanged(APin: Cardinal);
     procedure OnPortBChanged(APin: Cardinal);
+    procedure OnMasterClearChanged(APin: Cardinal);
 
   public
     constructor Create;
@@ -491,10 +491,6 @@ type
     property PCStack[P: TProgramCounterStackPos]: TProgramCounter read GetPCStack;
     property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
     property CalcFlags: TCalcFlags read GetCalcFlags;
-
-    property PortAPin[APin: TPortAPin]: TPin read GetPortAPin;
-    property PortBPin[APin: TPortBPin]: TPin read GetPortBPin;
-    property MasterClearPin: TPin read FMasterClearPin;
 
     property ReadAsZero[AType: TMemoryType; APos: Cardinal]: Boolean read GetReadAsZero;
     property Memory[AType: TMemoryType; APos: Cardinal]: Byte read GetMemory;
@@ -804,14 +800,14 @@ begin
     Diff := FileMap[P] xor AValue;
     for B := Low(B) to High(B) do
       if Diff shr B and $01 = 1 then
-        PortAPin[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
+        FPortAPins[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
   end
   else if P = Ord(b1TRISB) then
   begin
     Diff := FileMap[P] xor AValue;
     for B := Low(B) to High(B) do
       if Diff shr B and $01 = 1 then
-        PortBPin[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
+        FPortBPins[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
   end;
 
   if P = Ord(b0INDF) then
@@ -938,16 +934,6 @@ begin
     Result := FProgramCounterStack[P div 2] and $FF;
 end;
 
-function TProcessor.GetPortAPin(APin: TPortAPin): TPin;
-begin
-  Result := FPortAPin[APin];
-end;
-
-function TProcessor.GetPortBPin(APin: TPortBPin): TPin;
-begin
-  Result := FPortBPin[APin];
-end;
-
 function TProcessor.GetProgramMem(P: TProgramMemPointer): Byte;
 begin
   if P mod 2 = 0 then
@@ -1069,7 +1055,18 @@ end;
 
 function TProcessor.DoSub(A, B: Byte): Byte;
 begin
-  Result := DoAdd(A, (not B + 1) and $FF);
+  if B = 0 then
+  begin
+    // B = 0000 0000
+    // not B = 1111 1111
+    // + 1 through carry-in of last full adder
+    // AAAA AAAA
+    // 1111 1111+1 -> all the 1s will cause the carry to get all through independent of A, and the result will be A
+    Result := A;
+    CarryFlag := True;
+  end
+  else
+    Result := DoAdd(A, not B + 1); // don't need a 0xFF Mask, as this only happenes for B = 0 and that is spereate
 end;
 
 function TProcessor.NextProgramCounter(ACount: Integer): TProgramCounter;
@@ -1146,20 +1143,23 @@ end;
 
 procedure TProcessor.OnPortAChanged(APin: Cardinal);
 begin
-  Flag[b0PORTA, APin] := PortAPin[APin].State;
+  Flag[b0PORTA, APin] := FPortAPins[APin].State;
 end;
 
 procedure TProcessor.OnPortBChanged(APin: Cardinal);
 begin
-  Flag[b0PORTB, APin] := PortBPin[APin].State;
+  Flag[b0PORTB, APin] := FPortBPins[APin].State;
+end;
+
+procedure TProcessor.OnMasterClearChanged(APin: Cardinal);
+begin
+  // TODO: MCLR
 end;
 
 constructor TProcessor.Create;
 var
   T: TInstructionType;
   M: TMethod;
-  A: TPortAPin;
-  B: TPortBPin;
 begin
   FBreakpoints := TCardinalSet.Create;
   M.Data := Self;
@@ -1171,22 +1171,16 @@ begin
   end;
   QueryPerformanceFrequency(FFrequency);
   FSpeedFactor := 1;
-  for A := Low(A) to High(A) do
-    FPortAPin[A] := TPin.Create(A, OnPortAChanged);
-  for B := Low(B) to High(B) do
-    FPortBPin[B] := TPin.Create(B, OnPortBChanged);
-  FMasterClearPin := TPin.Create;
+  FPortAPins := TPinArray.Create('Port A', OnPortAChanged, PortACount);
+  FPortBPins := TPinArray.Create('Port B', OnPortBChanged, PortBCount);
+  FMasterClearPin := TPinArray.Create('MCLR', OnMasterClearChanged);
 end;
 
 destructor TProcessor.Destroy;
-var
-  Pin: TPin;
 begin
   FBreakpoints.Free;
-  for Pin in FPortAPin do
-    Pin.Free;
-  for Pin in FPortBPin do
-    Pin.Free;
+  FPortAPins.Free;
+  FPortBPins.Free;
   FMasterClearPin.Free;
   inherited;
 end;

@@ -22,20 +22,26 @@ type
   { TPin }
 
   TPin = class
-  public type
-
-    TOnChange = procedure (AIndex: Cardinal) of object;
-
+  public
     type
+
+      TChangeEvent = procedure (AIndex: Cardinal) of object;
+      TConnectionEvent = procedure (AIndex: Cardinal; AOther: TPin) of object;
+
       TPinDirection = (pdWrite, pdRead);
 
   private
-    FOnChange: TOnChange;
+    FOnChange: TChangeEvent;
+    FOnConnect: TConnectionEvent;
+    FOnDisconnect: TConnectionEvent;
+
     FIndex: Cardinal;
     FPinDirection: TPinDirection;
     FState: Boolean;
     FConnections: TObjectSet<TPin>;
 
+    function GetConnection(AIndex: Integer): TPin;
+    function GetConnectionCount: Integer;
     function GetState: Boolean;
     procedure SetPinDirection(AValue: TPinDirection);
     procedure SetState(AValue: Boolean);
@@ -43,13 +49,19 @@ type
     procedure TestForChanges;
 
   public
-    constructor Create(AIndex: Cardinal = 0; AOnChange: TOnChange = nil);
+    constructor Create(AIndex: Cardinal = 0; AOnChange: TChangeEvent = nil);
     destructor Destroy; override;
 
     procedure Connect(APin: TPin);
     procedure Disconnect(APin: TPin);
 
+    property OnConnect: TConnectionEvent read FOnConnect write FOnConnect;
+    property OnDisconnect: TConnectionEvent read FOnDisconnect write FOnDisconnect;
+
     property PinDirection: TPinDirection read FPinDirection write SetPinDirection;
+
+    property ConnectionCount: Integer read GetConnectionCount;
+    property Connections[AIndex: Integer]: TPin read GetConnection;
 
     property State: Boolean read GetState write SetState;
 
@@ -116,6 +128,16 @@ begin
   end;
 end;
 
+function TPin.GetConnectionCount: Integer;
+begin
+  Result := FConnections.Count;
+end;
+
+function TPin.GetConnection(AIndex: Integer): TPin;
+begin
+  Result
+end;
+
 procedure TPin.SetPinDirection(AValue: TPinDirection);
 begin
   if FPinDirection = AValue then
@@ -126,7 +148,7 @@ begin
   FState := False;
 end;
 
-constructor TPin.Create(AIndex: Cardinal; AOnChange: TOnChange);
+constructor TPin.Create(AIndex: Cardinal; AOnChange: TChangeEvent);
 begin
   FIndex := AIndex;
   FOnChange := AOnChange;
@@ -153,6 +175,10 @@ end;
 
 procedure TPin.Connect(APin: TPin);
 begin
+  if Assigned(OnConnect) then
+    OnConnect(FIndex, APin);
+  if Assigned(APin.OnConnect) then
+    APin.OnConnect(FIndex, Self);
   FConnections.Add(APin);
   APin.FConnections.Add(Self);
   APin.TestForChanges;
@@ -160,9 +186,18 @@ end;
 
 procedure TPin.Disconnect(APin: TPin);
 begin
+  if Assigned(OnDisconnect) then
+    OnDisconnect(FIndex, APin);
+  if Assigned(APin.OnDisconnect) then
+    APin.OnDisconnect(FIndex, Self);
   FConnections.Del(APin);
   APin.FConnections.Del(Self);
   APin.TestForChanges;
+end;
+
+function TPin.GetEnumerator: TObjectSet<TPin>.TIterator;
+begin
+  Result := FConnections.GetEnumerator;
 end;
 
 end.

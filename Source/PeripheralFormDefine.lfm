@@ -9,6 +9,7 @@ object PeripheralForm: TPeripheralForm
   ClientWidth = 429
   FormStyle = fsStayOnTop
   OnClose = FormClose
+  PopupMenu = pmPins
   Position = poDesktopCenter
   LCLVersion = '1.6.4.0'
   Visible = True
@@ -29,17 +30,44 @@ object PeripheralForm: TPeripheralForm
     Align = alBottom
     BorderSpacing.Around = 5
     Caption = 'Pin Connections'
-    ClientHeight = 74
+    ClientHeight = 69
     ClientWidth = 415
     TabOrder = 0
     object pbPins: TPaintBox
       Left = 0
-      Height = 74
+      Height = 69
       Top = 0
       Width = 415
       Align = alClient
-      OnDblClick = pbPinsDblClick
       OnPaint = pbPinsPaint
+    end
+  end
+  object pmPins: TPopupMenu
+    left = 48
+    top = 32
+    object miVisiblePins: TMenuItem
+      Action = actShowPins
+    end
+    object miSplitter1: TMenuItem
+      Caption = '-'
+    end
+    object miShowPins: TMenuItem
+      Action = actVisiblePins
+    end
+  end
+  object pmPeripheral: TActionList
+    left = 136
+    top = 32
+    object actVisiblePins: TAction
+      Category = 'Pins'
+      Caption = 'Visible Pins...'
+      OnExecute = actVisiblePinsExecute
+      OnUpdate = actVisiblePinsUpdate
+    end
+    object actShowPins: TAction
+      Category = 'Pins'
+      OnExecute = actShowPinsExecute
+      OnUpdate = actShowPinsUpdate
     end
   end
 end

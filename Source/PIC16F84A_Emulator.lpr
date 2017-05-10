@@ -16,10 +16,9 @@ begin
   {$IFDEF DEBUG}
   GlobalSkipIfNoLeaks := True;
   {$ENDIF}
-  RequireDerivedFormResource:=True;
+  RequireDerivedFormResource := True;
   Application.Initialize;
   Application.CreateForm(TfrmMain, frmMain);
-  Application.CreateForm(TfrmVisiblePinSelection, frmVisiblePinSelection);
   Application.Run;
 end.
 
