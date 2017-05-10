@@ -3,63 +3,10 @@ unit VisiblePinSelectionDefine;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, CheckLst, StdCtrls, ExtCtrls, ActnList, PinDefine,
-  Lists;
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, CheckLst, StdCtrls, ExtCtrls, ActnList, Lists,
+  PinDefine;
 
 type
-
-  { TPinArray }
-
-  TPinArray = class
-  public
-    type
-
-      TNameChangeEvent = procedure (Sender: TPinArray; AOldName, ANewName: String; var AReject: Boolean) of object;
-      TVisibilityChangeEvent = procedure (Sender: TPinArray) of object;
-
-  private
-    FPins: TObjectArray<TPin>;
-    FVisiblePinArrays: TObjectArray<TPinArray>;
-    FName: String;
-
-    FOnPinChange: TPin.TChangeEvent;
-    FOnPinConnect: TPin.TConnectionEvent;
-    FOnPinDisconnect: TPin.TConnectionEvent;
-    FOnVisibilityChange: TVisibilityChangeEvent;
-    FOnNameChange: TNameChangeEvent;
-
-    function GetCount: Integer;
-    function GetPin(AIndex: Integer): TPin;
-    function GetVisiblePinArray(AIndex: Integer): TPinArray;
-    function GetVisiblePinArrayCount: Integer;
-    procedure SetCount(AValue: Integer);
-    procedure SetOnPinConnect(AValue: TPin.TConnectionEvent);
-    procedure SetOnPinDisconnect(AValue: TPin.TConnectionEvent);
-
-    procedure VisibilityChanged;
-
-  public
-    constructor Create(AName: String; AOnPinChange: TPin.TChangeEvent = nil; ACount: Integer = 1);
-    destructor Destroy; override;
-
-    property OnNameChange: TNameChangeEvent read FOnNameChange write FOnNameChange;
-    property OnPinConnect: TPin.TConnectionEvent read FOnPinConnect write SetOnPinConnect;
-    property OnPinDisconnect: TPin.TConnectionEvent read FOnPinDisconnect write SetOnPinDisconnect;
-    property OnVisibilityChange: TVisibilityChangeEvent read FOnVisibilityChange write FOnVisibilityChange;
-
-    property Name: String read FName;
-
-    property Pins[AIndex: Integer]: TPin read GetPin; default;
-    property Count: Integer read GetCount write SetCount;
-
-    property VisiblePinArrays[AIndex: Integer]: TPinArray read GetVisiblePinArray;
-    property VisiblePinArrayCount: Integer read GetVisiblePinArrayCount;
-
-    procedure AddVisiblePinArray(APinArray: TPinArray);
-    procedure DelVisiblePinArray(APinArray: TPinArray);
-    procedure DelAllVisiblePinArrays;
-
-  end;
 
   { TfrmVisiblePinSelection }
 
@@ -101,123 +48,6 @@ var
 implementation
 
 {$R *.lfm}
-
-{ TPinArray }
-
-function TPinArray.GetCount: Integer;
-begin
-  Result := FPins.Count;
-end;
-
-function TPinArray.GetPin(AIndex: Integer): TPin;
-begin
-  Result := FPins[AIndex];
-end;
-
-function TPinArray.GetVisiblePinArray(AIndex: Integer): TPinArray;
-begin
-  Result := FVisiblePinArrays[AIndex];
-end;
-
-function TPinArray.GetVisiblePinArrayCount: Integer;
-begin
-  Result := FVisiblePinArrays.Count;
-end;
-
-procedure TPinArray.SetCount(AValue: Integer);
-var
-  Pin: TPin;
-begin
-  while Count > AValue do
-    FPins.DelLast;
-  while Count < AValue do
-  begin
-    Pin := FPins.Add(TPin.Create(FPins.Count, FOnPinChange));
-    Pin.OnConnect := OnPinConnect;
-    Pin.OnDisconnect := OnPinDisconnect;
-  end;
-end;
-
-procedure TPinArray.SetOnPinConnect(AValue: TPin.TConnectionEvent);
-var
-  Pin: TPin;
-begin
-  FOnPinConnect := AValue;
-  for Pin in FPins do
-    Pin.OnConnect := AValue;
-end;
-
-procedure TPinArray.SetOnPinDisconnect(AValue: TPin.TConnectionEvent);
-var
-  Pin: TPin;
-begin
-  FOnPinDisconnect := AValue;
-  for Pin in FPins do
-    Pin.OnDisconnect := AValue;
-end;
-
-procedure TPinArray.VisibilityChanged;
-begin
-  if Assigned(OnVisibilityChange) then
-    OnVisibilityChange(Self);
-end;
-
-constructor TPinArray.Create(AName: String; AOnPinChange: TPin.TChangeEvent; ACount: Integer);
-begin
-  FName := AName;
-  FOnPinChange := AOnPinChange;
-  FPins := TObjectArray<TPin>.Create;
-  FVisiblePinArrays := TObjectArray<TPinArray>.Create(True);
-  Count := ACount;
-  frmVisiblePinSelection.RegisterArray(Self);
-end;
-
-destructor TPinArray.Destroy;
-var
-  PinArray: TPinArray;
-begin
-  frmVisiblePinSelection.UnregisterArray(Self);
-  FPins.Free;
-  DelAllVisiblePinArrays;
-  FVisiblePinArrays.Free;
-  inherited Destroy;
-end;
-
-procedure TPinArray.AddVisiblePinArray(APinArray: TPinArray);
-begin
-  FVisiblePinArrays.Add(APinArray);
-  VisibilityChanged;
-  if Self <> APinArray then
-  begin
-    APinArray.FVisiblePinArrays.Add(Self);
-    APinArray.VisibilityChanged;
-  end;
-end;
-
-procedure TPinArray.DelVisiblePinArray(APinArray: TPinArray);
-begin
-  FVisiblePinArrays.DelObject(APinArray);
-  VisibilityChanged;
-  if Self <> APinArray then
-  begin
-    APinArray.FVisiblePinArrays.DelObject(Self);
-    APinArray.VisibilityChanged;
-  end;
-end;
-
-procedure TPinArray.DelAllVisiblePinArrays;
-var
-  PinArray: TPinArray;
-begin
-  for PinArray in FVisiblePinArrays do
-    if PinArray <> Self then
-    begin
-      PinArray.FVisiblePinArrays.DelObject(Self);
-      PinArray.VisibilityChanged;
-    end;
-  FVisiblePinArrays.DelAll;
-  VisibilityChanged;
-end;
 
 { TfrmVisiblePinSelection }
 
@@ -261,6 +91,8 @@ constructor TfrmVisiblePinSelection.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FPinArrays := TObjectArray<TPinArray>.Create(True);
+  TPinArray.OnCreate := RegisterArray;
+  TPinArray.OnDestroy := UnregisterArray;
 end;
 
 destructor TfrmVisiblePinSelection.Destroy;

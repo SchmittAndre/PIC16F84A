@@ -5,7 +5,7 @@ unit ProcessorDefine;
 interface
 
 uses
-  Classes, windows, SysUtils, Dialogs, Lists, VisiblePinSelectionDefine, PinDefine;
+  Classes, windows, SysUtils, Dialogs, Lists, PinDefine;
 
 type
 

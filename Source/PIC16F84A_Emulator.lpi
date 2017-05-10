@@ -178,30 +178,30 @@
         <IsPartOfProject Value="True"/>
       </Unit2>
       <Unit3>
-        <Filename Value="PinDefine.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit3>
-      <Unit4>
         <Filename Value="PeripheralFormDefine.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="PeripheralForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="PeripheralLEDArray.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit4>
       <Unit5>
-        <Filename Value="PeripheralLEDArray.pas"/>
+        <Filename Value="LEDDefine.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>
-        <Filename Value="LEDDefine.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit6>
-      <Unit7>
         <Filename Value="VisiblePinSelectionDefine.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmVisiblePinSelection"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="PinDefine.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit7>
     </Units>
   </ProjectOptions>

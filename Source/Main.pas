@@ -48,7 +48,7 @@ type
     cbMemorySelection: TComboBox;
     gbControl: TGroupBox;
     gbMemory: TGroupBox;
-    gbPorts: TGroupBox;
+    gbSpecialFunction: TGroupBox;
     gbFile: TGroupBox;
     gbStateInfo: TGroupBox;
     ilMarker: TImageList;
@@ -95,7 +95,6 @@ type
     pnlCenter: TPanel;
     pmMain: TPopupMenu;
     pnlFlags: TPanel;
-    spltMemory: TSplitter;
     sbStatus: TStatusBar;
     sgSpecialFunction: TStringGrid;
     synEditor: TSynEdit;
@@ -132,6 +131,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
+    procedure FormShow(Sender: TObject);
     procedure sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);
     procedure sgMemViewPrepareCanvas(Sender: TObject; aCol, aRow: Integer; aState: TGridDrawState);
     function synCompletionMeasureItem(const AKey: string; ACanvas: TCanvas; {%H-}Selected: boolean;
@@ -174,6 +174,11 @@ type
     function GetMemViewType: TProcessor.TMemoryType;
     procedure SetMemViewType(AValue: TProcessor.TMemoryType);
 
+    function GetMemViewWidth: Integer;
+    function GetSpecialFunctionWidth: Integer;
+    procedure SetMemViewWidth(AValue: Integer);
+    procedure SetSpecialFunctionWidth(AValue: Integer);
+
     function GetMemViewCellIndex(ACol, ARow: Integer): Integer;
 
     procedure SetCompiled(AValue: Boolean);
@@ -195,6 +200,12 @@ type
     property MemViewCellIndex[ACol, ARow: Integer]: Integer read GetMemViewCellIndex;
     property LineFollowMode: TLineFollowMode read FLineFollowMode write SetLineFollowMode;
     property LineFollowRange: Cardinal read FLineFollowRange write SetLineFollowRange;
+
+    property SpecialFunctionWidth: Integer read GetSpecialFunctionWidth write SetSpecialFunctionWidth;
+    property MemViewWidth: Integer read GetMemViewWidth write SetMemViewWidth;
+
+    procedure SpecialFunctionAutoWidth;
+    procedure MemViewAutoWidth;
 
     procedure UpdateMemView;
     procedure UpdateSpecialFunction;
@@ -220,20 +231,9 @@ implementation
 { TfrmMain }
 
 procedure TfrmMain.FormCreate(Sender: TObject);
-
-  procedure RecursiveDoubleBuffered(AComponent: TComponent);
-  var
-    C: TComponent;
-  begin
-    if AComponent is TWinControl then
-      TWinControl(AComponent).DoubleBuffered := True;
-    for C in AComponent do
-      RecursiveDoubleBuffered(C);
-  end;
-
 begin
   frmVisiblePinSelection := TfrmVisiblePinSelection.Create(Self);
-  RecursiveDoubleBuffered(Self);
+
   FProcessor := TProcessor.Create;
   FFileData := TStringList.Create;
   LineFollowRange := 3;
@@ -242,6 +242,10 @@ begin
   InitMemView;
   InitSpecialFunction;
   Application.OnIdle := IdleHandler;
+
+  sgSpecialFunction.Height := sgSpecialFunction.GridHeight + 4;
+  SpecialFunctionAutoWidth;
+  MemViewAutoWidth;
 end;
 
 procedure TfrmMain.SetMemViewColumns(AValue: Cardinal);
@@ -261,6 +265,7 @@ begin
   UpdateMemView;
 
   sgMemView.AutoAdjustColumns;
+  MemViewAutoWidth;
 end;
 
 procedure TfrmMain.actExitExecute(Sender: TObject);
@@ -559,6 +564,7 @@ end;
 
 procedure TfrmMain.Button1Click(Sender: TObject);
 begin
+  MemViewAutoWidth;
   TPeripheralLEDArray.Create(Self);
 end;
 
@@ -591,6 +597,11 @@ end;
 procedure TfrmMain.FormDropFiles(Sender: TObject; const FileNames: array of String);
 begin
   // TODO: Load dropped file
+end;
+
+procedure TfrmMain.FormShow(Sender: TObject);
+begin
+  MemViewAutoWidth;
 end;
 
 {
@@ -824,6 +835,32 @@ begin
   end;
 end;
 
+function TfrmMain.GetMemViewWidth: Integer;
+begin
+  Result := sgMemView.ClientWidth;
+end;
+
+function TfrmMain.GetSpecialFunctionWidth: Integer;
+begin
+  Result := sgSpecialFunction.Width;
+end;
+
+procedure TfrmMain.SetMemViewWidth(AValue: Integer);
+var
+  Diff: Integer;
+begin
+  Diff := AValue - MemViewWidth;
+  gbMemory.Width := gbMemory.Width + Diff;
+end;
+
+procedure TfrmMain.SetSpecialFunctionWidth(AValue: Integer);
+var
+  Diff: Integer;
+begin
+  Diff := AValue - SpecialFunctionWidth;
+  gbSpecialFunction.Width := gbSpecialFunction.Width + Diff;
+end;
+
 procedure TfrmMain.SetPreScaler(AValue: Byte);
 begin
   if FPreScaler = AValue then
@@ -973,7 +1010,7 @@ end;
 
 function TfrmMain.GetPortsVisible: Boolean;
 begin
-  Result := gbPorts.Visible;
+  Result := gbSpecialFunction.Visible;
 end;
 
 procedure TfrmMain.SetPortsVisible(AValue: Boolean);
@@ -981,9 +1018,19 @@ begin
   if PortsVisible = AValue then
     Exit;
   DisableAlign;
-  gbPorts.Visible := AValue;
+  gbSpecialFunction.Visible := AValue;
   actTogglePortsVisible.Checked := AValue;
   EnableAlign;
+end;
+
+procedure TfrmMain.SpecialFunctionAutoWidth;
+begin
+  SpecialFunctionWidth := sgSpecialFunction.GridWidth + 4;
+end;
+
+procedure TfrmMain.MemViewAutoWidth;
+begin
+  MemViewWidth := sgMemView.GridWidth;
 end;
 
 procedure TfrmMain.SetCycles(AValue: Cardinal);
@@ -1005,7 +1052,6 @@ begin
     Exit;
   DisableAlign;
   gbMemory.Visible := AValue;
-  spltMemory.Visible := AValue;
   actToggleMemoryVisible.Checked := AValue;
   EnableAlign;
 end;
