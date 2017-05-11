@@ -4,7 +4,7 @@ interface
 
 uses
   Forms, Classes, SysUtils, FileUtil, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls, Menus, ActnList, ProcessorDefine,
-  VisiblePinSelectionDefine, Lists, Math, FPCanvas, PinDefine;
+  VisiblePinSelectionDefine, Lists, Math, FPCanvas, PinDefine, Color;
 
 type
 
@@ -28,7 +28,7 @@ type
 
     function GetPinPosition(AIndex: Integer): TPoint;
 
-    procedure InitDrawPin(APinDirection: TPin.TPinDirection);
+    procedure InitDrawPin(APin: TPin);
     procedure InitDrawBoxCaption;
     procedure InitDrawPinCaption;
     procedure InitDrawBox;
@@ -119,6 +119,7 @@ type
     function GetDrawSurfaceWidth: Integer;
     function GetPinSurfaceHeight: Integer;
     function GetPinSurfaceWidth: Integer;
+    procedure OnPinRedirect(APin: TPin);
 
     procedure SetDrawSurfaceHeight(AValue: Integer);
     procedure SetDrawSurfaceWidth(AValue: Integer);
@@ -128,8 +129,7 @@ type
     procedure SetPeripheralName(AValue: String);
     function MakeUniqueName(AName: String): String;
 
-    procedure OnPinConnect(ASelf, AOther: TPin);
-    procedure OnPinDisconnect(ASelf, AOther: TPin);
+    procedure OnPinConnectionChange(ASelf, AOther: TPin);
     procedure OnVisibilityChanged(Sender: TPinArray);
 
     procedure SetPinsVisible(AValue: Boolean);
@@ -140,9 +140,12 @@ type
     function FindPinAt(APinArray: TDisplayPinArray; APoint: TPoint): Integer;
     function FindPinArrayAt(APoint: TPoint): TDisplayPinArray;
 
+    procedure AddVisiblePinArrayEvents;
+    procedure DelVisiblePinArrayEvents;
+
   protected
     procedure DrawPeripheral; virtual; abstract;
-    procedure OnPinChanged({%H-}APin: TPin); virtual;
+    procedure OnPinChange({%H-}APin: TPin); virtual;
     property PinArray: TPinArray read FPinArray;
 
   public
@@ -270,25 +273,30 @@ begin
   Result := FPinArray.Count;
 end;
 
-procedure TDisplayPinArray.InitDrawPin(APinDirection: TPin.TPinDirection);
+procedure TDisplayPinArray.InitDrawPin(APin: TPin);
+var
+  C: TColorRGB;
 begin
   with FCanvas do
   begin
     Brush.Style := bsSolid;
     Pen.Style := psSolid;
     Pen.Width := 2;
-    case APinDirection of
+    case APin.Direction of
       pdWrite:
       begin
-        Brush.Color := $1F4FFF;
-        Pen.Color := $1F3FCF;
+        if APin.WritePower then
+          C := TColorRGB.Create(0.9, 0.9, 0.2)
+        else
+          C := TColorRGB.Create(1.0, 0.3, 0.1);
       end;
       pdRead:
-      begin
-        Brush.Color := $1FEF4F;
-        Pen.Color := $0FBF2F;
-      end;
+        C := TColorRGB.Create(0.3, 0.9, 0.1);
     end;
+    if not APin.State then
+      C := C * 0.6;
+    Brush.Color := C.ToWinColor;
+    Pen.Color := (C * 0.8).ToWinColor;
   end;
 end;
 
@@ -345,8 +353,9 @@ begin
   // Draw Pins
   for I := 0 to FPinArray.Count - 1 do
   begin
-    InitDrawPin(Pins[I].PinDirection);
+    InitDrawPin(Pins[I]);
     FCanvas.Ellipse(PinPosition[I].X - 6, PinPosition[I].Y - 6, PinPosition[I].X + 6, PinPosition[I].Y + 6);
+    // FCanvas.TextOut(PinPosition[I].X - 6, PinPosition[I].Y - 6, PinArray[I].PowerSources.ToString);
   end;
 
   // Draw Pin Captions
@@ -435,7 +444,7 @@ begin
               EndPin := 0;
             if (EndPinArray <> nil) and (EndPinArray.Flipped <> FClickedPinArray.Flipped) then
             begin
-              MinPins := Min(FClickedPinArray.PinCount, EndPin + EndPinArray.PinCount);
+              MinPins := Min(FClickedPinArray.PinCount, EndPinArray.PinCount - EndPin);
               AllPinsExist := True;
               for I := 0 to MinPins - 1 do
               begin
@@ -524,8 +533,12 @@ begin
 end;
 
 procedure TPeripheralForm.actVisiblePinsExecute(Sender: TObject);
+var
+  I: Integer;
 begin
+  DelVisiblePinArrayEvents;
   frmVisiblePinSelection.Execute(FPinArray);
+  AddVisiblePinArrayEvents;
   GeneratePinArrays;
 end;
 
@@ -552,6 +565,11 @@ end;
 function TPeripheralForm.GetPinSurfaceWidth: Integer;
 begin
   Result := pbPins.Width;
+end;
+
+procedure TPeripheralForm.OnPinRedirect(APin: TPin);
+begin
+  Invalidate;
 end;
 
 procedure TPeripheralForm.OnVisibilityChanged(Sender: TPinArray);
@@ -619,12 +637,7 @@ begin
   until Unique;
 end;
 
-procedure TPeripheralForm.OnPinConnect(ASelf, AOther: TPin);
-begin
-  GeneratePinConnections;
-end;
-
-procedure TPeripheralForm.OnPinDisconnect(ASelf, AOther: TPin);
+procedure TPeripheralForm.OnPinConnectionChange(ASelf, AOther: TPin);
 begin
   GeneratePinConnections;
 end;
@@ -658,7 +671,7 @@ begin
 
   FDisplayPinArrays.Add(TDisplayPinArray.Create(pbPins.Canvas, Point(10, 10), FPinArray));
 
-  FPinArray.OnVisibilityChange := OnVisibilityChanged;
+  FPinArray.OnVisibilityChange.Add(OnVisibilityChanged);
 
   L := 10;
   for I := 0 to FPinArray.VisiblePinArrayCount - 1 do
@@ -721,9 +734,31 @@ begin
   Result := nil;
 end;
 
-procedure TPeripheralForm.OnPinChanged(APin: TPin);
+procedure TPeripheralForm.AddVisiblePinArrayEvents;
+var
+  I: Integer;
 begin
-  // nothing by default
+  for I := 0 to FPinArray.VisiblePinArrayCount - 1 do
+  begin
+    FPinArray.VisiblePinArrays[I].OnPinRedirect.Add(OnPinRedirect);
+    FPinArray.VisiblePinArrays[I].OnPinChange.Add(OnPinChange);
+  end;
+end;
+
+procedure TPeripheralForm.DelVisiblePinArrayEvents;
+var
+  I: Integer;
+begin
+  for I := 0 to FPinArray.VisiblePinArrayCount - 1 do
+  begin
+    FPinArray.VisiblePinArrays[I].OnPinRedirect.Del(OnPinRedirect);
+    FPinArray.VisiblePinArrays[I].OnPinChange.Del(OnPinChange);
+  end;
+end;
+
+procedure TPeripheralForm.OnPinChange(APin: TPin);
+begin
+  Invalidate;
 end;
 
 constructor TPeripheralForm.Create(TheOwner: TComponent);
@@ -731,10 +766,12 @@ begin
   inherited Create(TheOwner);
   PeripheralName := GetDefaultPeripheralName;
   PinSurfaceHeight := 150;
-  FPinArray := TPinArray.Create(PeripheralName, OnPinChanged, 4);
-  FPinArray.OnPinConnect := OnPinConnect;
-  FPinArray.OnPinDisconnect := OnPinDisconnect;
-  FPinArray.OnVisibilityChange := OnVisibilityChanged;
+  FPinArray := TPinArray.Create(PeripheralName, 4);
+  FPinArray.OnPinChange.Add(OnPinChange);
+  FPinArray.OnPinConnect.Add(OnPinConnectionChange);
+  FPinArray.OnPinDisconnect.Add(OnPinConnectionChange);
+  FPinArray.OnVisibilityChange.Add(OnVisibilityChanged);
+  FPinArray.OnPinRedirect.Add(OnPinRedirect);
   FPinsVisible := True;
   FDisplayPinArrays := TObjectArray<TDisplayPinArray>.Create;
   FDisplayPinConnections := TObjectArray<TDisplayPinConnection>.Create;
@@ -743,8 +780,12 @@ begin
 end;
 
 destructor TPeripheralForm.Destroy;
+var
+  I: Integer;
 begin
-  FPinArray.OnPinChange := nil;
+  DelVisiblePinArrayEvents;
+  FPinArray.OnPinRedirect.Del(OnPinRedirect);
+  FPinArray.OnPinChange.Del(OnPinChange);
   FPinArray.Free;
   FDisplayPinArrays.Free;
   FDisplayPinConnections.Free;

@@ -327,6 +327,7 @@ type
     FPortAPins: TPinArray;
     FPortBPins: TPinArray;
     FMasterClearPin: TPinArray;
+    FSkipPortWrite: Boolean;
 
     // Function Pointer
     FMethods: array [TInstructionType] of TInstructionMethod;
@@ -800,29 +801,32 @@ begin
     Diff := FileMap[P] xor AValue;
     for B := Low(B) to High(B) do
       if Diff shr B and $01 = 1 then
-        FPortAPins[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
+        FPortAPins[B].Direction := TPin.TDirection(AValue shr B and $01);
   end
   else if P = Ord(b1TRISB) then
   begin
     Diff := FileMap[P] xor AValue;
     for B := Low(B) to High(B) do
       if Diff shr B and $01 = 1 then
-        FPortBPins[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
+        FPortBPins[B].Direction := TPin.TDirection(AValue shr B and $01);
   end;
 
-  if P = Ord(b0PORTA) then
+  if not FSkipPortWrite then
   begin
-    Diff := FileMap[P] xor AValue;
-    for B := Low(B) to High(B) do
-      if Diff shr B and $01 = 1 then
-        FPortAPins[B].State := AValue shr B and $01 <> 0;
-  end
-  else if P = Ord(b0PORTB) then
-  begin
-    Diff := FileMap[P] xor AValue;
-    for B := Low(B) to High(B) do
-      if Diff shr B and $01 = 1 then
-        FPortBPins[B].State := AValue shr B and $01 <> 0;
+    if P = Ord(b0PORTA) then
+    begin
+      Diff := FileMap[P] xor AValue;
+      for B := Low(B) to High(B) do
+        if Diff shr B and $01 = 1 then
+          FPortAPins[B].State := AValue shr B and $01 <> 0;
+    end
+    else if P = Ord(b0PORTB) then
+    begin
+      Diff := FileMap[P] xor AValue;
+      for B := Low(B) to High(B) do
+        if Diff shr B and $01 = 1 then
+          FPortBPins[B].State := AValue shr B and $01 <> 0;
+    end;
   end;
 
   if P = Ord(b0INDF) then
@@ -1158,12 +1162,16 @@ end;
 
 procedure TProcessor.OnPortAChanged(APin: TPin);
 begin
+  FSkipPortWrite := True;
   Flag[b0PORTA, APin.Index] := APin.State;
+  FSkipPortWrite := False;
 end;
 
 procedure TProcessor.OnPortBChanged(APin: TPin);
 begin
+  FSkipPortWrite := True;
   Flag[b0PORTB, APin.Index] := APin.State;
+  FSkipPortWrite := False;
 end;
 
 procedure TProcessor.OnMasterClearChanged(APin: TPin);
@@ -1186,9 +1194,12 @@ begin
   end;
   QueryPerformanceFrequency(FFrequency);
   FSpeedFactor := 1;
-  FPortAPins := TPinArray.Create('Port A', OnPortAChanged, PortACount);
-  FPortBPins := TPinArray.Create('Port B', OnPortBChanged, PortBCount);
-  FMasterClearPin := TPinArray.Create('MCLR', OnMasterClearChanged);
+  FPortAPins := TPinArray.Create('Port A', PortACount);
+  FPortAPins.OnPinChange.Add(OnPortAChanged);
+  FPortBPins := TPinArray.Create('Port B', PortBCount);
+  FPortAPins.OnPinChange.Add(OnPortBChanged);
+  FMasterClearPin := TPinArray.Create('MCLR');
+  FMasterClearPin.OnPinChange.Add(OnMasterClearChanged);
 end;
 
 destructor TProcessor.Destroy;

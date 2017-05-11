@@ -139,6 +139,30 @@ type
     function RangeCheck(AIndex: Integer): Boolean;
   end;
 
+  { TDelegate }
+
+  TDelegate<T> = class
+  public
+    type
+      TCall = procedure (const AParam) of object;
+      PCall = ^TCall;
+  private
+    FList: TArrayList<T>;
+    FCall: T;
+
+    procedure CallFunction(const AParam);
+    function Find(const AMethod: T): Integer;
+
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    procedure Add(const AMethod: T);
+    procedure Del(const AMethod: T);
+
+    property Call: T read FCall;
+  end;
+
   { TNotifyArray }
 
   TNotifyArray<T> = class (TArrayList<T>)
@@ -1394,6 +1418,57 @@ end;
 class function TClassMap<T>.KeysEqual(AKey1, AKey2: TClass): Boolean;
 begin
   Result := Pointer(AKey1) = Pointer(AKey2);
+end;
+
+{ TDelegate<T> }
+
+procedure TDelegate<T>.Del(const AMethod: T);
+var
+  I: Integer;
+begin
+  I := Find(AMethod);
+  if I <> -1 then
+    FList.Del(I);
+end;
+
+function TDelegate<T>.Find(const AMethod: T): Integer;
+var
+  I: Integer;
+begin
+  for I := 0 to FList.Count - 1 do
+    if CompareByte(FList.Items[I], AMethod, SizeOf(TMethod)) = 0 then
+      Exit(I);
+  Result := -1;
+end;
+
+procedure TDelegate<T>.CallFunction(const AParam);
+var
+  Func: T;
+begin
+  for Func in FList do
+    TCall(Func)(AParam);
+end;
+
+constructor TDelegate<T>.Create;
+var
+  X: TCall;
+begin
+  FList := TArrayList<T>.Create;
+  X := CallFunction;
+  CallFunction(X);
+  Move(X, FCall, SizeOf(TMethod));
+end;
+
+destructor TDelegate<T>.Destroy;
+begin
+  FList.Free;
+  inherited Destroy;
+end;
+
+procedure TDelegate<T>.Add(const AMethod: T);
+begin
+  if Find(AMethod) = -1 then
+    FList.Add(AMethod);
 end;
 
 { TCardinalSet }

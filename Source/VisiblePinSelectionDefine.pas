@@ -124,8 +124,8 @@ constructor TfrmVisiblePinSelection.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FPinArrays := TObjectArray<TPinArray>.Create(True);
-  TPinArray.OnCreate := RegisterArray;
-  TPinArray.OnDestroy := UnregisterArray;
+  TPinArray.OnCreate.Add(RegisterArray);
+  TPinArray.OnDestroy.Add(UnregisterArray);
 end;
 
 destructor TfrmVisiblePinSelection.Destroy;

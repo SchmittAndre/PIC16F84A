@@ -30,12 +30,12 @@ object PeripheralForm: TPeripheralForm
     Align = alBottom
     BorderSpacing.Around = 5
     Caption = 'Pin Connections'
-    ClientHeight = 69
+    ClientHeight = 74
     ClientWidth = 415
     TabOrder = 0
     object pbPins: TPaintBox
       Left = 0
-      Height = 69
+      Height = 74
       Top = 0
       Width = 415
       Align = alClient
@@ -69,6 +69,7 @@ object PeripheralForm: TPeripheralForm
     end
     object actShowPins: TAction
       Category = 'Pins'
+      Caption = 'placeholder'
       OnExecute = actShowPinsExecute
       OnUpdate = actShowPinsUpdate
     end

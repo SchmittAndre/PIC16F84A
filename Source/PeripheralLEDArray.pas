@@ -16,7 +16,7 @@ type
   protected
     procedure DrawPeripheral; override;
 
-    procedure OnPinChanged(APin: TPin); override;
+    procedure OnPinChange(APin: TPin); override;
 
   public
     constructor Create(TheOwner: TComponent); override;
@@ -43,9 +43,11 @@ begin
   Result := 'LED-Array';
 end;
 
-procedure TPeripheralLEDArray.OnPinChanged(APin: TPin);
+procedure TPeripheralLEDArray.OnPinChange(APin: TPin);
 begin
-  FLEDs[APin.Index].State := APin.State;
+  inherited;
+  if APin.PinArray = PinArray then
+    FLEDs[APin.Index].State := APin.State;
 end;
 
 constructor TPeripheralLEDArray.Create(TheOwner: TComponent);
@@ -58,7 +60,7 @@ begin
   for I := 0 to 3 do
   begin
     LED := TRoundLED.Create(pbDrawSurface, nil);
-    LED.Left := I * 60;
+    LED.Left := (3 - I) * 60;
     LED.Top := 0;
     LED.Width := 50;
     LED.Height := 50;
