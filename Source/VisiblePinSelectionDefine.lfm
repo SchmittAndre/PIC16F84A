@@ -71,7 +71,7 @@ object frmVisiblePinSelection: TfrmVisiblePinSelection
   end
   object lbHeader: TLabel
     Left = 5
-    Height = 15
+    Height = 20
     Top = 5
     Width = 240
     Align = alTop
@@ -83,8 +83,8 @@ object frmVisiblePinSelection: TfrmVisiblePinSelection
   end
   object clbVisiblePinArrays: TCheckListBox
     Left = 5
-    Height = 240
-    Top = 25
+    Height = 235
+    Top = 30
     Width = 240
     Align = alClient
     BorderSpacing.Around = 5
@@ -97,7 +97,7 @@ object frmVisiblePinSelection: TfrmVisiblePinSelection
       'Processor PortB'
       'Processor MCLR'
     )
-    ItemHeight = 17
+    ItemHeight = 21
     TabOrder = 1
     Data = {
       0700000000000000000000

@@ -450,9 +450,9 @@ type
     procedure ProcessTimer(ACount: Cardinal = 1);
     procedure CheckTimer0Overflow;
 
-    procedure OnPortAChanged(APin: Cardinal);
-    procedure OnPortBChanged(APin: Cardinal);
-    procedure OnMasterClearChanged(APin: Cardinal);
+    procedure OnPortAChanged(APin: TPin);
+    procedure OnPortBChanged(APin: TPin);
+    procedure OnMasterClearChanged(APin: TPin);
 
   public
     constructor Create;
@@ -810,6 +810,21 @@ begin
         FPortBPins[B].PinDirection := TPin.TPinDirection(AValue shr B and $01);
   end;
 
+  if P = Ord(b0PORTA) then
+  begin
+    Diff := FileMap[P] xor AValue;
+    for B := Low(B) to High(B) do
+      if Diff shr B and $01 = 1 then
+        FPortAPins[B].State := AValue shr B and $01 <> 0;
+  end
+  else if P = Ord(b0PORTB) then
+  begin
+    Diff := FileMap[P] xor AValue;
+    for B := Low(B) to High(B) do
+      if Diff shr B and $01 = 1 then
+        FPortBPins[B].State := AValue shr B and $01 <> 0;
+  end;
+
   if P = Ord(b0INDF) then
   begin
     // indirect adressing
@@ -1141,17 +1156,17 @@ begin
     Timer0InterruptFlag := True;
 end;
 
-procedure TProcessor.OnPortAChanged(APin: Cardinal);
+procedure TProcessor.OnPortAChanged(APin: TPin);
 begin
-  Flag[b0PORTA, APin] := FPortAPins[APin].State;
+  Flag[b0PORTA, APin.Index] := APin.State;
 end;
 
-procedure TProcessor.OnPortBChanged(APin: Cardinal);
+procedure TProcessor.OnPortBChanged(APin: TPin);
 begin
-  Flag[b0PORTB, APin] := FPortBPins[APin].State;
+  Flag[b0PORTB, APin.Index] := APin.State;
 end;
 
-procedure TProcessor.OnMasterClearChanged(APin: Cardinal);
+procedure TProcessor.OnMasterClearChanged(APin: TPin);
 begin
   // TODO: MCLR
 end;

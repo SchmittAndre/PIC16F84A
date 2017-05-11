@@ -7,27 +7,19 @@ uses
 
 type
 
-  { EPinNotWriteable }
+  TPin = class;
+  TPinArray = class;
 
-  EPinNotWriteable = class (Exception)
-    constructor Create;
-  end;
-
-  { EPinNoChangeHandler }
-
-  EPinNoChangeHandler = class (Exception)
-    constructor Create;
-  end;
+  TPinSet = TObjectSet<TPin>;
 
   { TPin }
 
-  TPinArray = class;
   TPin = class
   public
     type
 
-      TChangeEvent = procedure (AIndex: Cardinal) of object;
-      TConnectionEvent = procedure (AIndex: Cardinal; AOther: TPin) of object;
+      TChangeEvent = procedure (APin: TPin) of object;
+      TConnectionEvent = procedure (ASender, AOther: TPin) of object;
 
       TPinDirection = (pdWrite, pdRead);
 
@@ -38,16 +30,19 @@ type
 
     FIndex: Cardinal;
     FPinDirection: TPinDirection;
-    FState: Boolean;
+    FState: Cardinal;
     FConnections: TObjectArray<TPin>;
 
     FPinArray: TPinArray;
 
+    procedure SendSignalHelp(ACount: Integer; AIgnoreList: TPinSet);
+    procedure SendSignal(ACount: Integer);
+
+    procedure ReevaluateSystem;
+
     function GetState: Boolean;
     procedure SetPinDirection(AValue: TPinDirection);
     procedure SetState(AValue: Boolean);
-
-    procedure TestForChanges;
 
   public
     constructor Create(APinArray: TPinArray; AIndex: Cardinal = 0; AOnChange: TChangeEvent = nil);
@@ -56,6 +51,9 @@ type
     procedure Connect(APin: TPin);
     procedure Disconnect(APin: TPin);
 
+    function ConnectedTo(APin: TPin): Boolean;
+
+    property OnChange: TChangeEvent read FOnChange write FOnChange;
     property OnConnect: TConnectionEvent read FOnConnect write FOnConnect;
     property OnDisconnect: TConnectionEvent read FOnDisconnect write FOnDisconnect;
 
@@ -103,6 +101,7 @@ type
     function GetVisiblePinArray(AIndex: Integer): TPinArray;
     function GetVisiblePinArrayCount: Integer;
     procedure SetCount(AValue: Integer);
+    procedure SetOnPinChange(AValue: TPin.TChangeEvent);
     procedure SetOnPinConnect(AValue: TPin.TConnectionEvent);
     procedure SetOnPinDisconnect(AValue: TPin.TConnectionEvent);
 
@@ -113,6 +112,7 @@ type
     destructor Destroy; override;
 
     property OnNameChange: TNameChangeEvent read FOnNameChange write FOnNameChange;
+    property OnPinChange: TPin.TChangeEvent read FOnPinChange write SetOnPinChange;
     property OnPinConnect: TPin.TConnectionEvent read FOnPinConnect write SetOnPinConnect;
     property OnPinDisconnect: TPin.TConnectionEvent read FOnPinDisconnect write SetOnPinDisconnect;
     property OnVisibilityChange: TVisibilityChangeEvent read FOnVisibilityChange write FOnVisibilityChange;
@@ -134,75 +134,135 @@ type
 
   end;
 
+  { EPinNotWriteable }
+
+  EPinNotWriteable = class (Exception)
+    constructor Create(APin: TPin);
+  end;
+
+  { EPinNoChangeHandler }
+
+  EPinNoChangeHandler = class (Exception)
+    constructor Create(APin: TPin);
+  end;
+
+
 implementation
 
 { EPinNoChangeHandler }
 
-constructor EPinNoChangeHandler.Create;
+constructor EPinNoChangeHandler.Create(APin: TPin);
 begin
-  inherited Create('Pin cannot be set to "read" without an OnChange-handler');
+  inherited CreateFmt('Pin %d in PinArray %s cannot be set to "read" without an OnChange-handler',
+                      [APin.Index, APin.PinArray.Name]);
 end;
 
 { EPinNotWriteable }
 
-constructor EPinNotWriteable.Create;
+constructor EPinNotWriteable.Create(APin: TPin);
 begin
-  inherited Create('Pin is not writeable');
+  inherited CreateFmt('Pin %d in PinArray %s is not writeable',
+                      [APin.Index, APin.PinArray.Name]);
 end;
 
 { TPin }
 
 procedure TPin.SetState(AValue: Boolean);
-var
-  Pin: TPin;
 begin
-  if FState = AValue then
-    Exit;
   if PinDirection <> pdWrite then
-    raise EPinNotWriteable.Create;
-  FState := AValue;
-  for Pin in FConnections do
-    if Pin.PinDirection = pdRead then
-      Pin.TestForChanges;
+    raise EPinNotWriteable.Create(Self);
+  if AValue then
+    SendSignal(+1)
+  else
+    SendSignal(-1);
 end;
 
-procedure TPin.TestForChanges;
+procedure TPin.SendSignalHelp(ACount: Integer; AIgnoreList: TPinSet);
 var
-  FNewState: Boolean;
+  Pin: TPin;
+  Before: Boolean;
 begin
-  FNewState := State;
-  if FState <> FNewState then
+  Before := State;
+  Inc(FState, ACount);
+  if (Before <> State) and Assigned(OnChange) then
+    OnChange(Self);
+
+  AIgnoreList.Add(Self);
+
+  for Pin in FConnections do
   begin
-    FState := FNewState;
-    FOnChange(FIndex);
+    if not AIgnoreList[Pin] and (Pin.PinDirection = pdRead) then
+    begin
+      Pin.SendSignalHelp(ACount, AIgnoreList);
+    end;
   end;
+end;
+
+procedure TPin.SendSignal(ACount: Integer);
+var
+  IgnoreList: TPinSet;
+begin
+  IgnoreList := TPinSet.Create(True);
+  SendSignalHelp(ACount, IgnoreList);
+  IgnoreList.Free;
+end;
+
+procedure TPin.ReevaluateSystem;
+
+  function FindPoweredPins(APin: TPin; APinList: TPinSet): Cardinal;
+  var
+    Pin: TPin;
+  begin
+    APinList.Add(APin);
+    if (APin.PinDirection = pdWrite) and APin.State then
+      Result := 1
+    else
+      Result := 0;
+    for Pin in FConnections do
+      if not APinList[Pin] then
+        Result := Result + FindPoweredPins(APin, APinList);
+  end;
+
+var
+  PinList: TPinSet;
+  Pin: TPin;
+  PoweredPins: Cardinal;
+  Before: Boolean;
+begin
+  // Find all pins
+  // Count powered write pins
+  // Set all pins read pins to count of powered wite pins
+  // Send OnChange events if something changed
+
+  PinList := TPinSet.Create(True);
+  PoweredPins := FindPoweredPins(Self, PinList);
+
+  for Pin in PinList do
+    if Pin.PinDirection = pdRead then
+    begin
+      Before := Pin.State;
+      Pin.FState := PoweredPins;
+      if (Before <> Pin.State) and Assigned(OnChange) then
+        Pin.OnChange(Pin);
+    end;
+
+  PinList.Free;
 end;
 
 function TPin.GetState: Boolean;
-var
-  Pin: TPin;
 begin
-  case PinDirection of
-    pdRead:
-    begin
-      for Pin in FConnections do
-        if (Pin.PinDirection = pdWrite) and Pin.FState then
-          Exit(True);
-      Result := False;
-    end;
-    pdWrite:
-      Result := FState;
-  end;
+  Result := FState > 0;
 end;
 
 procedure TPin.SetPinDirection(AValue: TPinDirection);
 begin
   if FPinDirection = AValue then
     Exit;
-  if not Assigned(FOnChange) and (AValue = pdRead) then
-    raise EPinNoChangeHandler.Create;
+  if (AValue = pdRead) and not Assigned(FOnChange) then
+    raise EPinNoChangeHandler.Create(Self);
   FPinDirection := AValue;
-  FState := False;
+  if (FPinDirection = pdRead) and State then
+    SendSignal(-1);
 end;
 
 constructor TPin.Create(APinArray: TPinArray; AIndex: Cardinal; AOnChange: TChangeEvent);
@@ -228,15 +288,22 @@ begin
 end;
 
 procedure TPin.Connect(APin: TPin);
+var
+  Pin: TPin;
 begin
+  if Self = APin then
+    Exit;
+  for Pin in FConnections do
+    if Pin = APin then
+      Exit;
+  SendSignal(APin.FState);
+  APin.SendSignal(FState);
   FConnections.Add(APin);
   APin.FConnections.Add(Self);
   if Assigned(OnConnect) then
-    OnConnect(FIndex, APin);
+    OnConnect(Self, APin);
   if Assigned(APin.OnConnect) then
-    APin.OnConnect(APin.FIndex, Self);
-  TestForChanges;
-  APin.TestForChanges;
+    APin.OnConnect(APin, Self);
 end;
 
 procedure TPin.Disconnect(APin: TPin);
@@ -244,11 +311,16 @@ begin
   FConnections.DelObject(APin);
   APin.FConnections.DelObject(Self);
   if Assigned(OnDisconnect) then
-    OnDisconnect(FIndex, APin);
+    OnDisconnect(Self, APin);
   if Assigned(APin.OnDisconnect) then
-    APin.OnDisconnect(APin.FIndex, Self);
-  TestForChanges;
-  APin.TestForChanges;
+    APin.OnDisconnect(APin, Self);
+  ReevaluateSystem;
+  APin.ReevaluateSystem;
+end;
+
+function TPin.ConnectedTo(APin: TPin): Boolean;
+begin
+  Result := FConnections.FindObject(APin) <> -1;
 end;
 
 function TPin.GetEnumerator: TObjectArray<TPin>.TIterator;
@@ -292,6 +364,15 @@ begin
   end;
 end;
 
+procedure TPinArray.SetOnPinChange(AValue: TPin.TChangeEvent);
+var
+  Pin: TPin;
+begin
+  FOnPinChange := AValue;
+  for Pin in FPins do
+    Pin.OnChange := AValue;
+end;
+
 procedure TPinArray.SetOnPinConnect(AValue: TPin.TConnectionEvent);
 var
   Pin: TPin;
@@ -328,14 +409,12 @@ begin
 end;
 
 destructor TPinArray.Destroy;
-var
-  PinArray: TPinArray;
 begin
   if Assigned(OnDestroy) then
     OnDestroy(Self);
-  FPins.Free;
   DelAllVisiblePinArrays;
   FVisiblePinArrays.Free;
+  FPins.Free;
   inherited Destroy;
 end;
 
@@ -351,7 +430,22 @@ begin
 end;
 
 procedure TPinArray.DelVisiblePinArray(APinArray: TPinArray);
+var
+  I: Integer;
+  Pin: TPin;
+  DisconnectPins: TObjectArray<TPin>;
 begin
+  DisconnectPins := TObjectArray<TPin>.Create(True);
+  for I := 0 to Count - 1 do
+  begin
+    DisconnectPins.DelAll;
+    for Pin in Pins[I] do
+      if Pin.PinArray = APinArray then
+        DisconnectPins.Add(Pin);
+    for Pin in DisconnectPins do
+      Pins[I].Disconnect(Pin);
+  end;
+  DisconnectPins.Free;
   FVisiblePinArrays.DelObject(APinArray);
   VisibilityChanged;
   if Self <> APinArray then
@@ -362,17 +456,9 @@ begin
 end;
 
 procedure TPinArray.DelAllVisiblePinArrays;
-var
-  PinArray: TPinArray;
 begin
-  for PinArray in FVisiblePinArrays do
-    if PinArray <> Self then
-    begin
-      PinArray.FVisiblePinArrays.DelObject(Self);
-      PinArray.VisibilityChanged;
-    end;
-  FVisiblePinArrays.DelAll;
-  VisibilityChanged;
+  while not FVisiblePinArrays.Empty do
+    DelVisiblePinArray(FVisiblePinArrays.Last);
 end;
 
 end.

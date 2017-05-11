@@ -3,7 +3,7 @@ object frmMain: TfrmMain
   Height = 645
   Top = 206
   Width = 1150
-  ActiveControl = sgSpecialFunction
+  ActiveControl = synEditor
   AllowDropFiles = True
   Caption = 'PIC16F84A Emulator'
   ClientHeight = 645
@@ -21,19 +21,19 @@ object frmMain: TfrmMain
   Visible = True
   object gbMemory: TGroupBox
     Left = 976
-    Height = 592
+    Height = 581
     Top = 5
     Width = 169
     Align = alRight
     BorderSpacing.Around = 5
     Caption = 'Memory'
-    ClientHeight = 572
+    ClientHeight = 556
     ClientWidth = 165
-    TabOrder = 2
+    TabOrder = 1
     object sgMemView: TStringGrid
       Left = 5
-      Height = 534
-      Top = 33
+      Height = 513
+      Top = 38
       Width = 155
       Align = alClient
       AutoEdit = False
@@ -63,12 +63,12 @@ object frmMain: TfrmMain
     end
     object cbMemorySelection: TComboBox
       Left = 5
-      Height = 23
+      Height = 28
       Top = 5
       Width = 155
       Align = alTop
       BorderSpacing.Around = 5
-      ItemHeight = 15
+      ItemHeight = 20
       ItemIndex = 0
       Items.Strings = (
         'RAM'
@@ -82,20 +82,20 @@ object frmMain: TfrmMain
     end
   end
   object pnlCenter: TPanel
-    Left = 205
-    Height = 602
+    Left = 202
+    Height = 591
     Top = 0
-    Width = 766
+    Width = 769
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 602
-    ClientWidth = 766
-    TabOrder = 1
+    ClientHeight = 591
+    ClientWidth = 769
+    TabOrder = 0
     inline synEditor: TSynEdit
       Left = 5
-      Height = 592
+      Height = 581
       Top = 5
-      Width = 605
+      Width = 608
       Align = alClient
       BlockTabIndent = 2
       BorderSpacing.Around = 5
@@ -607,13 +607,13 @@ object frmMain: TfrmMain
       end
     end
     object pnlControl: TPanel
-      Left = 615
-      Height = 592
+      Left = 618
+      Height = 581
       Top = 5
       Width = 146
       Align = alRight
       BorderSpacing.Around = 5
-      ClientHeight = 592
+      ClientHeight = 581
       ClientWidth = 146
       Constraints.MinHeight = 472
       TabOrder = 1
@@ -625,7 +625,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'File'
-        ClientHeight = 129
+        ClientHeight = 124
         ClientWidth = 130
         TabOrder = 0
         object btnSave: TButton
@@ -677,7 +677,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'Control'
-        ClientHeight = 161
+        ClientHeight = 156
         ClientWidth = 130
         TabOrder = 1
         object btnStartStop: TButton
@@ -739,7 +739,7 @@ object frmMain: TfrmMain
         Align = alTop
         BorderSpacing.Around = 5
         Caption = 'State-Info'
-        ClientHeight = 100
+        ClientHeight = 95
         ClientWidth = 130
         TabOrder = 2
         object pnlWRegister: TPanel
@@ -756,7 +756,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 14
+            Width = 17
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'W:'
@@ -764,10 +764,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbWRegister: TLabel
-            Left = 19
+            Left = 22
             Height = 25
             Top = 0
-            Width = 106
+            Width = 103
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -790,7 +790,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 30
+            Width = 37
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Flags:'
@@ -798,10 +798,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbFlags: TLabel
-            Left = 35
+            Left = 42
             Height = 25
             Top = 0
-            Width = 90
+            Width = 83
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -824,7 +824,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 37
+            Width = 44
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Cycles:'
@@ -832,10 +832,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbCycles: TLabel
-            Left = 42
+            Left = 49
             Height = 25
             Top = 0
-            Width = 83
+            Width = 76
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -858,7 +858,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 50
+            Width = 62
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Prescaler:'
@@ -866,10 +866,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbPreScaler: TLabel
-            Left = 55
+            Left = 67
             Height = 25
             Top = 0
-            Width = 70
+            Width = 58
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -881,50 +881,61 @@ object frmMain: TfrmMain
       end
     end
   end
-  object gbSpecialFunction: TGroupBox
-    Left = 5
-    Height = 592
-    Top = 5
-    Width = 195
-    Align = alLeft
-    BorderSpacing.Around = 5
-    Caption = 'Special Function Register'
-    ClientHeight = 572
-    ClientWidth = 191
-    TabOrder = 0
-    object sgSpecialFunction: TStringGrid
-      Left = 5
-      Height = 344
-      Top = 5
-      Width = 181
-      Align = alTop
-      BorderSpacing.Around = 5
-      ColCount = 1
-      DefaultColWidth = 50
-      DefaultRowHeight = 20
-      FixedCols = 0
-      MouseWheelOption = mwGrid
-      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goThumbTracking, goSmoothScroll]
-      RowCount = 1
-      ScrollBars = ssNone
-      TabOrder = 0
-    end
-    object Button1: TButton
-      Left = 48
-      Height = 80
-      Top = 400
-      Width = 107
-      Caption = 'Button1'
-      OnClick = Button1Click
-      TabOrder = 1
-    end
-  end
   object sbStatus: TStatusBar
     Left = 0
-    Height = 23
-    Top = 602
+    Height = 29
+    Top = 591
     Width = 1150
     Panels = <>
+  end
+  object pnlLeft: TPanel
+    Left = 0
+    Height = 591
+    Top = 0
+    Width = 202
+    Align = alLeft
+    ClientHeight = 591
+    ClientWidth = 202
+    TabOrder = 3
+    object gbSpecialFunction: TGroupBox
+      Left = 6
+      Height = 384
+      Top = 6
+      Width = 190
+      Align = alTop
+      BorderSpacing.Around = 5
+      Caption = 'Special Function Register'
+      ClientHeight = 359
+      ClientWidth = 186
+      TabOrder = 0
+      object sgSpecialFunction: TStringGrid
+        Left = 5
+        Height = 349
+        Top = 5
+        Width = 176
+        Align = alClient
+        BorderSpacing.Around = 5
+        ColCount = 1
+        DefaultColWidth = 50
+        DefaultRowHeight = 20
+        FixedCols = 0
+        MouseWheelOption = mwGrid
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goThumbTracking, goSmoothScroll]
+        RowCount = 1
+        ScrollBars = ssNone
+        TabOrder = 0
+      end
+    end
+    object gbPeripherals: TGroupBox
+      Left = 6
+      Height = 117
+      Top = 395
+      Width = 190
+      Align = alTop
+      BorderSpacing.Around = 5
+      Caption = 'Peripherals'
+      TabOrder = 1
+    end
   end
   object mmMainMenu: TMainMenu
     left = 288
@@ -993,6 +1004,15 @@ object frmMain: TfrmMain
       end
       object miStepOut: TMenuItem
         Action = actStepOut
+      end
+    end
+    object miPeripherals: TMenuItem
+      Caption = 'Peripherals'
+      object miCloseAllPeripherals: TMenuItem
+        Action = actCloseAllPeripherals
+      end
+      object miPeripheralListStart: TMenuItem
+        Caption = '-'
       end
     end
     object miHelpHeader: TMenuItem
@@ -1111,6 +1131,10 @@ object frmMain: TfrmMain
       Category = 'Help'
       Caption = 'Help'
       OnExecute = actHelpExecute
+    end
+    object actCloseAllPeripherals: TAction
+      Caption = 'Close all'
+      OnExecute = actCloseAllPeripheralsExecute
     end
   end
   object synCompletion: TSynCompletion

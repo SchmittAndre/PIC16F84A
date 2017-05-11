@@ -20,7 +20,7 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
-      <BuildNr Value="24"/>
+      <BuildNr Value="25"/>
       <Attributes pvaPrivateBuild="True"/>
       <StringTable Comments="Best Program" CompanyName="VS42 Inc." FileDescription="PIC16F84A Emulator" ProductVersion=""/>
     </VersionInfo>
@@ -151,6 +151,7 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
+        <CommandLineParams Value="&quot;..\..\..\Resources\our scripts\PortB FF.LST&quot;"/>
       </local>
     </RunParams>
     <RequiredPackages Count="2">
@@ -248,7 +249,7 @@
     </Other>
   </CompilerOptions>
   <Debugging>
-    <Exceptions Count="5">
+    <Exceptions Count="6">
       <Item1>
         <Name Value="EAbort"/>
       </Item1>
@@ -264,6 +265,9 @@
       <Item5>
         <Name Value="ERangeError"/>
       </Item5>
+      <Item6>
+        <Name Value="EUnsupportedException"/>
+      </Item6>
     </Exceptions>
   </Debugging>
 </CONFIG>
