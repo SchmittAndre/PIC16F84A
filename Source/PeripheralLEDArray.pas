@@ -3,7 +3,7 @@ unit PeripheralLEDArray;
 interface
 
 uses
-  Classes, SysUtils, PeripheralFormDefine, Graphics, Dialogs, Color, Lists, Controls, LEDDefine;
+  Classes, SysUtils, PeripheralFormDefine, Graphics, Dialogs, Color, Lists, Controls, LEDDefine, PinDefine;
 
 type
 
@@ -15,13 +15,14 @@ type
 
   protected
     procedure DrawPeripheral; override;
-    function GetDefaultPeripheralName: String; override;
 
-    procedure OnPinChanged(APinIndex: Cardinal); override;
+    procedure OnPinChanged(APin: TPin); override;
 
   public
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
+
+    class function GetDefaultPeripheralName: String; override;
 
   end;
 
@@ -37,14 +38,14 @@ begin
     LED.Draw;
 end;
 
-function TPeripheralLEDArray.GetDefaultPeripheralName: String;
+class function TPeripheralLEDArray.GetDefaultPeripheralName: String;
 begin
   Result := 'LED-Array';
 end;
 
-procedure TPeripheralLEDArray.OnPinChanged(APinIndex: Cardinal);
+procedure TPeripheralLEDArray.OnPinChanged(APin: TPin);
 begin
-  FLEDs[APinIndex].State := PinArray[APinIndex].State;
+  FLEDs[APin.Index].State := APin.State;
 end;
 
 constructor TPeripheralLEDArray.Create(TheOwner: TComponent);

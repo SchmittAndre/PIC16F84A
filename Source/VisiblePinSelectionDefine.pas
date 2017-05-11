@@ -33,7 +33,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
-    procedure Execute(APinDevice: TPinArray);
+    procedure Execute(APinArray: TPinArray);
 
     procedure RegisterArray(APinArray: TPinArray);
     procedure UnregisterArray(APinArray: TPinArray);
@@ -55,7 +55,7 @@ procedure TfrmVisiblePinSelection.LoadPinDevice(APinArray: TPinArray);
 var
   I: Integer;
 begin
-  lbHeader.Caption := 'I want to connect the ' + APinArray.Name + ' to:';
+  lbHeader.Caption := 'I want to connect "' + APinArray.Name + '" to:';
   clbVisiblePinArrays.Clear;
   for I := 0 to APinArray.VisiblePinArrayCount - 1 do
     clbVisiblePinArrays.AddItem(APinArray.VisiblePinArrays[I].Name, APinArray.VisiblePinArrays[I]);
@@ -76,15 +76,48 @@ begin
 end;
 
 procedure TfrmVisiblePinSelection.SavePinDevice(APinArray: TPinArray);
+
+  type
+    TConnection = record
+      First, Second: TPin;
+    end;
+
 var
   I: Integer;
+  OldConnections: TArrayList<TConnection>;
+  Connection: TConnection;
+  Pin: TPin;
+  PinArray: TPinArray;
 begin
+  // save old connections
+  OldConnections := TArrayList<TConnection>.Create;
+  for I := 0 to APinArray.Count - 1 do
+  begin
+    Connection.First := APinArray[I];
+    for Pin in APinArray[I] do
+    begin
+      Connection.Second := Pin;
+      OldConnections.Add(Connection);
+    end;
+  end;
+
+  // regenerate
   APinArray.DelAllVisiblePinArrays;
   for I := 0 to clbVisiblePinArrays.Count - 1 do
   begin
     if clbVisiblePinArrays.Checked[I] then
-      APinArray.AddVisiblePinArray(TPinArray(clbVisiblePinArrays.Items.Objects[I]));
+    begin
+      PinArray := TPinArray(clbVisiblePinArrays.Items.Objects[I]);
+      APinArray.AddVisiblePinArray(PinArray);
+      // load back connections to this PinArray
+      for Connection in OldConnections do
+      begin
+        if Connection.Second.PinArray = PinArray then
+          Connection.First.Connect(Connection.Second);
+      end;
+    end;
   end;
+  OldConnections.Free;
 end;
 
 constructor TfrmVisiblePinSelection.Create(AOwner: TComponent);
@@ -101,13 +134,11 @@ begin
   inherited Destroy;
 end;
 
-procedure TfrmVisiblePinSelection.Execute(APinDevice: TPinArray);
-var
-  PinArray: TPinArray;
+procedure TfrmVisiblePinSelection.Execute(APinArray: TPinArray);
 begin
-  LoadPinDevice(APinDevice);
+  LoadPinDevice(APinArray);
   if ShowModal = mrOK then
-    SavePinDevice(APinDevice);
+    SavePinDevice(APinArray);
 end;
 
 procedure TfrmVisiblePinSelection.RegisterArray(APinArray: TPinArray);

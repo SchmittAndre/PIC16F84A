@@ -3,9 +3,16 @@ unit Main;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList,
-  StdCtrls, Grids, ComCtrls, ProcessorDefine, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses,
-  Math, LazUTF8, PeripheralLEDArray, VisiblePinSelectionDefine;
+
+  // Standard Units
+  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList, StdCtrls, Grids,
+  ComCtrls, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses, Math, LazUTF8,
+  // Our Units
+  ProcessorDefine,
+  VisiblePinSelectionDefine,
+  PeripheralFormDefine,
+  // Peripherals
+  PeripheralLEDArray;
 
 type
 
@@ -15,12 +22,16 @@ type
     lfCenter
   );
 
+  TLoadType = (ltAssembler = 1, ltCompiled, ltBinary);
+  TSaveType = (stAssembler = 1, stCompiledCommented, stCompiledUncommented, stBinary);
+
   { TfrmMain }
 
   TfrmMain = class (TForm)
     actExit: TAction;
     actCompile: TAction;
     actHelp: TAction;
+    actCloseAllPeripherals: TAction;
     actNew: TAction;
     actSaveFileAs: TAction;
     actStepOut: TAction;
@@ -44,13 +55,13 @@ type
     btnStep: TButton;
     btnStepOver: TButton;
     btnStepOut: TButton;
-    Button1: TButton;
     cbMemorySelection: TComboBox;
     gbControl: TGroupBox;
     gbMemory: TGroupBox;
     gbSpecialFunction: TGroupBox;
     gbFile: TGroupBox;
     gbStateInfo: TGroupBox;
+    gbPeripherals: TGroupBox;
     ilMarker: TImageList;
     lbCycles: TLabel;
     lbCyclesTitle: TLabel;
@@ -65,6 +76,9 @@ type
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem4: TMenuItem;
+    miCloseAllPeripherals: TMenuItem;
+    miPeripheralListStart: TMenuItem;
+    miPeripherals: TMenuItem;
     miHelp: TMenuItem;
     miHelpHeader: TMenuItem;
     miNew: TMenuItem;
@@ -87,6 +101,7 @@ type
     miPlaceholder: TMenuItem;
     miFile: TMenuItem;
     mmMainMenu: TMainMenu;
+    pnlLeft: TPanel;
     pnlControl: TPanel;
     pnlCycles: TPanel;
     pnlPreScaler: TPanel;
@@ -101,6 +116,7 @@ type
     sgMemView: TStringGrid;
     synHighlighter: TSynAnySyn;
     synCompletion: TSynCompletion;
+    procedure actCloseAllPeripheralsExecute(Sender: TObject);
     procedure actCompileExecute(Sender: TObject);
     procedure actCompileUpdate(Sender: TObject);
     procedure actExitExecute(Sender: TObject);
@@ -125,7 +141,6 @@ type
     procedure actStepOverUpdate(Sender: TObject);
     procedure actToggleMemoryVisibleExecute(Sender: TObject);
     procedure actTogglePortsVisibleExecute(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure cbMemorySelectionChange(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormCreate(Sender: TObject);
@@ -176,8 +191,10 @@ type
 
     function GetMemViewWidth: Integer;
     function GetSpecialFunctionWidth: Integer;
+    function GetSpecialFunctionHeight: Integer;
     procedure SetMemViewWidth(AValue: Integer);
     procedure SetSpecialFunctionWidth(AValue: Integer);
+    procedure SetSpecialFunctionHeight(AValue: Integer);
 
     function GetMemViewCellIndex(ACol, ARow: Integer): Integer;
 
@@ -202,9 +219,11 @@ type
     property LineFollowRange: Cardinal read FLineFollowRange write SetLineFollowRange;
 
     property SpecialFunctionWidth: Integer read GetSpecialFunctionWidth write SetSpecialFunctionWidth;
+    property SpecialFunctionHeight: Integer read GetSpecialFunctionHeight write SetSpecialFunctionHeight;
     property MemViewWidth: Integer read GetMemViewWidth write SetMemViewWidth;
 
     procedure SpecialFunctionAutoWidth;
+    procedure SpecialFunctionAutoHeight;
     procedure MemViewAutoWidth;
 
     procedure UpdateMemView;
@@ -216,10 +235,55 @@ type
 
     procedure IdleHandler(Sender: TObject; var ADone: Boolean);
 
+    procedure LoadFile(AFileName: String);
+    function ExtractFileType(AFileName: String): TLoadType;
+
+    procedure ProcessParams;
+
+    procedure OnPeripheralAdd(Sender: TObject);
+    procedure GeneratePeripheralLists;
+
   protected
     procedure UpdateActions; override;
 
   end;
+
+  { EUnsupportedException }
+
+  EUnsupportedException = class (Exception)
+    constructor Create(AExtension: String);
+  end;
+
+const
+  LoadTypeNames: array [TLoadType] of String = (
+    'Assembler Program',
+    'Compiled Program',
+    'Binary Program'
+  );
+
+  LoadExtensions: array [TLoadType] of String = (
+    '.asm',
+    '.lst',
+    '.hex'
+  );
+
+  SaveTypeNames: array [TSaveType] of String = (
+    'Assembler Program',
+    'Compiled Program Commented',
+    'Compiled Program Uncommented',
+    'Binary Program'
+  );
+
+  SaveExtensions: array [TSaveType] of String = (
+    '.asm',
+    '.lst',
+    '.lst',
+    '.hex'
+  );
+
+  PeripheralClasses: array [0 .. 0] of TPeripheralFormClass = (
+    TPeripheralLEDArray
+  );
 
 var
   frmMain: TfrmMain;
@@ -227,6 +291,13 @@ var
 implementation
 
 {$R *.lfm}
+
+{ EUnsupportedException }
+
+constructor EUnsupportedException.Create(AExtension: String);
+begin
+  inherited Create('Extension "' + AExtension + '" is not supported!');
+end;
 
 { TfrmMain }
 
@@ -243,9 +314,7 @@ begin
   InitSpecialFunction;
   Application.OnIdle := IdleHandler;
 
-  sgSpecialFunction.Height := sgSpecialFunction.GridHeight + 4;
-  SpecialFunctionAutoWidth;
-  MemViewAutoWidth;
+  GeneratePeripheralLists;
 end;
 
 procedure TfrmMain.SetMemViewColumns(AValue: Cardinal);
@@ -284,6 +353,15 @@ begin
   raise ENotImplemented.Create('Compiling not implemented');
 end;
 
+procedure TfrmMain.actCloseAllPeripheralsExecute(Sender: TObject);
+var
+  I: Integer;
+begin
+  for I := ComponentCount - 1 downto 0 do
+    if Components[I] is TPeripheralForm then
+      Components[I].Free;
+end;
+
 procedure TfrmMain.actCompileUpdate(Sender: TObject);
 begin
   actCompile.Enabled := not Compiled;
@@ -300,64 +378,17 @@ begin
 end;
 
 procedure TfrmMain.actOpenFileExecute(Sender: TObject);
-
-type
-  TLoadType = (ltAssembler = 1, ltCompiled, ltBinary);
-
-const
-  TypeName: array [TLoadType] of String = (
-    'Assembler Program',
-    'Compiled Program',
-    'Binary Program'
-  );
-
-  Extension: array [TLoadType] of String = (
-    '*.asm',
-    '*.lst',
-    '*.hex'
-  );
-
 var
   T: TLoadType;
-  FileData: RawByteString;
 begin
   with TOpenDialog.Create(Self) do
   begin
      try
       for T := Low(TLoadType) to High(TLoadType) do
-        Filter := Filter + TypeName[T] + '|' + Extension[T] + '|';
+        Filter := Filter + LoadTypeNames[T] + '|*' + LoadExtensions[T] + '|';
       FilterIndex := Integer(ltCompiled);
       if Execute then
-      begin
-        case TLoadType(FilterIndex) of
-          ltAssembler:
-          begin
-            raise ENotImplemented.Create('Can''t load! Loading not implemented!');
-          end;
-          ltCompiled:
-          begin
-            FFileData.LoadFromFile(FileName);
-            FileData := FFileData.Text;
-            SetCodePage(FileData, 1252, False);
-            SetCodePage(FileData, DefaultSystemCodePage);
-            FFileData.Text := FileData;
-            ParseStringListFromLST(FFileData);
-            FProcessor.LoadProgram(FFileData);
-            Compiled := True;
-            UpdateActions;
-            UpdateMemView;
-            UpdateCycles;
-            UpdateALUInfo;
-            UpdateSpecialFunction;
-            UpdateSynEditScroll;
-            UpdateSynEditMarkup;
-          end;
-          ltBinary:
-          begin
-            raise ENotImplemented.Create('Can''t load! Loading not implemented!');
-          end;
-        end;
-      end;
+        LoadFile(FileName);
     finally
       Free;
     end;
@@ -396,24 +427,6 @@ begin
 end;
 
 procedure TfrmMain.actSaveFileExecute(Sender: TObject);
-type
-  TSaveType = (stAssembler = 1, stCompiledCommented, stCompiledUncommented, stBinary);
-
-const
-  TypeName: array [TSaveType] of String = (
-    'Assembler Program',
-    'Compiled Program Commented',
-    'Compiled Program Uncommented',
-    'Binary Program'
-  );
-
-  Extension: array [TSaveType] of String = (
-    '*.asm',
-    '*.lst',
-    '*.lst',
-    '*.hex'
-  );
-
 var
   T: TSaveType;
 begin
@@ -421,7 +434,7 @@ begin
   begin
     try
       for T := Low(TSaveType) to High(TSaveType) do
-        Filter := Filter + TypeName[T] + '|' + Extension[T] + '|';
+        Filter := Filter + SaveTypeNames[T] + '|*' + SaveExtensions[T] + '|';
       FilterIndex := Integer(stAssembler);
       if Execute then
       begin
@@ -562,12 +575,6 @@ begin
   PortsVisible := not PortsVisible;
 end;
 
-procedure TfrmMain.Button1Click(Sender: TObject);
-begin
-  MemViewAutoWidth;
-  TPeripheralLEDArray.Create(Self);
-end;
-
 procedure TfrmMain.cbMemorySelectionChange(Sender: TObject);
 var
   Old: TMouseWheelOption;
@@ -596,12 +603,19 @@ end;
 
 procedure TfrmMain.FormDropFiles(Sender: TObject; const FileNames: array of String);
 begin
-  // TODO: Load dropped file
+  if Length(FileNames) <> 1 then
+    MessageDlg('Drop only one file please.', mtInformation, [mbOK], 0)
+  else
+    LoadFile(FileNames[0]);
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);
 begin
+  SpecialFunctionAutoWidth;
+  SpecialFunctionAutoHeight;
   MemViewAutoWidth;
+  sgSpecialFunction.Invalidate;
+  ProcessParams;
 end;
 
 {
@@ -835,6 +849,19 @@ begin
   end;
 end;
 
+function TfrmMain.GetSpecialFunctionHeight: Integer;
+begin
+  Result := sgSpecialFunction.Height;
+end;
+
+procedure TfrmMain.SetSpecialFunctionHeight(AValue: Integer);
+var
+  Diff: Integer;
+begin
+  Diff := AValue - SpecialFunctionHeight;
+  gbSpecialFunction.Height := gbSpecialFunction.Height + Diff;
+end;
+
 function TfrmMain.GetMemViewWidth: Integer;
 begin
   Result := sgMemView.ClientWidth;
@@ -858,7 +885,7 @@ var
   Diff: Integer;
 begin
   Diff := AValue - SpecialFunctionWidth;
-  gbSpecialFunction.Width := gbSpecialFunction.Width + Diff;
+  pnlLeft.Width := pnlLeft.Width + Diff;
 end;
 
 procedure TfrmMain.SetPreScaler(AValue: Byte);
@@ -1008,6 +1035,69 @@ begin
   sgMemView.AutoSizeColumns;
 end;
 
+procedure TfrmMain.OnPeripheralAdd(Sender: TObject);
+var
+  MenuItem: TMenuItem;
+begin
+  MenuItem := Sender as TMenuItem;
+  PeripheralClasses[MenuItem.Tag].Create(Self);
+end;
+
+procedure TfrmMain.LoadFile(AFileName: String);
+var
+  FileData: RawByteString;
+  LoadType: TLoadType;
+begin
+  try
+    LoadType := ExtractFileType(AFileName);
+    case LoadType of
+      ltAssembler:
+      begin
+        raise ENotImplemented.Create('Can''t load! Loading not implemented!');
+      end;
+      ltCompiled:
+      begin
+        FFileData.LoadFromFile(AFileName);
+        FileData := FFileData.Text;
+        SetCodePage(FileData, 1252, False);
+        SetCodePage(FileData, DefaultSystemCodePage);
+        FFileData.Text := FileData;
+        ParseStringListFromLST(FFileData);
+        FProcessor.LoadProgram(FFileData);
+        Compiled := True;
+        UpdateActions;
+        UpdateMemView;
+        UpdateCycles;
+        UpdateALUInfo;
+        UpdateSpecialFunction;
+        UpdateSynEditScroll;
+        UpdateSynEditMarkup;
+      end;
+      ltBinary:
+      begin
+        raise ENotImplemented.Create('Can''t load! Loading not implemented!');
+      end;
+    end;
+  except
+    on E: EUnsupportedException do
+    begin
+      MessageDlg(E.Message, mtError, [mbOK], 0);
+    end;
+  end;
+end;
+
+function TfrmMain.ExtractFileType(AFileName: String): TLoadType;
+var
+  LoadType: TLoadType;
+  Ext: String;
+begin
+  Ext := LowerCase(ExtractFileExt(AFileName));
+  for LoadType := Low(LoadType) to High(LoadType) do
+    if LoadExtensions[LoadType] = Ext then
+      Exit(LoadType);
+  raise EUnsupportedException.Create(Ext);
+end;
+
 function TfrmMain.GetPortsVisible: Boolean;
 begin
   Result := gbSpecialFunction.Visible;
@@ -1026,6 +1116,11 @@ end;
 procedure TfrmMain.SpecialFunctionAutoWidth;
 begin
   SpecialFunctionWidth := sgSpecialFunction.GridWidth + 4;
+end;
+
+procedure TfrmMain.SpecialFunctionAutoHeight;
+begin
+  SpecialFunctionHeight := sgSpecialFunction.GridHeight + 4;
 end;
 
 procedure TfrmMain.MemViewAutoWidth;
@@ -1171,6 +1266,27 @@ begin
     synEditor.Lines[Counter] := synEditor.Lines[Counter].Remove(0, MinWhitespacecount - 1 + AssemblerOffset );
   end;
 
+end;
+
+procedure TfrmMain.ProcessParams;
+begin
+  if ParamCount >= 1 then
+    LoadFile(ParamStr(1));
+end;
+
+procedure TfrmMain.GeneratePeripheralLists;
+var
+  MenuItem: TMenuItem;
+  I: Integer;
+begin
+  for I := 0 to Length(PeripheralClasses) - 1 do
+  begin
+    MenuItem := TMenuItem.Create(miPeripherals);
+    MenuItem.Caption := PeripheralClasses[I].GetDefaultPeripheralName;
+    MenuItem.OnClick := OnPeripheralAdd;
+    MenuItem.Tag := I;
+    miPeripherals.Add(MenuItem);
+  end;
 end;
 
 end.
