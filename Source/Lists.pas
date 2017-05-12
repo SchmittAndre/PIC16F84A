@@ -14,6 +14,13 @@ type
     function Find(AElement: T): Boolean; virtual; abstract;
   end;
 
+  TCompareFunction<T> = function(A, B: T): Boolean;
+  TCompareFunctionOfObject<T> = function(A, B: T): Boolean of object;
+
+  TFindFunctionStatic<T> = function(A: T): Boolean;
+  TFindFunctionOfObject<T> = function(A: T): Boolean of object;
+
+
  { TPair }
 
   TPair<TKey, TData> = record
@@ -31,22 +38,14 @@ type
 
   TIntArray = class;
   TArrayList<T> = class
-  public
-    type
-      TCompareFunction = function(A, B: T): Boolean;
-      TCompareFunctionOfObject = function(A, B: T): Boolean of object;
-
-      TFindFunction = function(A: T): Boolean;
-      TFindFunctionOfObject = function(A: T): Boolean of object;
-
   private
     FItems: array of T;
     FIterReversed: Boolean;
     FSizeSteps: Integer;
     FCount: Integer;
 
-    procedure SortLR(ACompareFunc: TCompareFunction; ALeft, ARight: Integer); overload;
-    procedure SortLR(ACompareFunc: TCompareFunctionOfObject; ALeft, ARight: Integer); overload;
+    procedure SortLR(ACompareFunc: TCompareFunction<T>; ALeft, ARight: Integer); overload;
+    procedure SortLR(ACompareFunc: TCompareFunctionOfObject<T>; ALeft, ARight: Integer); overload;
 
   public
     type
@@ -93,32 +92,32 @@ type
 
     procedure Swap(A, B: Integer);
 
-    function FindFirstIndex(AFunc: TFindFunction): Integer; overload;
-    function FindFirstIndex(AFunc: TFindFunctionOfObject): Integer; overload;
+    function FindFirstIndex(AFunc: TFindFunctionStatic<T>): Integer; overload;
+    function FindFirstIndex(AFunc: TFindFunctionOfObject<T>): Integer; overload;
     function FindFirstIndex(AFunc: TFindFunctionClass<T>; ADoFree: Boolean = True): Integer; overload;
 
-    function FindFirst(AFunc: TFindFunction): T; overload;
-    function FindFirst(AFunc: TFindFunctionOfObject): T; overload;
+    function FindFirst(AFunc: TFindFunctionStatic<T>): T; overload;
+    function FindFirst(AFunc: TFindFunctionOfObject<T>): T; overload;
     function FindFirst(AFunc: TFindFunctionClass<T>; ADoFree: Boolean = True): T; overload;
 
-    function FindLastIndex(AFunc: TFindFunction): Integer; overload;
-    function FindLastIndex(AFunc: TFindFunctionOfObject): Integer; overload;
+    function FindLastIndex(AFunc: TFindFunctionStatic<T>): Integer; overload;
+    function FindLastIndex(AFunc: TFindFunctionOfObject<T>): Integer; overload;
     function FindLastIndex(AFunc: TFindFunctionClass<T>; ADoFree: Boolean = True): Integer; overload;
 
-    function FindLast(AFunc: TFindFunction): T; overload;
-    function FindLast(AFunc: TFindFunctionOfObject): T; overload;
+    function FindLast(AFunc: TFindFunctionStatic<T>): T; overload;
+    function FindLast(AFunc: TFindFunctionOfObject<T>): T; overload;
     function FindLast(AFunc: TFindFunctionClass<T>; ADoFree: Boolean = True): T; overload;
 
-    function FindIndexAsArray(AFunc: TFindFunction): TIntArray; overload;
-    function FindIndexAsArray(AFunc: TFindFunctionOfObject): TIntArray; overload;
+    function FindIndexAsArray(AFunc: TFindFunctionStatic<T>): TIntArray; overload;
+    function FindIndexAsArray(AFunc: TFindFunctionOfObject<T>): TIntArray; overload;
     function FindIndexAsArray(AFunc: TFindFunctionClass<T>; ADoFree: Boolean = True): TIntArray; overload;
 
-    function FindAsArray(AFunc: TFindFunction): TArrayList<T>; overload; virtual;
-    function FindAsArray(AFunc: TFindFunctionOfObject): TArrayList<T>; overload; virtual;
+    function FindAsArray(AFunc: TFindFunctionStatic<T>): TArrayList<T>; overload; virtual;
+    function FindAsArray(AFunc: TFindFunctionOfObject<T>): TArrayList<T>; overload; virtual;
     function FindAsArray(AFunc: TFindFunctionClass<T>; ADoFree: Boolean = True): TArrayList<T>; overload; virtual;
 
-    procedure Sort(AFunc: TCompareFunction); overload;
-    procedure Sort(AFunc: TCompareFunctionOfObject); overload;
+    procedure Sort(AFunc: TCompareFunction<T>); overload;
+    procedure Sort(AFunc: TCompareFunctionOfObject<T>); overload;
 
     function Copy: TArrayList<T>; virtual;
 
@@ -141,26 +140,26 @@ type
 
   { TDelegate }
 
-  TDelegate<T> = class
-  public
-    type
-      TCall = procedure (const AParam) of object;
-      PCall = ^TCall;
+  TDelegate<T> = record
   private
-    FList: TArrayList<T>;
-    FCall: T;
+    type
+      TCall = procedure (const AParam: array of const) of object;
+      {$IFNDEF FPC}
+      PCall = ^TCall;
+      {$ENDIF}
+  private
+    FItems: array of T;
 
-    procedure CallFunction(const AParam);
+    function GetCallFunction: T;
+
+    procedure CallFunction(const AParam: array of const);
     function Find(const AMethod: T): Integer;
 
   public
-    constructor Create;
-    destructor Destroy; override;
-
     procedure Add(const AMethod: T);
     procedure Del(const AMethod: T);
 
-    property Call: T read FCall;
+    property Call: T read GetCallFunction;
   end;
 
   { TNotifyArray }
@@ -199,8 +198,8 @@ type
     constructor Create(AReferenceList: Boolean = False; ASizeSteps: Integer = 16);
     destructor Destroy; override;
 
-    function FindAsObjectArray(AFunc: TFindFunction): TObjectArray<T>; overload;
-    function FindAsObjectArray(AFunc: TFindFunctionOfObject): TObjectArray<T>; overload;
+    function FindAsObjectArray(AFunc: TFindFunctionStatic<T>): TObjectArray<T>; overload;
+    function FindAsObjectArray(AFunc: TFindFunctionOfObject<T>): TObjectArray<T>; overload;
     function FindAsObjectArray(AFunc: TFindFunctionClass<T>; ADoFree: Boolean = True): TObjectArray<T>; overload;
 
     function FindObject(AData: T): Integer;
@@ -1014,19 +1013,19 @@ begin
   FItems[AIndex] := AValue;
 end;
 
-procedure TArrayList<T>.Sort(AFunc: TCompareFunction);
+procedure TArrayList<T>.Sort(AFunc: TCompareFunction<T>);
 begin
   if Count > 1 then
     SortLR(AFunc, 0, Count - 1);
 end;
 
-procedure TArrayList<T>.Sort(AFunc: TCompareFunctionOfObject);
+procedure TArrayList<T>.Sort(AFunc: TCompareFunctionOfObject<T>);
 begin
   if Count > 1 then
     SortLR(AFunc, 0, Count - 1);
 end;
 
-procedure TArrayList<T>.SortLR(ACompareFunc: TCompareFunctionOfObject; ALeft, ARight: Integer);
+procedure TArrayList<T>.SortLR(ACompareFunc: TCompareFunctionOfObject<T>; ALeft, ARight: Integer);
 var
   Pivot: T;
   L, R: Integer;
@@ -1052,7 +1051,7 @@ begin
     SortLR(ACompareFunc, L, ARight);
 end;
 
-procedure TArrayList<T>.SortLR(ACompareFunc: TCompareFunction; ALeft, ARight: Integer);
+procedure TArrayList<T>.SortLR(ACompareFunc: TCompareFunction<T>; ALeft, ARight: Integer);
 var
   Pivot: T;
   L, R: Integer;
@@ -1143,7 +1142,7 @@ begin
   Result := EntryNotFound; // preventing a warning...
 end;
 
-function TArrayList<T>.FindFirstIndex(AFunc: TFindFunction): Integer;
+function TArrayList<T>.FindFirstIndex(AFunc: TFindFunctionStatic<T>): Integer;
 var
   I: Integer;
 begin
@@ -1153,7 +1152,7 @@ begin
   Result := -1;
 end;
 
-function TArrayList<T>.FindFirstIndex(AFunc: TFindFunctionOfObject): Integer;
+function TArrayList<T>.FindFirstIndex(AFunc: TFindFunctionOfObject<T>): Integer;
 var
   I: Integer;
 begin
@@ -1175,7 +1174,7 @@ begin
     AFunc.Free;
 end;
 
-function TArrayList<T>.FindFirst(AFunc: TFindFunction): T;
+function TArrayList<T>.FindFirst(AFunc: TFindFunctionStatic<T>): T;
 var
   I: Integer;
 begin
@@ -1185,7 +1184,7 @@ begin
   Result := FItems[I];
 end;
 
-function TArrayList<T>.FindFirst(AFunc: TFindFunctionOfObject): T;
+function TArrayList<T>.FindFirst(AFunc: TFindFunctionOfObject<T>): T;
 var
   I: Integer;
 begin
@@ -1206,7 +1205,7 @@ begin
 end;
 
 
-function TArrayList<T>.FindLastIndex(AFunc: TFindFunction): Integer;
+function TArrayList<T>.FindLastIndex(AFunc: TFindFunctionStatic<T>): Integer;
 var
   I: Integer;
 begin
@@ -1216,7 +1215,7 @@ begin
   Result := -1;
 end;
 
-function TArrayList<T>.FindLastIndex(AFunc: TFindFunctionOfObject): Integer;
+function TArrayList<T>.FindLastIndex(AFunc: TFindFunctionOfObject<T>): Integer;
 var
   I: Integer;
 begin
@@ -1238,7 +1237,7 @@ begin
     AFunc.Free;
 end;
 
-function TArrayList<T>.FindLast(AFunc: TFindFunction): T;
+function TArrayList<T>.FindLast(AFunc: TFindFunctionStatic<T>): T;
 var
   I: Integer;
 begin
@@ -1248,7 +1247,7 @@ begin
   Result := FItems[I];
 end;
 
-function TArrayList<T>.FindLast(AFunc: TFindFunctionOfObject): T;
+function TArrayList<T>.FindLast(AFunc: TFindFunctionOfObject<T>): T;
 var
   I: Integer;
 begin
@@ -1269,7 +1268,7 @@ begin
   Result := FItems[I];
 end;
 
-function TArrayList<T>.FindIndexAsArray(AFunc: TFindFunction): TIntArray;
+function TArrayList<T>.FindIndexAsArray(AFunc: TFindFunctionStatic<T>): TIntArray;
 var
   I: Integer;
 begin
@@ -1279,7 +1278,7 @@ begin
       Result.Add(I);
 end;
 
-function TArrayList<T>.FindIndexAsArray(AFunc: TFindFunctionOfObject): TIntArray;
+function TArrayList<T>.FindIndexAsArray(AFunc: TFindFunctionOfObject<T>): TIntArray;
 var
   I: Integer;
 begin
@@ -1301,7 +1300,7 @@ begin
     AFunc.Free;
 end;
 
-function TArrayList<T>.FindAsArray(AFunc: TFindFunction): TArrayList<T>;
+function TArrayList<T>.FindAsArray(AFunc: TFindFunctionStatic<T>): TArrayList<T>;
 var
   I: Integer;
 begin
@@ -1311,7 +1310,7 @@ begin
       Result.Add(FItems[I]);
 end;
 
-function TArrayList<T>.FindAsArray(AFunc: TFindFunctionOfObject): TArrayList<T>;
+function TArrayList<T>.FindAsArray(AFunc: TFindFunctionOfObject<T>): TArrayList<T>;
 var
   I: Integer;
 begin
@@ -1422,53 +1421,63 @@ end;
 
 { TDelegate<T> }
 
+function TDelegate<T>.GetCallFunction: T;
+var
+  {$IFDEF FPC}
+  F: TMethod; {$ELSE}
+  F: TCall;   {$ENDIF}
+begin
+  {$IFDEF FPC}
+  F.Code := @CallFunction;
+  F.Data := @Self;
+  {$ELSE}
+  F := CallFunction;
+  {$ENDIF}
+  Move(F, Result{%H-}, SizeOf(TMethod));
+end;
+
 procedure TDelegate<T>.Del(const AMethod: T);
 var
   I: Integer;
 begin
   I := Find(AMethod);
   if I <> -1 then
-    FList.Del(I);
+  begin
+    if Length(FItems) - I > 1 then
+      Move(FItems[I + 1], FItems[I], SizeOf(TMethod) * (Length(FItems) - I - 1));
+    SetLength(FItems, Length(FItems) - 1)
+  end;
 end;
 
 function TDelegate<T>.Find(const AMethod: T): Integer;
 var
   I: Integer;
 begin
-  for I := 0 to FList.Count - 1 do
-    if CompareByte(FList.Items[I], AMethod, SizeOf(TMethod)) = 0 then
+  for I := 0 to Length(FItems) - 1 do
+    {$IFDEF FPC}
+    if CompareByte(FItems[I], AMethod, SizeOf(TMethod)) = 0 then {$ELSE}
+    if CompareMem(@FItems[I], @AMethod, SizeOf(TMethod)) then {$ENDIF}
       Exit(I);
   Result := -1;
 end;
 
-procedure TDelegate<T>.CallFunction(const AParam);
+procedure TDelegate<T>.CallFunction(const AParam: array of const);
 var
   Func: T;
 begin
-  for Func in FList do
-    TCall(Func)(AParam);
-end;
-
-constructor TDelegate<T>.Create;
-var
-  X: TCall;
-begin
-  FList := TArrayList<T>.Create;
-  X := CallFunction;
-  CallFunction(X);
-  Move(X, FCall, SizeOf(TMethod));
-end;
-
-destructor TDelegate<T>.Destroy;
-begin
-  FList.Free;
-  inherited Destroy;
+  for Func in FItems do
+    {$IFDEF FPC}
+    TCall(Func)(AParam); {$ELSE}
+    PCall(@Func)^(AParam); {$ENDIF}
 end;
 
 procedure TDelegate<T>.Add(const AMethod: T);
 begin
   if Find(AMethod) = -1 then
-    FList.Add(AMethod);
+  begin
+    SetLength(FItems, Length(FItems) + 1);
+    FItems[Length(FItems) - 1] := AMethod;
+  end;
 end;
 
 { TCardinalSet }
@@ -1777,7 +1786,7 @@ begin
   inherited;
 end;
 
-function TObjectArray<T>.FindAsObjectArray(AFunc: TFindFunction): TObjectArray<T>;
+function TObjectArray<T>.FindAsObjectArray(AFunc: TFindFunctionStatic<T>): TObjectArray<T>;
 var
   I: Integer;
 begin
@@ -1787,7 +1796,7 @@ begin
       Result.Add(FItems[I]);
 end;
 
-function TObjectArray<T>.FindAsObjectArray(AFunc: TFindFunctionOfObject): TObjectArray<T>;
+function TObjectArray<T>.FindAsObjectArray(AFunc: TFindFunctionOfObject<T>): TObjectArray<T>;
 var
   I: Integer;
 begin

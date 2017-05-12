@@ -1008,10 +1008,22 @@ object frmMain: TfrmMain
     end
     object miPeripherals: TMenuItem
       Caption = 'Peripherals'
+      object miShowPortA: TMenuItem
+        Action = actProcessorPortA
+      end
+      object miShowPortB: TMenuItem
+        Action = actProcessorPortB
+      end
+      object miShowMCLR: TMenuItem
+        Action = actProcessorMCLR
+      end
+      object miPeripheralSplitter1: TMenuItem
+        Caption = '-'
+      end
       object miCloseAllPeripherals: TMenuItem
         Action = actCloseAllPeripherals
       end
-      object miPeripheralListStart: TMenuItem
+      object miPeripheralSplitter2: TMenuItem
         Caption = '-'
       end
     end
@@ -1133,8 +1145,24 @@ object frmMain: TfrmMain
       OnExecute = actHelpExecute
     end
     object actCloseAllPeripherals: TAction
+      Category = 'Peripheral'
       Caption = 'Close all'
       OnExecute = actCloseAllPeripheralsExecute
+    end
+    object actProcessorPortA: TAction
+      Category = 'Peripheral'
+      Caption = 'Port A'
+      OnExecute = actProcessorPortAExecute
+    end
+    object actProcessorPortB: TAction
+      Category = 'Peripheral'
+      Caption = 'Port B'
+      OnExecute = actProcessorPortBExecute
+    end
+    object actProcessorMCLR: TAction
+      Category = 'Peripheral'
+      Caption = 'MCLR'
+      OnExecute = actProcessorMCLRExecute
     end
   end
   object synCompletion: TSynCompletion

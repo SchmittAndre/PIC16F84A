@@ -1,25 +1,26 @@
-object PeripheralForm: TPeripheralForm
+object PinConnectionForm: TPinConnectionForm
   Left = 0
   Height = 331
   Top = 0
   Width = 429
-  BorderStyle = bsSizeToolWin
+  BorderStyle = bsToolWindow
   Caption = 'Peripherals'
   ClientHeight = 331
   ClientWidth = 429
   FormStyle = fsStayOnTop
-  OnClose = FormClose
   PopupMenu = pmPins
   Position = poDesktopCenter
   LCLVersion = '1.6.4.0'
   Visible = True
   object pbDrawSurface: TPaintBox
-    Left = 5
-    Height = 222
-    Top = 5
-    Width = 419
+    Left = 0
+    Height = 227
+    Top = 0
+    Width = 429
     Align = alClient
-    BorderSpacing.Around = 5
+    OnMouseDown = pbDrawSurfaceMouseDown
+    OnMouseMove = pbDrawSurfaceMouseMove
+    OnMouseUp = pbDrawSurfaceMouseUp
     OnPaint = pbDrawSurfacePaint
   end
   object gbPins: TGroupBox
@@ -48,17 +49,20 @@ object PeripheralForm: TPeripheralForm
   object pmPins: TPopupMenu
     left = 48
     top = 32
-    object miVisiblePins: TMenuItem
+    object miShowPins: TMenuItem
       Action = actShowPins
     end
-    object miSplitter1: TMenuItem
-      Caption = '-'
-    end
-    object miShowPins: TMenuItem
+    object miVisiblePins: TMenuItem
       Action = actVisiblePins
     end
+    object miPeripheralSeperator1: TMenuItem
+      Caption = '-'
+    end
+    object miSettings: TMenuItem
+      Action = actPeripheralSettings
+    end
   end
-  object pmPeripheral: TActionList
+  object alPeripheral: TActionList
     left = 136
     top = 32
     object actVisiblePins: TAction
@@ -72,6 +76,10 @@ object PeripheralForm: TPeripheralForm
       Caption = 'placeholder'
       OnExecute = actShowPinsExecute
       OnUpdate = actShowPinsUpdate
+    end
+    object actPeripheralSettings: TAction
+      Category = 'Pins'
+      Caption = 'Settings...'
     end
   end
 end

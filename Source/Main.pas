@@ -12,6 +12,7 @@ uses
   VisiblePinSelectionDefine,
   PeripheralFormDefine,
   // Peripherals
+  ProcessorFormDefine,
   PeripheralLEDArray;
 
 type
@@ -27,11 +28,14 @@ type
 
   { TfrmMain }
 
-  TfrmMain = class (TForm)
+  TfrmMain = class (TForm, IHasProcessor)
     actExit: TAction;
     actCompile: TAction;
     actHelp: TAction;
     actCloseAllPeripherals: TAction;
+    actProcessorMCLR: TAction;
+    actProcessorPortB: TAction;
+    actProcessorPortA: TAction;
     actNew: TAction;
     actSaveFileAs: TAction;
     actStepOut: TAction;
@@ -76,8 +80,12 @@ type
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem4: TMenuItem;
+    miShowMCLR: TMenuItem;
+    miShowPortA: TMenuItem;
+    miShowPortB: TMenuItem;
+    miPeripheralSplitter1: TMenuItem;
     miCloseAllPeripherals: TMenuItem;
-    miPeripheralListStart: TMenuItem;
+    miPeripheralSplitter2: TMenuItem;
     miPeripherals: TMenuItem;
     miHelp: TMenuItem;
     miHelpHeader: TMenuItem;
@@ -124,6 +132,9 @@ type
     procedure actHideAllExecute(Sender: TObject);
     procedure actOpenFileExecute(Sender: TObject);
     procedure actOpenFileUpdate(Sender: TObject);
+    procedure actProcessorMCLRExecute(Sender: TObject);
+    procedure actProcessorPortAExecute(Sender: TObject);
+    procedure actProcessorPortBExecute(Sender: TObject);
     procedure actResetExecute(Sender: TObject);
     procedure actResetUpdate(Sender: TObject);
     procedure actSaveFileAsExecute(Sender: TObject);
@@ -169,6 +180,10 @@ type
     FFlags: TProcessor.TCalcFlags;
     FLineFollowMode: TLineFollowMode;
     FLineFollowRange: Cardinal;
+
+    FProcessorPortAForm: TProcessorPortAForm;
+    FProcessorPortBForm: TProcessorPortBForm;
+    FProcessorMasterClearForm: TProcessorMasterClearForm;
 
     procedure InitSynEdit;
     procedure InitSpecialFunction;
@@ -246,6 +261,11 @@ type
   protected
     procedure UpdateActions; override;
 
+  public
+
+    // IHasProcessor
+    function GetProcessor: TProcessor;
+
   end;
 
   { EUnsupportedException }
@@ -313,6 +333,10 @@ begin
   InitMemView;
   InitSpecialFunction;
   Application.OnIdle := IdleHandler;
+
+  FProcessorPortAForm := TProcessorPortAForm.Create(Self);
+  FProcessorPortBForm := TProcessorPortBForm.Create(Self);
+  FProcessorMasterClearForm := TProcessorMasterClearForm.Create(Self);
 
   GeneratePeripheralLists;
 end;
@@ -398,6 +422,24 @@ end;
 procedure TfrmMain.actOpenFileUpdate(Sender: TObject);
 begin
   actOpenFile.Enabled := not FProcessor.Running;
+end;
+
+procedure TfrmMain.actProcessorMCLRExecute(Sender: TObject);
+begin
+  with FProcessorMasterClearForm do
+    Visible := not Visible;
+end;
+
+procedure TfrmMain.actProcessorPortAExecute(Sender: TObject);
+begin
+  with FProcessorPortAForm do
+    Visible := not Visible;
+end;
+
+procedure TfrmMain.actProcessorPortBExecute(Sender: TObject);
+begin
+  with FProcessorPortBForm do
+    Visible := not Visible;
 end;
 
 procedure TfrmMain.actResetExecute(Sender: TObject);
@@ -597,6 +639,10 @@ end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
+  // must free those forms first, as the desturction tries to do stuff with the processor
+  FProcessorPortAForm.Free;
+  FProcessorPortBForm.Free;
+  FProcessorMasterClearForm.Free;
   FProcessor.Free;
   FFileData.Free;
 end;
@@ -1238,6 +1284,11 @@ procedure TfrmMain.UpdateActions;
 begin
   inherited UpdateActions;
   cbMemorySelection.Enabled := not FProcessor.Running;
+end;
+
+function TfrmMain.GetProcessor: TProcessor;
+begin
+  Result := FProcessor;
 end;
 
 procedure TfrmMain.ParseStringListFromLST(List: TStringList);

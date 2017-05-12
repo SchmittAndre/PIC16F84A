@@ -3,20 +3,31 @@ unit PeripheralLEDArray;
 interface
 
 uses
-  Classes, SysUtils, PeripheralFormDefine, Graphics, Dialogs, Color, Lists, Controls, LEDDefine, PinDefine;
+  Classes, SysUtils, PeripheralFormDefine, Graphics, Dialogs, Controls, LEDDefine, PinDefine, Math,
+  Menus, ActnList;
 
 type
 
   { TPeripheralLEDArray }
 
   TPeripheralLEDArray = class (TPeripheralForm)
+  public
+    type
+
+      TLEDCount = 0 .. 8;
+
   private
-    FLEDs: TObjectArray<TBaseLED>;
+    FLEDArray: TLEDArray;
+
+    procedure OnShowSettings(Sender: TObject);
+
+    procedure OnLEDArrayWidthChange(ALEDArray: TLEDArray);
+    procedure OnLEDArrayHeightChange(ALEDArray: TLEDArray);
 
   protected
     procedure DrawPeripheral; override;
 
-    procedure OnPinChange(APin: TPin); override;
+    function GetMinWidth: Integer; override;
 
   public
     constructor Create(TheOwner: TComponent); override;
@@ -30,12 +41,24 @@ implementation
 
 { TPeripheralLEDArray }
 
-procedure TPeripheralLEDArray.DrawPeripheral;
-var
-  LED: TBaseLED;
+procedure TPeripheralLEDArray.OnShowSettings(Sender: TObject);
 begin
-  for LED in FLEDs do
-    LED.Draw;
+  raise ENotImplemented.Create('LED-Array Settings not implemented');
+end;
+
+procedure TPeripheralLEDArray.OnLEDArrayWidthChange(ALEDArray: TLEDArray);
+begin
+  AutoWidth;
+end;
+
+procedure TPeripheralLEDArray.OnLEDArrayHeightChange(ALEDArray: TLEDArray);
+begin
+  DrawSurfaceHeight := FLEDArray.DisplayHeight;
+end;
+
+procedure TPeripheralLEDArray.DrawPeripheral;
+begin
+  FLEDArray.Draw;
 end;
 
 class function TPeripheralLEDArray.GetDefaultPeripheralName: String;
@@ -43,38 +66,27 @@ begin
   Result := 'LED-Array';
 end;
 
-procedure TPeripheralLEDArray.OnPinChange(APin: TPin);
+function TPeripheralLEDArray.GetMinWidth: Integer;
 begin
-  inherited;
-  if APin.PinArray = PinArray then
-    FLEDs[APin.Index].State := APin.State;
+  Result := inherited GetMinWidth;
+  Result := Max(Result, FLEDArray.DisplayWidth);
 end;
 
 constructor TPeripheralLEDArray.Create(TheOwner: TComponent);
-var
-  I: Integer;
-  LED: TRoundLED;
 begin
   inherited Create(TheOwner);
-  FLEDs := TObjectArray<TBaseLED>.Create;
-  for I := 0 to 3 do
-  begin
-    LED := TRoundLED.Create(pbDrawSurface, nil);
-    LED.Left := (3 - I) * 60;
-    LED.Top := 0;
-    LED.Width := 50;
-    LED.Height := 50;
-    LED.Color := TColorRGB.Create(1, 0, 0);
-    LED.OffFactor := 0.2;
-    FLEDs.Add(LED);
-  end;
-  DrawSurfaceWidth := 4 * 60 - 10;
-  DrawSurfaceHeight := 50;
+  FLEDArray := TLEDArray.Create(pbDrawSurface, PinArray);
+  FLEDArray.OnWidthChanged.Add(OnLEDArrayWidthChange);
+  FLEDArray.OnHeightChanged.Add(OnLEDArrayHeightChange);
+  OnLEDArrayHeightChange(FLEDArray);
+  SetSettingsFunc(OnShowSettings);
 end;
 
 destructor TPeripheralLEDArray.Destroy;
 begin
-  FLEDs.Free;
+  FLEDArray.OnWidthChanged.Del(OnLEDArrayWidthChange);
+  FLEDArray.OnHeightChanged.Del(OnLEDArrayHeightChange);
+  FLEDArray.Free;
   inherited Destroy;
 end;
 

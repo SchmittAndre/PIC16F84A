@@ -20,7 +20,7 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
-      <BuildNr Value="30"/>
+      <BuildNr Value="31"/>
       <Attributes pvaPrivateBuild="True"/>
       <StringTable Comments="Best Program" CompanyName="VS42 Inc." FileDescription="PIC16F84A Emulator" ProductVersion=""/>
     </VersionInfo>
@@ -162,7 +162,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="8">
+    <Units Count="9">
       <Unit0>
         <Filename Value="PIC16F84A_Emulator.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -181,13 +181,16 @@
       <Unit3>
         <Filename Value="PeripheralFormDefine.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="PeripheralForm"/>
+        <ComponentName Value="PinConnectionForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
       </Unit3>
       <Unit4>
         <Filename Value="PeripheralLEDArray.pas"/>
         <IsPartOfProject Value="True"/>
+        <ComponentName Value="PeripheralForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
       </Unit4>
       <Unit5>
         <Filename Value="LEDDefine.pas"/>
@@ -204,6 +207,10 @@
         <Filename Value="PinDefine.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit7>
+      <Unit8>
+        <Filename Value="ProcessorFormDefine.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit8>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -11,7 +11,7 @@ type
 
   { TProcessor }
 
-  TProcessor = class (TInterfacedObject)
+  TProcessor = class
   public const
     {$REGION Simple Numerical Constants for Size and such}
     // Stack
@@ -493,6 +493,10 @@ type
     property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
     property CalcFlags: TCalcFlags read GetCalcFlags;
 
+    property PortAPins: TPinArray read FPortAPins;
+    property PortBPins: TPinArray read FPortBPins;
+    property MasterClearPin: TPinArray read FMasterClearPin;
+
     property ReadAsZero[AType: TMemoryType; APos: Cardinal]: Boolean read GetReadAsZero;
     property Memory[AType: TMemoryType; APos: Cardinal]: Byte read GetMemory;
 
@@ -548,6 +552,14 @@ type
     procedure InstructionSUBLW(AInstruction: TInstruction);
     procedure InstructionXORLW(AInstruction: TInstruction);
     {$ENDREGION}
+  end;
+
+  { IHasProcessor }
+
+  IHasProcessor = interface
+  ['{F7D8497B-3262-4B22-BC25-4D8C1E380772}']
+    function GetProcessor: TProcessor;
+    property Processor: TProcessor read GetProcessor;
   end;
 
 implementation
@@ -1162,16 +1174,22 @@ end;
 
 procedure TProcessor.OnPortAChanged(APin: TPin);
 begin
-  FSkipPortWrite := True;
-  Flag[b0PORTA, APin.Index] := APin.State;
-  FSkipPortWrite := False;
+  if APin.Direction = pdRead then
+  begin
+    FSkipPortWrite := True;
+    Flag[b0PORTA, APin.Index] := APin.State;
+    FSkipPortWrite := False;
+  end;
 end;
 
 procedure TProcessor.OnPortBChanged(APin: TPin);
 begin
-  FSkipPortWrite := True;
-  Flag[b0PORTB, APin.Index] := APin.State;
-  FSkipPortWrite := False;
+  if APin.Direction = pdRead then
+  begin
+    FSkipPortWrite := True;
+    Flag[b0PORTB, APin.Index] := APin.State;
+    FSkipPortWrite := False;
+  end;
 end;
 
 procedure TProcessor.OnMasterClearChanged(APin: TPin);
@@ -1197,7 +1215,7 @@ begin
   FPortAPins := TPinArray.Create('Port A', PortACount);
   FPortAPins.OnPinChange.Add(OnPortAChanged);
   FPortBPins := TPinArray.Create('Port B', PortBCount);
-  FPortAPins.OnPinChange.Add(OnPortBChanged);
+  FPortBPins.OnPinChange.Add(OnPortBChanged);
   FMasterClearPin := TPinArray.Create('MCLR');
   FMasterClearPin.OnPinChange.Add(OnMasterClearChanged);
 end;
