@@ -11,6 +11,7 @@ uses
   ProcessorDefine,
   VisiblePinSelectionDefine,
   PeripheralFormDefine,
+  PinDefine,
   // Peripherals
   ProcessorFormDefine,
   PeripheralLEDArray;
@@ -258,6 +259,8 @@ type
     procedure OnPeripheralAdd(Sender: TObject);
     procedure GeneratePeripheralLists;
 
+    procedure OnAsyncProcessorChange(AProcessor: TProcessor);
+
   protected
     procedure UpdateActions; override;
 
@@ -326,6 +329,8 @@ begin
   frmVisiblePinSelection := TfrmVisiblePinSelection.Create(Self);
 
   FProcessor := TProcessor.Create;
+  FProcessor.OnAsyncMemoryChange.Add(OnAsyncProcessorChange);
+
   FFileData := TStringList.Create;
   LineFollowRange := 3;
   LineFollowMode := lfBorder;
@@ -1338,6 +1343,12 @@ begin
     MenuItem.Tag := I;
     miPeripherals.Add(MenuItem);
   end;
+end;
+
+procedure TfrmMain.OnAsyncProcessorChange(AProcessor: TProcessor);
+begin
+  UpdateMemView;
+  UpdateSpecialFunction;
 end;
 
 end.

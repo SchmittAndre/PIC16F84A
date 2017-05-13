@@ -175,6 +175,8 @@ type
       paWatchdog
     );
 
+    TAsyncProcessorChangeEvent = procedure (AProcessor: TProcessor) of object;
+
   public const
     {$REGION RegisterBank Mapped Parts}
     RegisterBank0Mapped: set of TRegisterBank0 = [
@@ -456,6 +458,10 @@ type
     procedure OnMasterClearChanged(APin: TPin);
 
   public
+
+    // whenever something changes, not while the processor is processing a command (like a port change)
+    OnAsyncMemoryChange: TDelegate<TAsyncProcessorChangeEvent>;
+
     constructor Create;
     destructor Destroy; override;
 
@@ -1178,6 +1184,7 @@ begin
   begin
     FSkipPortWrite := True;
     Flag[b0PORTA, APin.Index] := APin.State;
+    OnAsyncMemoryChange.Call(Self);
     FSkipPortWrite := False;
   end;
 end;
@@ -1188,13 +1195,17 @@ begin
   begin
     FSkipPortWrite := True;
     Flag[b0PORTB, APin.Index] := APin.State;
+    OnAsyncMemoryChange.Call(Self);
     FSkipPortWrite := False;
   end;
 end;
 
 procedure TProcessor.OnMasterClearChanged(APin: TPin);
 begin
-  // TODO: MCLR
+  FSkipPortWrite := True;
+  Flag[b0PORTB, APin.Index] := APin.State;
+  OnAsyncMemoryChange.Call(Self);
+  FSkipPortWrite := False;
 end;
 
 constructor TProcessor.Create;
