@@ -189,6 +189,7 @@ type
     procedure InitSynEdit;
     procedure InitSpecialFunction;
     procedure InitMemView;
+
     procedure OnUnhandeledException(Sender: TObject; E: Exception);
 
     procedure ParseStringListFromLST(List: TStringList);
@@ -260,7 +261,7 @@ type
     procedure OnPeripheralAdd(Sender: TObject);
     procedure GeneratePeripheralLists;
 
-    procedure OnAsyncProcessorChange(AProcessor: TProcessor);
+    procedure OnAsyncProcessorChange(Sender: TProcessor);
 
   protected
     procedure UpdateActions; override;
@@ -515,7 +516,6 @@ begin
           end;
         end;
       end;
-
     finally
       Free;
     end;
@@ -543,7 +543,10 @@ begin
     UpdateSynEditScroll;
   end
   else
+  begin
     FProcessor.Start;
+  end;
+  UpdateCycles;
   UpdateSynEditMarkup;
   UpdateMemView;
   UpdateSpecialFunction;
@@ -1014,6 +1017,16 @@ end;
 procedure TfrmMain.UpdateCycles;
 begin
   Cycles := FProcessor.Cycles;
+  if FProcessor.Overloaded then
+  begin
+    pnlCycles.Color := $5FAFFF;
+    pnlCycles.ShowHint := True;
+  end
+  else
+  begin
+    pnlCycles.ParentColor := True;
+    pnlCycles.ShowHint := False;
+  end;
 end;
 
 procedure TfrmMain.UpdateALUInfo;
@@ -1369,7 +1382,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.OnAsyncProcessorChange(AProcessor: TProcessor);
+procedure TfrmMain.OnAsyncProcessorChange(Sender: TProcessor);
 begin
   UpdateMemView;
   UpdateSpecialFunction;

@@ -813,12 +813,14 @@ object frmMain: TfrmMain
         object pnlCycles: TPanel
           Left = 0
           Height = 25
+          Hint = 'Processor can''t keep up'
           Top = 0
           Width = 130
           Align = alTop
           BevelOuter = bvNone
           ClientHeight = 25
           ClientWidth = 130
+          ParentColor = False
           TabOrder = 2
           object lbCyclesTitle: TLabel
             Left = 5

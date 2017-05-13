@@ -1,0 +1,19 @@
+                    00001           list c=132          ;Zeilenlänge im LST auf 132 Zeichen setzen
+                    00002
+                    00003           ;Definition des Prozessors
+                    00004           device 16F84
+                    00005
+                    00006           ;Festlegen des Codebeginns
+                    00007           org 0
+                    00008  start
+0000 1683           00009           bsf 03h, 5    ; Bank 1
+0001 0186           00010           clrf 06h      ; TrisB clear
+0002 1283           00011           bcf 03h, 5    ; Bank 0
+                    00012
+0003 1403           00013           bsf 03h, 0    ; Carry set
+                    00014
+                    00015  ende
+0004 0D86           00016           rlf 06h       ; Rotate PortB through carry
+                    00017
+0005 2804           00018           goto ende     ; Endlosschleife, verhindert Nirwana
+                    00019

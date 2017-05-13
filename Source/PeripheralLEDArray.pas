@@ -4,7 +4,7 @@ interface
 
 uses
   Classes, SysUtils, PeripheralFormDefine, Graphics, Dialogs, Controls, LEDDefine, PinDefine, Math,
-  Menus, ActnList;
+  Menus, ActnList, LEDArraySettingsForm;
 
 type
 
@@ -21,8 +21,8 @@ type
 
     procedure OnShowSettings(Sender: TObject);
 
-    procedure OnLEDArrayWidthChange(ALEDArray: TLEDArray);
-    procedure OnLEDArrayHeightChange(ALEDArray: TLEDArray);
+    procedure OnLEDArrayWidthChange(Sender: TLEDArray);
+    procedure OnLEDArrayHeightChange(Sender: TLEDArray);
 
   protected
     procedure DrawPeripheral; override;
@@ -43,15 +43,16 @@ implementation
 
 procedure TPeripheralLEDArray.OnShowSettings(Sender: TObject);
 begin
-  raise ENotImplemented.Create('LED-Array Settings not implemented');
+  frmLEDArraySettings.Execute(FLEDArray);
+  GeneratePinArrays;
 end;
 
-procedure TPeripheralLEDArray.OnLEDArrayWidthChange(ALEDArray: TLEDArray);
+procedure TPeripheralLEDArray.OnLEDArrayWidthChange(Sender: TLEDArray);
 begin
-  AutoWidth;
+  GeneratePinArrays;
 end;
 
-procedure TPeripheralLEDArray.OnLEDArrayHeightChange(ALEDArray: TLEDArray);
+procedure TPeripheralLEDArray.OnLEDArrayHeightChange(Sender: TLEDArray);
 begin
   DrawSurfaceHeight := FLEDArray.DisplayHeight;
 end;
@@ -76,16 +77,16 @@ constructor TPeripheralLEDArray.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
   FLEDArray := TLEDArray.Create(pbDrawSurface, PinArray);
-  FLEDArray.OnWidthChanged.Add(OnLEDArrayWidthChange);
-  FLEDArray.OnHeightChanged.Add(OnLEDArrayHeightChange);
+  FLEDArray.OnWidthChange.Add(OnLEDArrayWidthChange);
+  FLEDArray.OnHeightChange.Add(OnLEDArrayHeightChange);
   OnLEDArrayHeightChange(FLEDArray);
   SetSettingsFunc(OnShowSettings);
 end;
 
 destructor TPeripheralLEDArray.Destroy;
 begin
-  FLEDArray.OnWidthChanged.Del(OnLEDArrayWidthChange);
-  FLEDArray.OnHeightChanged.Del(OnLEDArrayHeightChange);
+  FLEDArray.OnWidthChange.Del(OnLEDArrayWidthChange);
+  FLEDArray.OnHeightChange.Del(OnLEDArrayHeightChange);
   FLEDArray.Free;
   inherited Destroy;
 end;

@@ -138,30 +138,6 @@ type
     function RangeCheck(AIndex: Integer): Boolean;
   end;
 
-  { TDelegate }
-
-  TDelegate<T> = record
-  private
-    type
-      TCall = procedure (const AParam: array of const) of object;
-      {$IFNDEF FPC}
-      PCall = ^TCall;
-      {$ENDIF}
-  private
-    FItems: array of T;
-
-    function GetCallFunction: T;
-
-    procedure CallFunction(const AParam: array of const);
-    function Find(const AMethod: T): Integer;
-
-  public
-    procedure Add(const AMethod: T);
-    procedure Del(const AMethod: T);
-
-    property Call: T read GetCallFunction;
-  end;
-
   { TNotifyArray }
 
   TNotifyArray<T> = class (TArrayList<T>)
@@ -1417,67 +1393,6 @@ end;
 class function TClassMap<T>.KeysEqual(AKey1, AKey2: TClass): Boolean;
 begin
   Result := Pointer(AKey1) = Pointer(AKey2);
-end;
-
-{ TDelegate<T> }
-
-function TDelegate<T>.GetCallFunction: T;
-var
-  {$IFDEF FPC}
-  F: TMethod; {$ELSE}
-  F: TCall;   {$ENDIF}
-begin
-  {$IFDEF FPC}
-  F.Code := @CallFunction;
-  F.Data := @Self;
-  {$ELSE}
-  F := CallFunction;
-  {$ENDIF}
-  Move(F, Result{%H-}, SizeOf(TMethod));
-end;
-
-procedure TDelegate<T>.Del(const AMethod: T);
-var
-  I: Integer;
-begin
-  I := Find(AMethod);
-  if I <> -1 then
-  begin
-    if Length(FItems) - I > 1 then
-      Move(FItems[I + 1], FItems[I], SizeOf(TMethod) * (Length(FItems) - I - 1));
-    SetLength(FItems, Length(FItems) - 1)
-  end;
-end;
-
-function TDelegate<T>.Find(const AMethod: T): Integer;
-var
-  I: Integer;
-begin
-  for I := 0 to Length(FItems) - 1 do
-    {$IFDEF FPC}
-    if CompareByte(FItems[I], AMethod, SizeOf(TMethod)) = 0 then {$ELSE}
-    if CompareMem(@FItems[I], @AMethod, SizeOf(TMethod)) then {$ENDIF}
-      Exit(I);
-  Result := -1;
-end;
-
-procedure TDelegate<T>.CallFunction(const AParam: array of const);
-var
-  Func: T;
-begin
-  for Func in FItems do
-    {$IFDEF FPC}
-    TCall(Func)(AParam); {$ELSE}
-    PCall(@Func)^(AParam); {$ENDIF}
-end;
-
-procedure TDelegate<T>.Add(const AMethod: T);
-begin
-  if Find(AMethod) = -1 then
-  begin
-    SetLength(FItems, Length(FItems) + 1);
-    FItems[Length(FItems) - 1] := AMethod;
-  end;
 end;
 
 { TCardinalSet }

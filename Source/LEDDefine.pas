@@ -3,7 +3,7 @@ unit LEDDefine;
 interface
 
 uses
-  Classes, SysUtils, Color, PinDefine, Graphics, Controls, Math, Lists;
+  Classes, SysUtils, Color, PinDefine, Graphics, Controls, Math, Lists, Delegates;
 
 type
 
@@ -100,9 +100,15 @@ type
   public
     type
 
-      TLEDCount = 0 .. 8;
+      TLEDCount = 1 .. 10;
 
-      TLEDArrayChangeEvent = procedure (ALEDArray: TLEDArray) of object;
+  public
+
+    type TLEDArrayNotifyEvent = procedure (Sender: TLEDArray) of object; var
+      // The width of the LED-Array changed
+      OnWidthChange: TDelegate1<TLEDArrayNotifyEvent>;
+      // The height of the LED-Array changed
+      OnHeightChange: TDelegate1<TLEDArrayNotifyEvent>;
 
   private
     FControl: TGraphicControl;
@@ -148,13 +154,12 @@ type
 
   public
 
-    OnWidthChanged: TDelegate<TLEDArrayChangeEvent>;
-    OnHeightChanged: TDelegate<TLEDArrayChangeEvent>;
-
-    constructor Create(AControl: TGraphicControl; APinArray: TPinArray);
+    constructor Create(AControl: TGraphicControl; APinArray: TPinArray); overload;
     destructor Destroy; override;
 
     procedure Draw;
+
+    property PinArray: TPinArray read FPinArray;
 
     property LEDCount: TLEDCount read GetLEDCount write SetLEDCount;
     property LEDType: TLEDClass read FLEDClass write SetLEDClass;

@@ -4,12 +4,12 @@ object PinConnectionForm: TPinConnectionForm
   Top = 0
   Width = 429
   BorderStyle = bsToolWindow
-  Caption = 'Peripherals'
+  Caption = 'placeholder'
   ClientHeight = 331
   ClientWidth = 429
   FormStyle = fsStayOnTop
   PopupMenu = pmPins
-  Position = poDesktopCenter
+  Position = poOwnerFormCenter
   LCLVersion = '1.6.4.0'
   Visible = True
   object pbDrawSurface: TPaintBox

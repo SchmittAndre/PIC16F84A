@@ -5,7 +5,7 @@ unit ProcessorDefine;
 interface
 
 uses
-  Classes, windows, SysUtils, Dialogs, Lists, PinDefine;
+  Classes, windows, SysUtils, Dialogs, Lists, Delegates, PinDefine;
 
 type
 
@@ -175,7 +175,11 @@ type
       paWatchdog
     );
 
-    TAsyncProcessorChangeEvent = procedure (AProcessor: TProcessor) of object;
+  public
+
+    type TProcessorNotifyEvent = procedure (Sender: TProcessor) of object; var
+      // whenever something changes, not while the processor is processing a command (like a port change)
+      OnAsyncMemoryChange: TDelegate1<TProcessorNotifyEvent>;
 
   public const
     {$REGION RegisterBank Mapped Parts}
@@ -302,6 +306,7 @@ type
       Line: Integer;
     end;
 
+
   private class var
     FInstructionArray: array [TInstruction] of TInstructionType;
 
@@ -342,6 +347,7 @@ type
     FFrequency: Int64;
     FStartTime: Int64;        // Changes for ResetSyncTime
     FSpeedFactor: Single;
+    FOverloaded: Boolean;     // Processor can't keep up
     FBreakpoints: TCardinalSet;
 
     FHelpBreakpointDepth: TProgramCounterStackPos;
@@ -459,9 +465,6 @@ type
 
   public
 
-    // whenever something changes, not while the processor is processing a command (like a port change)
-    OnAsyncMemoryChange: TDelegate<TAsyncProcessorChangeEvent>;
-
     constructor Create;
     destructor Destroy; override;
 
@@ -513,6 +516,8 @@ type
     property Breakpoint[ALine: Cardinal]: Boolean read GetBreakpoint write SetBreakpoint;
 
     class function FormatInstruction(AInstruction: TInstruction): String;
+
+    property Overloaded: Boolean read FOverloaded;
 
   published
     {$REGION --- Byte-Oriented File Register Operations --- }
@@ -984,7 +989,7 @@ var
   T: Int64;
 begin
   QueryPerformanceCounter(T);
-  Result := (T - FStartTime) / FFrequency * FSpeedFactor - FCyclesFromStart * TProcessor.OperationTime;
+  Result := (T - FStartTime) / FFrequency * FSpeedFactor - FCyclesFromStart * OperationTime;
 end;
 
 function TProcessor.GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
@@ -1281,6 +1286,7 @@ procedure TProcessor.Stop;
 begin
   FHelpBreakpointEnabled := False;
   FRunning := False;
+  FOverloaded := False;
 end;
 
 procedure TProcessor.ProcessInstruction(AInstruction: TInstruction; ALine: Integer);
@@ -1372,7 +1378,10 @@ begin
 end;
 
 procedure TProcessor.CatchUp;
+const
+  MaxTimeBehind = 0.02; // 20 ms
 begin
+  FOverloaded := False;
   while TimeBehind > 0 do
   begin
     StepIn;
@@ -1380,6 +1389,12 @@ begin
        FHelpBreakpointEnabled and (FProgramCounterStackPos = FHelpBreakpointDepth) then
     begin
       Stop;
+      Break;
+    end;
+    if TimeBehind > MaxTimeBehind * FSpeedFactor then
+    begin
+      FOverloaded := True;
+      ResetSyncTime;
       Break;
     end;
   end;

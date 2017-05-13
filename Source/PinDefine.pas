@@ -3,7 +3,7 @@ unit PinDefine;
 interface
 
 uses
-  SysUtils, Lists;
+  SysUtils, Lists, Delegates;
 
 type
 
@@ -66,15 +66,35 @@ type
 
   TPinArray = class
   public
-    type
 
-      TPinChangeEvent = procedure (APin: TPin) of object;
-      TPinConnectionEvent = procedure (ASender, AOther: TPin) of object;
-      TPinRedirectEvent = procedure (APin: TPin) of object;
-      TNameChangeEvent = procedure (Sender: TPinArray; AOldName, ANewName: String; var AReject: Boolean) of object;
-      TVisibilityChangeEvent = procedure (Sender: TPinArray) of object;
-      TCreateEvent = procedure (Sender: TPinArray) of object;
-      TDestroyEvent = procedure (Sender: TPinArray) of object;
+    type TPinNotifyEvent = procedure (Sender: TPin) of object; var
+      // The power state of a pin changes
+      OnPinChange: TDelegate1<TPinNotifyEvent>;
+      // A pin changes from read to write or vice versa
+      OnPinRedirect: TDelegate1<TPinNotifyEvent>;
+      // A pin changes its WritePower
+      OnPinWritePowerChange: TDelegate1<TPinNotifyEvent>;
+
+    type TPinConnectionEvent = procedure (Sender, AOther: TPin) of object; var
+      // Two pins get connected
+      OnPinConnect: TDelegate2<TPinConnectionEvent>;
+      // Two pins get disconnected
+      OnPinDisconnect: TDelegate2<TPinConnectionEvent>;
+
+    type TPinArrayTryChangeNameEvent = procedure (Sender: TPinArray; var ANewName: String) of object; var
+      // The name of the PinArray changes, the new name can be modified if needed
+      OnTryChangeName: TDelegate2<TPinArrayTryChangeNameEvent>;
+
+    type TPinArrayNotifyEvent = procedure (Sender: TPinArray) of object; var
+      // The list of visible PinArrays changed
+      OnVisibilityChange: TDelegate1<TPinArrayNotifyEvent>;
+      // The name of the PinArray changed
+      OnNameChange: TDelegate1<TPinArrayNotifyEvent>;
+    class var
+      // A new PinArray gets created
+      OnCreate: TDelegate1<TPinArrayNotifyEvent>;
+      // A PinArray gets destroyed
+      OnDestroy: TDelegate1<TPinArrayNotifyEvent>;
 
   private
     FPins: TObjectArray<TPin>;
@@ -90,19 +110,7 @@ type
 
   public
 
-    OnPinChange: TDelegate<TPinChangeEvent>;
-    OnPinConnect: TDelegate<TPinConnectionEvent>;
-    OnPinDisconnect: TDelegate<TPinConnectionEvent>;
-    OnPinRedirect: TDelegate<TPinRedirectEvent>;
-
-    OnNameChange: TDelegate<TNameChangeEvent>;
-    OnVisibilityChange: TDelegate<TVisibilityChangeEvent>;
-
-    class var
-      OnCreate: TDelegate<TCreateEvent>;
-      OnDestroy: TDelegate<TDestroyEvent>;
-
-    constructor Create(AName: String; ACount: Integer = 1);
+    constructor Create(AName: String = 'Unnamed'; ACount: Integer = 1);
     destructor Destroy; override;
 
     property Name: String read FName write SetName;
@@ -156,9 +164,10 @@ procedure TPin.SetState(AValue: Boolean);
 begin
   if Direction <> pdWrite then
     raise EPinNotWriteable.Create(Self);
-  FWritePower := AValue;
-  if AValue = State then
+  if FWritePower = AValue then
     Exit;
+  FWritePower := AValue;
+  PinArray.OnPinWritePowerChange.Call(Self);
   if AValue then
     SendSignal(+1)
   else
@@ -360,14 +369,12 @@ begin
 end;
 
 procedure TPinArray.SetName(AValue: String);
-var
-  Rejected: Boolean;
 begin
   if FName = AValue then
     Exit;
-  OnNameChange.Call(Self, FName, AValue, Rejected);
-  if not Rejected then
-    FName := AValue;
+  OnTryChangeName.Call(Self, AValue);
+  FName := AValue;
+  OnNameChange.Call(Self);
 end;
 
 constructor TPinArray.Create(AName: String; ACount: Integer);

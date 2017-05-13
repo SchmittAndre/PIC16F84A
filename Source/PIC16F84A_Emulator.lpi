@@ -20,7 +20,7 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
-      <BuildNr Value="31"/>
+      <BuildNr Value="32"/>
       <Attributes pvaPrivateBuild="True"/>
       <StringTable Comments="Best Program" CompanyName="VS42 Inc." FileDescription="PIC16F84A Emulator" ProductVersion=""/>
     </VersionInfo>
@@ -151,7 +151,7 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="&quot;..\..\..\Resources\our scripts\PortB FF.LST&quot;"/>
+        <CommandLineParams Value="&quot;..\..\..\Resources\our scripts\PortB Rotate.LST&quot;"/>
       </local>
     </RunParams>
     <RequiredPackages Count="2">
@@ -162,7 +162,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="9">
+    <Units Count="10">
       <Unit0>
         <Filename Value="PIC16F84A_Emulator.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -211,6 +211,13 @@
         <Filename Value="ProcessorFormDefine.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit8>
+      <Unit9>
+        <Filename Value="LEDArraySettingsForm.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmLEDArraySettings"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit9>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

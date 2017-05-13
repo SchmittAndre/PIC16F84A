@@ -17,7 +17,7 @@ type
 
     FPinArray: TPinArray;
 
-    FCanvas: TCanvas;
+    FControl: TGraphicControl;
 
     function GetBounds: TRect;
     function GetBoxCaptionPosition: TPoint;
@@ -32,13 +32,18 @@ type
     procedure InitDrawBoxCaption;
     procedure InitDrawPinCaption;
     procedure InitDrawBox;
+    procedure SetLeft(AValue: Integer);
+    procedure SetTop(AValue: Integer);
 
   public
-    constructor Create(ACanvas: TCanvas; APosition: TPoint; APinArray: TPinArray; AFlipped: Boolean = False);
+    constructor Create(AControl: TGraphicControl; APosition: TPoint; APinArray: TPinArray; AFlipped: Boolean = False);
 
     procedure Draw;
 
     property PinArray: TPinArray read FPinArray;
+
+    property Left: Integer read FPosition.X write SetLeft;
+    property Top: Integer read FPosition.Y write SetTop;
 
     property PinCount: Integer read GetPinCount;
     property PinPosition[AIndex: Integer]: TPoint read GetPinPosition;
@@ -122,13 +127,17 @@ type
     function GetDrawSurfaceWidth: Integer;
     function GetPinSurfaceHeight: Integer;
     function GetPinSurfaceWidth: Integer;
-    procedure OnPinRedirect(APin: TPin);
+
+    procedure OnPinChange(Sender: TPin);
+    procedure OnPinWritePowerChange(Sender: TPin);
+    procedure OnPinRedirect(Sender: TPin);
+    procedure OnNameChange(Sender: TPinArray);
+
+    procedure OnPinConnectionChange(Sender, AOther: TPin);
+    procedure OnVisibilityChanged(Sender: TPinArray);
 
     procedure SetDrawSurfaceHeight(AValue: Integer);
     procedure SetPinSurfaceHeight(AValue: Integer);
-
-    procedure OnPinConnectionChange(ASelf, AOther: TPin);
-    procedure OnVisibilityChanged(Sender: TPinArray);
 
     procedure SetPinsVisible(AValue: Boolean);
 
@@ -140,7 +149,6 @@ type
 
   protected
     procedure DrawPeripheral; virtual; abstract;
-    procedure OnPinChange({%H-}APin: TPin); virtual;
 
     procedure DrawSurfaceMouseDown(X, Y: Integer; AButton: TMouseButton); virtual;
     procedure DrawSurfaceMouseMove(X, Y: Integer); virtual;
@@ -188,10 +196,13 @@ type
   TPeripheralForm = class (TPinConnectionForm)
   private
     FPinArray: TPinArray;
-    FPeripheralName: String;
 
+    function GetPeripheralName: String;
     procedure SetPeripheralName(AValue: String);
     function MakeUniqueName(AName: String): String;
+
+    procedure OnTryChangeName(Sender: TPinArray; var ANewName: String);
+    procedure OnNameChange(Sender: TPinArray);
 
     procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
 
@@ -204,7 +215,7 @@ type
 
     class function GetDefaultPeripheralName: String; virtual; abstract;
 
-    property PeripheralName: String read FPeripheralName write SetPeripheralName;
+    property PeripheralName: String read GetPeripheralName write SetPeripheralName;
   end;
 
   TPeripheralFormClass = class of TPeripheralForm;
@@ -217,13 +228,14 @@ implementation
 
 procedure TPeripheralForm.SetPeripheralName(AValue: String);
 begin
-  AValue := MakeUniqueName(AValue);
   if PeripheralName = AValue then
     Exit;
-  FPeripheralName := AValue;
-  if Assigned(FPinArray) then
-    FPinArray.Name := AValue;
-  Caption := 'Perpiheral - ' + PeripheralName;
+  FPinArray.Name := AValue;
+end;
+
+function TPeripheralForm.GetPeripheralName: String;
+begin
+  Result := PinArray.Name;
 end;
 
 function TPeripheralForm.MakeUniqueName(AName: String): String;
@@ -249,6 +261,16 @@ begin
   until Unique;
 end;
 
+procedure TPeripheralForm.OnTryChangeName(Sender: TPinArray; var ANewName: String);
+begin
+  ANewName := MakeUniqueName(ANewName);
+end;
+
+procedure TPeripheralForm.OnNameChange(Sender: TPinArray);
+begin
+  Caption := 'Peripheral - ' + FPinArray.Name;
+end;
+
 procedure TPeripheralForm.OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   CloseAction := caFree;
@@ -262,13 +284,17 @@ end;
 constructor TPeripheralForm.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
+  FPinArray := TPinArray.Create;
+  PinArray.OnTryChangeName.Add(OnTryChangeName);
+  PinArray.OnNameChange.Add(OnNameChange);
   PeripheralName := GetDefaultPeripheralName;
-  FPinArray := TPinArray.Create(PeripheralName);
   OnClose := OnFormClose;
 end;
 
 destructor TPeripheralForm.Destroy;
 begin
+  PinArray.OnTryChangeName.Del(OnTryChangeName);
+  PinArray.OnNameChange.Del(OnNameChange);
   FPinArray.Free;
   inherited Destroy;
 end;
@@ -328,14 +354,14 @@ end;
 
 function TDisplayPinArray.GetWidth: Integer;
 begin
-  Result := Max(PinDistance * FPinArray.Count, FCanvas.GetTextWidth(FPinArray.Name) + 10);
+  Result := Max(PinDistance * FPinArray.Count, FControl.Canvas.GetTextWidth(FPinArray.Name) + 10);
 end;
 
 function TDisplayPinArray.GetBoxCaptionPosition: TPoint;
 begin
-  Result.X := FPosition.X + (Width - FCanvas.TextWidth(FPinArray.Name)) div 2;
+  Result.X := FPosition.X + (Width - FControl.Canvas.TextWidth(FPinArray.Name)) div 2;
   if FFlipped then
-    Result.Y := FPosition.Y + Height - 2 - FCanvas.TextHeight(FPinArray.Name)
+    Result.Y := FPosition.Y + Height - 2 - FControl.Canvas.TextHeight(FPinArray.Name)
   else
     Result.Y := FPosition.Y + 2;
 end;
@@ -352,8 +378,8 @@ end;
 
 function TDisplayPinArray.GetPinCaptionPosition(AIndex: Integer): TPoint;
 begin
-  Result.X := PinPosition[AIndex].X - FCanvas.TextWidth(AIndex.ToString) div 2;
-  Result.Y := FPosition.Y + (Height - FCanvas.TextHeight(AIndex.ToString)) div 2;
+  Result.X := PinPosition[AIndex].X - FControl.Canvas.TextWidth(AIndex.ToString) div 2;
+  Result.Y := FPosition.Y + (Height - FControl.Canvas.TextHeight(AIndex.ToString)) div 2;
 end;
 
 function TDisplayPinArray.GetPinCount: Integer;
@@ -365,7 +391,7 @@ procedure TDisplayPinArray.InitDrawPin(APin: TPin);
 var
   C: TColorRGB;
 begin
-  with FCanvas do
+  with FControl.Canvas do
   begin
     Brush.Style := bsSolid;
     Pen.Style := psSolid;
@@ -390,7 +416,7 @@ end;
 
 procedure TDisplayPinArray.InitDrawBoxCaption;
 begin
-  with FCanvas do
+  with FControl.Canvas do
   begin
     Brush.Style := bsClear;
   end;
@@ -398,7 +424,7 @@ end;
 
 procedure TDisplayPinArray.InitDrawPinCaption;
 begin
-  with FCanvas do
+  with FControl.Canvas do
   begin
     Brush.Style := bsClear;
   end;
@@ -406,7 +432,7 @@ end;
 
 procedure TDisplayPinArray.InitDrawBox;
 begin
-  with FCanvas do
+  with FControl.Canvas do
   begin
     Brush.Style := bsSolid;
     Brush.Color := $FFBFCF;
@@ -416,9 +442,26 @@ begin
   end;
 end;
 
-constructor TDisplayPinArray.Create(ACanvas: TCanvas; APosition: TPoint; APinArray: TPinArray; AFlipped: Boolean);
+procedure TDisplayPinArray.SetLeft(AValue: Integer);
 begin
-  FCanvas := ACanvas;
+  if Left = AValue then
+    Exit;
+  FPosition.X := AValue;
+  FControl.Invalidate;
+end;
+
+procedure TDisplayPinArray.SetTop(AValue: Integer);
+begin
+  if Top = AValue then
+    Exit;
+  FPosition.Y := AValue;
+  FControl.Invalidate;
+end;
+
+constructor TDisplayPinArray.Create(AControl: TGraphicControl; APosition: TPoint; APinArray: TPinArray;
+  AFlipped: Boolean);
+begin
+  FControl := AControl;
   FPosition := APosition;
   FPinArray := APinArray;
   FFlipped := AFlipped;
@@ -431,19 +474,19 @@ var
 begin
   // Draw Box
   InitDrawBox;
-  FCanvas.Rectangle(TRect.Create(FPosition, Width, Height)); //TRect.Create(FPosition, Width, Height));
+  FControl.Canvas.Rectangle(TRect.Create(FPosition, Width, Height));
 
   // Draw PinArray Caption
   InitDrawBoxCaption;
   P := BoxCaptionPosition;
-  FCanvas.TextOut(P.X, P.Y, FPinArray.Name);
+  FControl.Canvas.TextOut(P.X, P.Y, FPinArray.Name);
 
   // Draw Pins
   for I := 0 to FPinArray.Count - 1 do
   begin
     InitDrawPin(Pins[I]);
-    FCanvas.Ellipse(PinPosition[I].X - 6, PinPosition[I].Y - 6, PinPosition[I].X + 6, PinPosition[I].Y + 6);
-    // FCanvas.TextOut(PinPosition[I].X - 6, PinPosition[I].Y - 6, PinArray[I].PowerSources.ToString);
+    FControl.Canvas.Ellipse(PinPosition[I].X - 6, PinPosition[I].Y - 6, PinPosition[I].X + 6, PinPosition[I].Y + 6);
+    //FControl.Canvas.TextOut(PinPosition[I].X - 6, PinPosition[I].Y - 6, PinArray[I].PowerSources.ToString);
   end;
 
   // Draw Pin Captions
@@ -451,7 +494,7 @@ begin
   for I := 0 to FPinArray.Count - 1 do
   begin
     P := PinCaptionPosition[I];
-    FCanvas.TextOut(P.X, P.Y, I.ToString);
+    FControl.Canvas.TextOut(P.X, P.Y, I.ToString);
   end;
 
 end;
@@ -477,7 +520,7 @@ begin
       if FClickedPinArray <> nil then
       begin
         FClickedPin := FindPinAt(FClickedPinArray, FPinMousePos);
-        Invalidate;
+        pbPins.Invalidate;
       end;
     end;
   end;
@@ -488,7 +531,7 @@ begin
   FPinMousePos := Point(X, Y);
   if FClickedPinArray <> nil then
   begin
-    Invalidate;
+    pbPins.Invalidate;
   end;
 end;
 
@@ -558,7 +601,7 @@ begin
           end;
         end;
         FClickedPinArray := nil;
-        Invalidate;
+        pbPins.Invalidate;
       end;
     end;
   end;
@@ -664,9 +707,14 @@ begin
   Result := pbPins.Width;
 end;
 
-procedure TPinConnectionForm.OnPinRedirect(APin: TPin);
+procedure TPinConnectionForm.OnPinRedirect(Sender: TPin);
 begin
-  Invalidate;
+  pbPins.Invalidate;
+end;
+
+procedure TPinConnectionForm.OnNameChange(Sender: TPinArray);
+begin
+  GeneratePinArrays;
 end;
 
 procedure TPinConnectionForm.OnVisibilityChanged(Sender: TPinArray);
@@ -674,7 +722,6 @@ begin
   DelVisiblePinArrayEvents;
   AddVisiblePinArrayEvents;
   GeneratePinArrays;
-  AutoWidth;
 end;
 
 procedure TPinConnectionForm.SetDrawSurfaceHeight(AValue: Integer);
@@ -691,7 +738,7 @@ begin
   gbPins.Height := gbPins.Height + HeightDiff;
 end;
 
-procedure TPinConnectionForm.OnPinConnectionChange(ASelf, AOther: TPin);
+procedure TPinConnectionForm.OnPinConnectionChange(Sender, AOther: TPin);
 begin
   GeneratePinConnections;
 end;
@@ -720,25 +767,30 @@ end;
 
 procedure TPinConnectionForm.GeneratePinArrays;
 var
-  I, L: Integer;
+  I, L, Diff: Integer;
   DisplayPinArray: TDisplayPinArray;
 begin
   FDisplayPinArrays.DelAll;
 
-  FDisplayPinArrays.Add(TDisplayPinArray.Create(pbPins.Canvas, Point(10, 10), PinArray));
-
-  PinArray.OnVisibilityChange.Add(OnVisibilityChanged);
+  FDisplayPinArrays.Add(TDisplayPinArray.Create(pbPins, Point(10, 10), PinArray));
 
   L := 10;
   for I := 0 to PinArray.VisiblePinArrayCount - 1 do
   begin
     DisplayPinArray := FDisplayPinArrays.Add(TDisplayPinArray.Create(
-      pbPins.Canvas,
+      pbPins,
       Point(L, pbPins.Height - TDisplayPinArray.Height - 10),
       PinArray.VisiblePinArrays[I],
       True));
     L := L + DisplayPinArray.Width + 10;
   end;
+
+  AutoWidth;
+
+  FDisplayPinArrays.First.Left := pbPins.Width - FDisplayPinArrays.First.Width - 10;
+  Diff := pbPins.Width - FDisplayPinArrays.Last.Bounds.Right - 10;
+  for I := 1 to PinArray.VisiblePinArrayCount do
+    FDisplayPinArrays[I].Left := FDisplayPinArrays[I].Left + Diff;
 
   GeneratePinConnections;
 end;
@@ -798,6 +850,8 @@ begin
   begin
     PinArray.VisiblePinArrays[I].OnPinRedirect.Add(OnPinRedirect);
     PinArray.VisiblePinArrays[I].OnPinChange.Add(OnPinChange);
+    PinArray.VisiblePinArrays[I].OnPinWritePowerChange.Add(OnPinWritePowerChange);
+    PinArray.VisiblePinArrays[I].OnNameChange.Add(OnNameChange);
   end;
 end;
 
@@ -809,12 +863,19 @@ begin
   begin
     PinArray.VisiblePinArrays[I].OnPinRedirect.Del(OnPinRedirect);
     PinArray.VisiblePinArrays[I].OnPinChange.Del(OnPinChange);
+    PinArray.VisiblePinArrays[I].OnPinWritePowerChange.Del(OnPinWritePowerChange);
+    PinArray.VisiblePinArrays[I].OnNameChange.Del(OnNameChange);
   end;
 end;
 
-procedure TPinConnectionForm.OnPinChange(APin: TPin);
+procedure TPinConnectionForm.OnPinChange(Sender: TPin);
 begin
-  Invalidate;
+  pbPins.Invalidate;
+end;
+
+procedure TPinConnectionForm.OnPinWritePowerChange(Sender: TPin);
+begin
+  pbPins.Invalidate;
 end;
 
 procedure TPinConnectionForm.DrawSurfaceMouseDown(X, Y: Integer; AButton: TMouseButton);
@@ -838,7 +899,8 @@ begin
   if PinsVisible then
   begin
     Result := Max(Result, FDisplayPinArrays.First.Bounds.Right + 10 + ClientWidth - pbPins.Width);
-    Result := Max(Result, FDisplayPinArrays.Last.Bounds.Right + 10 + ClientWidth - pbPins.Width);
+    if FDisplayPinArrays.Count > 1 then
+      Result := Max(Result, FDisplayPinArrays.Last.Bounds.Right + 10 + ClientWidth - pbPins.Width);
   end;
 end;
 
@@ -866,18 +928,20 @@ procedure TPinConnectionForm.AfterConstruction;
 begin
   inherited AfterConstruction;
   PinArray.OnPinChange.Add(OnPinChange);
+  PinArray.OnPinWritePowerChange.Add(OnPinWritePowerChange);
   PinArray.OnPinConnect.Add(OnPinConnectionChange);
   PinArray.OnPinDisconnect.Add(OnPinConnectionChange);
   PinArray.OnVisibilityChange.Add(OnVisibilityChanged);
   PinArray.OnPinRedirect.Add(OnPinRedirect);
+  PinArray.OnNameChange.Add(OnNameChange);
   GeneratePinArrays;
-  AutoWidth;
 end;
 
 procedure TPinConnectionForm.BeforeDestruction;
 begin
   DelVisiblePinArrayEvents;
   PinArray.OnPinChange.Del(OnPinChange);
+  PinArray.OnPinWritePowerChange.Del(OnPinWritePowerChange);
   PinArray.OnPinConnect.Del(OnPinConnectionChange);
   PinArray.OnPinDisconnect.Del(OnPinConnectionChange);
   PinArray.OnVisibilityChange.Del(OnVisibilityChanged);

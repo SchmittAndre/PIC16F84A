@@ -1,0 +1,138 @@
+object frmLEDArraySettings: TfrmLEDArraySettings
+  Left = 0
+  Height = 244
+  Top = 0
+  Width = 236
+  ActiveControl = btnCancel
+  BorderStyle = bsToolWindow
+  Caption = 'LED-Array Settings'
+  ClientHeight = 244
+  ClientWidth = 236
+  OnCreate = FormCreate
+  Position = poOwnerFormCenter
+  LCLVersion = '1.6.4.0'
+  Visible = False
+  object pnlControl: TPanel
+    Left = 5
+    Height = 25
+    Top = 214
+    Width = 226
+    Align = alBottom
+    BorderSpacing.Around = 5
+    BevelOuter = bvNone
+    ClientHeight = 25
+    ClientWidth = 226
+    TabOrder = 0
+    object btnCancel: TButton
+      Left = 151
+      Height = 25
+      Top = 0
+      Width = 75
+      Align = alRight
+      BorderSpacing.Left = 5
+      Cancel = True
+      Caption = 'Cancel'
+      ModalResult = 2
+      TabOrder = 0
+    end
+    object btnOK: TButton
+      Left = 71
+      Height = 25
+      Top = 0
+      Width = 75
+      Align = alRight
+      BorderSpacing.Left = 5
+      Caption = 'OK'
+      Default = True
+      ModalResult = 1
+      TabOrder = 1
+    end
+  end
+  object pnlSettingsArea: TPanel
+    Left = 5
+    Height = 204
+    Top = 5
+    Width = 226
+    Align = alClient
+    BorderSpacing.Around = 5
+    ClientHeight = 204
+    ClientWidth = 226
+    TabOrder = 1
+    object pnlName: TPanel
+      Left = 6
+      Height = 23
+      Top = 6
+      Width = 214
+      Align = alTop
+      AutoSize = True
+      BorderSpacing.Around = 5
+      BevelOuter = bvNone
+      ClientHeight = 23
+      ClientWidth = 214
+      TabOrder = 0
+      object edtName: TEdit
+        Left = 72
+        Height = 23
+        Top = 0
+        Width = 142
+        Align = alRight
+        TabOrder = 0
+        Text = 'placeholder'
+      end
+      object lbName: TLabel
+        Left = 0
+        Height = 23
+        Top = 0
+        Width = 67
+        Align = alClient
+        Alignment = taRightJustify
+        BorderSpacing.Right = 5
+        Caption = 'Name:'
+        Layout = tlCenter
+        ParentColor = False
+      end
+    end
+    object pnlCount: TPanel
+      Left = 6
+      Height = 23
+      Top = 34
+      Width = 214
+      Align = alTop
+      AutoSize = True
+      BorderSpacing.Around = 5
+      BevelOuter = bvNone
+      ClientHeight = 23
+      ClientWidth = 214
+      TabOrder = 1
+      object lbCount: TLabel
+        Left = 0
+        Height = 23
+        Top = 0
+        Width = 67
+        Align = alClient
+        Alignment = taRightJustify
+        BorderSpacing.Right = 5
+        Caption = 'Count:'
+        Layout = tlCenter
+        ParentColor = False
+      end
+      object cbCount: TComboBox
+        Left = 72
+        Height = 23
+        Top = 0
+        Width = 142
+        Align = alRight
+        AutoComplete = True
+        AutoCompleteText = [cbactEnabled, cbactEndOfLineComplete, cbactSearchAscending]
+        ItemHeight = 15
+        ItemIndex = 0
+        Items.Strings = (
+          'placeholder'
+        )
+        Style = csDropDownList
+        TabOrder = 0
+        Text = 'placeholder'
+      end
+    end
+  end
+end
