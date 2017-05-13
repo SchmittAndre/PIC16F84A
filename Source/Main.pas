@@ -189,6 +189,7 @@ type
     procedure InitSynEdit;
     procedure InitSpecialFunction;
     procedure InitMemView;
+    procedure OnUnhandeledException(Sender: TObject; E: Exception);
 
     procedure ParseStringListFromLST(List: TStringList);
 
@@ -342,6 +343,8 @@ begin
   FProcessorPortAForm := TProcessorPortAForm.Create(Self);
   FProcessorPortBForm := TProcessorPortBForm.Create(Self);
   FProcessorMasterClearForm := TProcessorMasterClearForm.Create(Self);
+
+  Application.OnException := OnUnhandeledException;
 
   GeneratePeripheralLists;
 end;
@@ -1084,6 +1087,27 @@ begin
 
   UpdateMemView;
   sgMemView.AutoSizeColumns;
+end;
+
+procedure TfrmMain.OnUnhandeledException(Sender: TObject; E: Exception);
+begin
+  if E is ENotImplemented then
+  begin
+    MessageDlg('Unimplemented Feature',
+               E.Message,
+               mtInformation,
+               [mbOK],
+               0);
+  end
+  else
+  begin
+    if MessageDlg('Unhandeled Exception',
+                  'An unhandeled exception occured:' + sLineBreak + sLineBreak +
+                  E.Message + sLineBreak + sLineBreak +
+                  'Continue and risk data corruption?',
+                  mtError, mbOKCancel, 0, mbOK) = mrCancel then
+      Close;
+  end;
 end;
 
 procedure TfrmMain.OnPeripheralAdd(Sender: TObject);
