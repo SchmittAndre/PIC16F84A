@@ -16,7 +16,7 @@ type
     FState: Boolean;
 
     FPin: TPin;
-    FControl: TGraphicControl;
+    FControl: TCustomControl;
 
     FLeft: Integer;
     FTop: Integer;
@@ -27,6 +27,7 @@ type
 
     function GetCanvas: TCanvas;
     function GetCurrentColor: TColorRGB;
+
     procedure SetColor(AValue: TColorRGB);
     procedure SetInverted(AValue: Boolean);
     procedure SetOffFactor(AValue: Single);
@@ -39,8 +40,6 @@ type
 
     procedure OnPinChange(APin: TPin);
 
-    class function GetShapeName: String; virtual; abstract;
-
     property State: Boolean read FState write SetState;
 
   protected
@@ -49,7 +48,7 @@ type
     property Canvas: TCanvas read GetCanvas;
 
   public
-    constructor Create(AControl: TGraphicControl; APin: TPin); virtual;
+    constructor Create(AControl: TCustomControl; APin: TPin); virtual;
 
     property Color: TColorRGB read FColor write SetColor;
     property OffFactor: Single read FOffFactor write SetOffFactor;
@@ -65,7 +64,8 @@ type
 
     procedure Draw; virtual;
 
-    property TypeName: String read GetShapeName;
+    class function GetShapeName: String; virtual; abstract;
+
   end;
 
   TLEDClass = class of TBaseLED;
@@ -94,6 +94,21 @@ type
     procedure Draw; override;
   end;
 
+  TLEDShape = (
+    shRound,
+    shRect,
+    shStar);
+
+const
+
+  LEDClasses: array [TLEDShape] of TLEDClass = (
+    TRoundLED,
+    TRectLED,
+    TStarLED
+  );
+
+type
+
   { TLEDArray }
 
   TLEDArray = class
@@ -111,13 +126,13 @@ type
       OnHeightChange: TDelegate1<TLEDArrayNotifyEvent>;
 
   private
-    FControl: TGraphicControl;
+    FControl: TCustomControl;
 
     FPinArray: TPinArray;
 
     FLEDs: TObjectArray<TBaseLED>;
 
-    FLEDClass: TLEDClass;
+    FLEDShape: TLEDShape;
 
     FLEDColor: TColorRGB;
     FLEDOffFactor: Single;
@@ -128,7 +143,8 @@ type
 
     FReverseOrder: Boolean;
 
-    FChanged: Boolean;
+    FUpdateCounter: Cardinal;
+    FTriedGenerate: Boolean;
 
     function GetDisplayHeight: Integer;
     function GetDisplayWidth: Integer;
@@ -136,7 +152,7 @@ type
     function GetLEDCount: TLEDCount;
 
     procedure SetLEDCount(AValue: TLEDCount);
-    procedure SetLEDClass(AValue: TLEDClass);
+    procedure SetLEDShape(AValue: TLEDShape);
 
     procedure SetLEDColor(AValue: TColorRGB);
     procedure SetLEDOffFactor(AValue: Single);
@@ -149,20 +165,20 @@ type
 
     procedure GenerateLEDs;
 
-  protected
-    procedure NotifyChanges;
-
   public
 
-    constructor Create(AControl: TGraphicControl; APinArray: TPinArray); overload;
+    constructor Create(AControl: TCustomControl; APinArray: TPinArray); overload;
     destructor Destroy; override;
 
     procedure Draw;
 
+    procedure BeginUpdate;
+    procedure EndUpdate;
+
     property PinArray: TPinArray read FPinArray;
 
     property LEDCount: TLEDCount read GetLEDCount write SetLEDCount;
-    property LEDType: TLEDClass read FLEDClass write SetLEDClass;
+    property LEDShape: TLEDShape read FLEDShape write SetLEDShape;
 
     property LEDColor: TColorRGB read FLEDColor write SetLEDColor;
     property LEDOffFactor: Single read FLEDOffFactor write SetLEDOffFactor;
@@ -282,11 +298,12 @@ begin
   FControl.Invalidate;
 end;
 
-constructor TBaseLED.Create(AControl: TGraphicControl; APin: TPin);
+constructor TBaseLED.Create(AControl: TCustomControl; APin: TPin);
 begin
   FControl := AControl;
   FPin := APin;
   FPin.PinArray.OnPinChange.Add(OnPinChange);
+  State := FPin.State;
 end;
 
 procedure TBaseLED.Draw;
@@ -300,8 +317,10 @@ end;
 
 procedure TBaseLED.SetLeft(AValue: Integer);
 begin
-  if FLeft = AValue then Exit;
+  if FLeft = AValue then
+    Exit;
   FLeft := AValue;
+  NotifyChanges;
 end;
 
 procedure TBaseLED.SetHeight(AValue: Cardinal);
@@ -358,20 +377,23 @@ begin
   Result := (LEDWidth + 10) * LEDCount;
 end;
 
-procedure TLEDArray.SetLEDClass(AValue: TLEDClass);
+procedure TLEDArray.SetLEDShape(AValue: TLEDShape);
 begin
-  if FLEDClass = AValue then
+  if FLEDShape = AValue then
     Exit;
-  FLEDClass := AValue;
-  NotifyChanges;
+  FLEDShape := AValue;
+  GenerateLEDs;
 end;
 
 procedure TLEDArray.SetLEDColor(AValue: TColorRGB);
+var
+  LED: TBaseLED;
 begin
   if FLEDColor = AValue then
     Exit;
   FLEDColor := AValue;
-  NotifyChanges;
+  for LED in FLEDs do
+    LED.Color := AValue;
 end;
 
 procedure TLEDArray.SetLEDCount(AValue: TLEDCount);
@@ -379,7 +401,7 @@ begin
   if LEDCount = AValue then
     Exit;
   FPinArray.Count := AValue;
-  NotifyChanges;
+  GenerateLEDs;
 end;
 
 procedure TLEDArray.GenerateLEDs;
@@ -387,10 +409,15 @@ var
   LED: TBaseLED;
   I: Integer;
 begin
+  if FUpdateCounter > 0 then
+  begin
+    FTriedGenerate := True;
+    Exit;
+  end;
   FLEDs.DelAll;
   for I := 0 to LEDCount - 1 do
   begin
-    LED := LEDType.Create(FControl, FPinArray.Pins[I]);
+    LED := LEDClasses[LEDShape].Create(FControl, FPinArray.Pins[I]);
     if ReverseOrder then
       LED.Left := 5 + I * (LEDWidth + 10)
     else
@@ -400,9 +427,9 @@ begin
     LED.Height := LEDHeight;
     LED.Color := LEDColor;
     LED.OffFactor := LEDOffFactor;
+    LED.Inverted := LEDInverted;
     FLEDs.Add(LED);
   end;
-  FChanged := False;
 end;
 
 procedure TLEDArray.SetLEDHeight(AValue: Integer);
@@ -410,23 +437,29 @@ begin
   if FLEDHeight = AValue then
     Exit;
   FLEDHeight := AValue;
-  NotifyChanges;
+  GenerateLEDs;
 end;
 
 procedure TLEDArray.SetLEDInverted(AValue: Boolean);
+var
+  LED: TBaseLED;
 begin
   if FLEDInverted = AValue then
     Exit;
   FLEDInverted := AValue;
-  NotifyChanges;
+  for LED in FLEDs do
+    LED.Inverted := AValue;
 end;
 
 procedure TLEDArray.SetLEDOffFactor(AValue: Single);
+var
+  LED: TBaseLED;
 begin
   if FLEDOffFactor = AValue then
     Exit;
   FLEDOffFactor := AValue;
-  NotifyChanges;
+  for LED in FLEDs do
+    LED.OffFactor := AValue;
 end;
 
 procedure TLEDArray.SetLEDWidth(AValue: Integer);
@@ -434,7 +467,7 @@ begin
   if FLEDWidth = AValue then
     Exit;
   FLEDWidth := AValue;
-  NotifyChanges;
+  GenerateLEDs;
 end;
 
 procedure TLEDArray.SetReverseOrder(AValue: Boolean);
@@ -442,30 +475,38 @@ begin
   if FReverseOrder = AValue then
     Exit;
   FReverseOrder := AValue;
-  NotifyChanges;
+  GenerateLEDs;
 end;
 
 procedure TLEDArray.Draw;
 var
   LED: TBaseLED;
 begin
-  if FChanged then
-    GenerateLEDs;
   for LED in FLEDs do
     LED.Draw;
 end;
 
-procedure TLEDArray.NotifyChanges;
+procedure TLEDArray.BeginUpdate;
 begin
-  FChanged := True;
+  Inc(FUpdateCounter);
 end;
 
-constructor TLEDArray.Create(AControl: TGraphicControl; APinArray: TPinArray);
+procedure TLEDArray.EndUpdate;
+begin
+  Dec(FUpdateCounter);
+  if (FUpdateCounter = 0) and FTriedGenerate then
+  begin
+    FTriedGenerate := False;
+    GenerateLEDs;
+  end;
+end;
+
+constructor TLEDArray.Create(AControl: TCustomControl; APinArray: TPinArray);
 begin
   FControl := AControl;
   FPinArray := APinArray;
   FLEDs := TObjectArray<TBaseLED>.Create;
-  FLEDClass := TStarLED;
+  FLEDShape := shRound;
   FLEDColor := TColorRGB.Create(1, 0, 0);
   FLEDHeight := 50;
   FLEDWidth := 50;

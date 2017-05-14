@@ -17,7 +17,7 @@ type
 
     FPinArray: TPinArray;
 
-    FControl: TGraphicControl;
+    FControl: TCustomControl;
 
     function GetBounds: TRect;
     function GetBoxCaptionPosition: TPoint;
@@ -36,7 +36,7 @@ type
     procedure SetTop(AValue: Integer);
 
   public
-    constructor Create(AControl: TGraphicControl; APosition: TPoint; APinArray: TPinArray; AFlipped: Boolean = False);
+    constructor Create(AControl: TCustomControl; APosition: TPoint; APinArray: TPinArray; AFlipped: Boolean = False);
 
     procedure Draw;
 
@@ -97,22 +97,22 @@ type
     miSettings: TMenuItem;
     miShowPins: TMenuItem;
     miVisiblePins: TMenuItem;
-    pbDrawSurface: TPaintBox;
-    pbPins: TPaintBox;
+    pnlPins: TPanel;
+    pnlDrawSurface: TPanel;
     pmPeripheral: TPopupMenu;
     pmPins: TPopupMenu;
     procedure actShowPinsExecute(Sender: TObject);
     procedure actShowPinsUpdate(Sender: TObject);
     procedure actVisiblePinsExecute(Sender: TObject);
     procedure actVisiblePinsUpdate(Sender: TObject);
-    procedure pbDrawSurfaceMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-    procedure pbDrawSurfaceMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-    procedure pbDrawSurfaceMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-    procedure pbDrawSurfacePaint(Sender: TObject);
-    procedure pbPinsMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-    procedure pbPinsMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-    procedure pbPinsMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-    procedure pbPinsPaint(Sender: TObject);
+    procedure pnlDrawSurfaceMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure pnlDrawSurfaceMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure pnlDrawSurfaceMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure pnlDrawSurfacePaint(Sender: TObject);
+    procedure pnlPinsMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure pnlPinsMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure pnlPinsMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure pnlPinsPaint(Sender: TObject);
   private
     FPinsVisible: Boolean;
 
@@ -458,7 +458,7 @@ begin
   FControl.Invalidate;
 end;
 
-constructor TDisplayPinArray.Create(AControl: TGraphicControl; APosition: TPoint; APinArray: TPinArray;
+constructor TDisplayPinArray.Create(AControl: TCustomControl; APosition: TPoint; APinArray: TPinArray;
   AFlipped: Boolean);
 begin
   FControl := AControl;
@@ -501,16 +501,16 @@ end;
 
 { TPinConnectionForm }
 
-procedure TPinConnectionForm.pbDrawSurfacePaint(Sender: TObject);
+procedure TPinConnectionForm.pnlDrawSurfacePaint(Sender: TObject);
 begin
-  pbDrawSurface.Canvas.Pen.Style := psClear;
-  pbDrawSurface.Canvas.Brush.Style := bsSolid;
-  pbDrawSurface.Canvas.Brush.Color := clBtnFace;
-  pbDrawSurface.Canvas.Rectangle(0, 0, pbDrawSurface.Width, pbDrawSurface.Height);
+  pnlDrawSurface.Canvas.Pen.Style := psClear;
+  pnlDrawSurface.Canvas.Brush.Style := bsSolid;
+  pnlDrawSurface.Canvas.Brush.Color := clBtnFace;
+  pnlDrawSurface.Canvas.Rectangle(0, 0, pnlDrawSurface.Width, pnlDrawSurface.Height);
   DrawPeripheral;
 end;
 
-procedure TPinConnectionForm.pbPinsMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TPinConnectionForm.pnlPinsMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   FPinMousePos := Point(X, Y);
   case Button of
@@ -520,22 +520,22 @@ begin
       if FClickedPinArray <> nil then
       begin
         FClickedPin := FindPinAt(FClickedPinArray, FPinMousePos);
-        pbPins.Invalidate;
+        pnlPins.Invalidate;
       end;
     end;
   end;
 end;
 
-procedure TPinConnectionForm.pbPinsMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+procedure TPinConnectionForm.pnlPinsMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 begin
   FPinMousePos := Point(X, Y);
   if FClickedPinArray <> nil then
   begin
-    pbPins.Invalidate;
+    pnlPins.Invalidate;
   end;
 end;
 
-procedure TPinConnectionForm.pbPinsMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TPinConnectionForm.pnlPinsMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
   EndPinArray: TDisplayPinArray;
   EndPin, MinPins, I: Integer;
@@ -601,23 +601,23 @@ begin
           end;
         end;
         FClickedPinArray := nil;
-        pbPins.Invalidate;
+        pnlPins.Invalidate;
       end;
     end;
   end;
 end;
 
-procedure TPinConnectionForm.pbPinsPaint(Sender: TObject);
+procedure TPinConnectionForm.pnlPinsPaint(Sender: TObject);
 var
   DisplayPinArray: TDisplayPinArray;
   DisplayPinConnection: TDisplayPinConnection;
   I: Integer;
   Offset: TPoint;
 begin
-  pbPins.Canvas.Pen.Style := psClear;
-  pbPins.Canvas.Brush.Style := bsSolid;
-  pbPins.Canvas.Brush.Color := clBtnFace;
-  pbPins.Canvas.Rectangle(0, 0, pbPins.Width, pbPins.Height);
+  pnlPins.Canvas.Pen.Style := psClear;
+  pnlPins.Canvas.Brush.Style := bsSolid;
+  pnlPins.Canvas.Brush.Color := clBtnFace;
+  pnlPins.Canvas.Rectangle(0, 0, pnlPins.Width, pnlPins.Height);
 
   for DisplayPinArray in FDisplayPinArrays do
     DisplayPinArray.Draw;
@@ -626,20 +626,20 @@ begin
 
   if FClickedPinArray <> nil then
   begin
-    pbPins.Canvas.Pen.Style := psSolid;
-    pbPins.Canvas.Pen.Color := $0F1FEF;
-    pbPins.Canvas.Pen.Width := 6;
-    pbPins.Canvas.Pen.EndCap := pecRound;
+    pnlPins.Canvas.Pen.Style := psSolid;
+    pnlPins.Canvas.Pen.Color := $0F1FEF;
+    pnlPins.Canvas.Pen.Width := 6;
+    pnlPins.Canvas.Pen.EndCap := pecRound;
     if FClickedPin <> -1 then
     begin
-      pbPins.Canvas.Line(FClickedPinArray.PinPosition[FClickedPin], FPinMousePos);
+      pnlPins.Canvas.Line(FClickedPinArray.PinPosition[FClickedPin], FPinMousePos);
     end
     else
     begin
       for I := 0 to FClickedPinArray.PinCount - 1 do
       begin
         Offset := Point(I * TDisplayPinArray.PinDistance, 0);
-        pbPins.Canvas.Line(FClickedPinArray.PinPosition[0] - Offset, FPinMousePos - Offset);
+        pnlPins.Canvas.Line(FClickedPinArray.PinPosition[0] - Offset, FPinMousePos - Offset);
       end;
     end;
   end;
@@ -670,18 +670,18 @@ begin
   actVisiblePins.Enabled := PinsVisible;
 end;
 
-procedure TPinConnectionForm.pbDrawSurfaceMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState;
+procedure TPinConnectionForm.pnlDrawSurfaceMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState;
   X, Y: Integer);
 begin
   DrawSurfaceMouseDown(X, Y, Button);
 end;
 
-procedure TPinConnectionForm.pbDrawSurfaceMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+procedure TPinConnectionForm.pnlDrawSurfaceMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 begin
   DrawSurfaceMouseMove(X, Y);
 end;
 
-procedure TPinConnectionForm.pbDrawSurfaceMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState;
+procedure TPinConnectionForm.pnlDrawSurfaceMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState;
   X, Y: Integer);
 begin
   DrawSurfaceMouseUp(X, Y, Button);
@@ -689,27 +689,27 @@ end;
 
 function TPinConnectionForm.GetDrawSurfaceHeight: Integer;
 begin
-  Result := pbDrawSurface.Height;
+  Result := pnlDrawSurface.Height;
 end;
 
 function TPinConnectionForm.GetDrawSurfaceWidth: Integer;
 begin
-  Result := pbDrawSurface.Width;
+  Result := pnlDrawSurface.Width;
 end;
 
 function TPinConnectionForm.GetPinSurfaceHeight: Integer;
 begin
-  Result := pbPins.Height;
+  Result := pnlPins.Height;
 end;
 
 function TPinConnectionForm.GetPinSurfaceWidth: Integer;
 begin
-  Result := pbPins.Width;
+  Result := pnlPins.Width;
 end;
 
 procedure TPinConnectionForm.OnPinRedirect(Sender: TPin);
 begin
-  pbPins.Invalidate;
+  pnlPins.Invalidate;
 end;
 
 procedure TPinConnectionForm.OnNameChange(Sender: TPinArray);
@@ -772,14 +772,14 @@ var
 begin
   FDisplayPinArrays.DelAll;
 
-  FDisplayPinArrays.Add(TDisplayPinArray.Create(pbPins, Point(10, 10), PinArray));
+  FDisplayPinArrays.Add(TDisplayPinArray.Create(pnlPins, Point(10, 10), PinArray));
 
   L := 10;
   for I := 0 to PinArray.VisiblePinArrayCount - 1 do
   begin
     DisplayPinArray := FDisplayPinArrays.Add(TDisplayPinArray.Create(
-      pbPins,
-      Point(L, pbPins.Height - TDisplayPinArray.Height - 10),
+      pnlPins,
+      Point(L, pnlPins.Height - TDisplayPinArray.Height - 10),
       PinArray.VisiblePinArrays[I],
       True));
     L := L + DisplayPinArray.Width + 10;
@@ -787,8 +787,8 @@ begin
 
   AutoWidth;
 
-  FDisplayPinArrays.First.Left := pbPins.Width - FDisplayPinArrays.First.Width - 10;
-  Diff := pbPins.Width - FDisplayPinArrays.Last.Bounds.Right - 10;
+  FDisplayPinArrays.First.Left := pnlPins.Width - FDisplayPinArrays.First.Width - 10;
+  Diff := pnlPins.Width - FDisplayPinArrays.Last.Bounds.Right - 10;
   for I := 1 to PinArray.VisiblePinArrayCount do
     FDisplayPinArrays[I].Left := FDisplayPinArrays[I].Left + Diff;
 
@@ -811,13 +811,13 @@ begin
       DisplayPinArray := FDisplayPinArrays.FindFirst(TFindDisplayPinArray.Create(Connected.PinArray));
 
       FDisplayPinConnections.Add(TDisplayPinConnection.Create(
-        pbPins.Canvas,
+        pnlPins.Canvas,
         Main, DisplayPinArray,
         I, Connected.Index));
     end;
   end;
 
-  pbPins.Invalidate;
+  pnlPins.Invalidate;
 end;
 
 function TPinConnectionForm.FindPinAt(APinArray: TDisplayPinArray; APoint: TPoint): Integer;
@@ -870,12 +870,12 @@ end;
 
 procedure TPinConnectionForm.OnPinChange(Sender: TPin);
 begin
-  pbPins.Invalidate;
+  pnlPins.Invalidate;
 end;
 
 procedure TPinConnectionForm.OnPinWritePowerChange(Sender: TPin);
 begin
-  pbPins.Invalidate;
+  pnlPins.Invalidate;
 end;
 
 procedure TPinConnectionForm.DrawSurfaceMouseDown(X, Y: Integer; AButton: TMouseButton);
@@ -898,9 +898,9 @@ begin
   Result := 0;
   if PinsVisible then
   begin
-    Result := Max(Result, FDisplayPinArrays.First.Bounds.Right + 10 + ClientWidth - pbPins.Width);
+    Result := Max(Result, FDisplayPinArrays.First.Bounds.Right + 10 + ClientWidth - pnlPins.Width);
     if FDisplayPinArrays.Count > 1 then
-      Result := Max(Result, FDisplayPinArrays.Last.Bounds.Right + 10 + ClientWidth - pbPins.Width);
+      Result := Max(Result, FDisplayPinArrays.Last.Bounds.Right + 10 + ClientWidth - pnlPins.Width);
   end;
 end;
 
@@ -917,6 +917,7 @@ end;
 constructor TPinConnectionForm.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
+  pnlDrawSurface.DoubleBuffered := True;
   PinSurfaceHeight := 150;
   FPinsVisible := True;
   FDisplayPinArrays := TObjectArray<TDisplayPinArray>.Create;

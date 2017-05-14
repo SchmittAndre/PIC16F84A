@@ -11,11 +11,6 @@ type
   { TPeripheralLEDArray }
 
   TPeripheralLEDArray = class (TPeripheralForm)
-  public
-    type
-
-      TLEDCount = 0 .. 8;
-
   private
     FLEDArray: TLEDArray;
 
@@ -43,8 +38,8 @@ implementation
 
 procedure TPeripheralLEDArray.OnShowSettings(Sender: TObject);
 begin
-  frmLEDArraySettings.Execute(FLEDArray);
-  GeneratePinArrays;
+  if frmLEDArraySettings.Execute(FLEDArray) then
+    GeneratePinArrays;
 end;
 
 procedure TPeripheralLEDArray.OnLEDArrayWidthChange(Sender: TLEDArray);
@@ -76,7 +71,7 @@ end;
 constructor TPeripheralLEDArray.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
-  FLEDArray := TLEDArray.Create(pbDrawSurface, PinArray);
+  FLEDArray := TLEDArray.Create(pnlDrawSurface, PinArray);
   FLEDArray.OnWidthChange.Add(OnLEDArrayWidthChange);
   FLEDArray.OnHeightChange.Add(OnLEDArrayHeightChange);
   OnLEDArrayHeightChange(FLEDArray);

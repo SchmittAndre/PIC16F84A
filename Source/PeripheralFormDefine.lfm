@@ -12,17 +12,6 @@ object PinConnectionForm: TPinConnectionForm
   Position = poOwnerFormCenter
   LCLVersion = '1.6.4.0'
   Visible = True
-  object pbDrawSurface: TPaintBox
-    Left = 0
-    Height = 227
-    Top = 0
-    Width = 429
-    Align = alClient
-    OnMouseDown = pbDrawSurfaceMouseDown
-    OnMouseMove = pbDrawSurfaceMouseMove
-    OnMouseUp = pbDrawSurfaceMouseUp
-    OnPaint = pbDrawSurfacePaint
-  end
   object gbPins: TGroupBox
     Left = 5
     Height = 94
@@ -34,17 +23,32 @@ object PinConnectionForm: TPinConnectionForm
     ClientHeight = 74
     ClientWidth = 415
     TabOrder = 0
-    object pbPins: TPaintBox
+    object pnlPins: TPanel
       Left = 0
       Height = 74
       Top = 0
       Width = 415
       Align = alClient
-      OnMouseDown = pbPinsMouseDown
-      OnMouseMove = pbPinsMouseMove
-      OnMouseUp = pbPinsMouseUp
-      OnPaint = pbPinsPaint
+      BevelOuter = bvNone
+      TabOrder = 0
+      OnMouseDown = pnlPinsMouseDown
+      OnMouseMove = pnlPinsMouseMove
+      OnMouseUp = pnlPinsMouseUp
+      OnPaint = pnlPinsPaint
     end
+  end
+  object pnlDrawSurface: TPanel
+    Left = 0
+    Height = 227
+    Top = 0
+    Width = 429
+    Align = alClient
+    BevelOuter = bvNone
+    TabOrder = 1
+    OnMouseDown = pnlDrawSurfaceMouseDown
+    OnMouseMove = pnlDrawSurfaceMouseMove
+    OnMouseUp = pnlPinsMouseUp
+    OnPaint = pnlDrawSurfacePaint
   end
   object pmPins: TPopupMenu
     left = 48

@@ -77,7 +77,7 @@ end;
 
 procedure TBaseProcessorForm.InitDrawCaption;
 begin
-  with pbDrawSurface.Canvas.Font do
+  with pnlDrawSurface.Canvas.Font do
   begin
     Height := 40;
     Bold := True;
@@ -94,13 +94,13 @@ function TBaseProcessorForm.GetMinWidth: Integer;
 begin
   Result := inherited GetMinWidth;
   InitDrawCaption;
-  Result := Max(Result, pbDrawSurface.Canvas.TextWidth(PinArray.Name) + 40);
+  Result := Max(Result, pnlDrawSurface.Canvas.TextWidth(PinArray.Name) + 40);
 end;
 
 procedure TBaseProcessorForm.DrawPeripheral;
 begin
   InitDrawCaption;
-  with pbDrawSurface do
+  with pnlDrawSurface do
     Canvas.TextOut((Width - Canvas.TextWidth(PinArray.Name)) div 2, 5, PinArray.Name);
 end;
 

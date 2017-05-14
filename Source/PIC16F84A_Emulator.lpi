@@ -20,7 +20,7 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
-      <BuildNr Value="32"/>
+      <BuildNr Value="33"/>
       <Attributes pvaPrivateBuild="True"/>
       <StringTable Comments="Best Program" CompanyName="VS42 Inc." FileDescription="PIC16F84A Emulator" ProductVersion=""/>
     </VersionInfo>
