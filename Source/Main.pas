@@ -7,6 +7,8 @@ uses
   // Standard Units
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList, StdCtrls, Grids,
   ComCtrls, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses, Math, LazUTF8,
+  // Domis Units
+  Color,
   // Our Units
   ProcessorDefine,
   VisiblePinSelectionDefine,
@@ -69,7 +71,9 @@ type
     gbPeripherals: TGroupBox;
     ilMarker: TImageList;
     lbCycles: TLabel;
+    lbReachedSpeed: TLabel;
     lbCyclesTitle: TLabel;
+    lbReachedSpeedTitle: TLabel;
     lbPreScaler: TLabel;
     lbPreScalerTitle: TLabel;
     lbWRegister: TLabel;
@@ -110,6 +114,7 @@ type
     miPlaceholder: TMenuItem;
     miFile: TMenuItem;
     mmMainMenu: TMainMenu;
+    pnlReachedSpeed: TPanel;
     pnlLeft: TPanel;
     pnlControl: TPanel;
     pnlCycles: TPanel;
@@ -1017,15 +1022,16 @@ end;
 procedure TfrmMain.UpdateCycles;
 begin
   Cycles := FProcessor.Cycles;
-  if FProcessor.Overloaded then
+  if FProcessor.Running then
   begin
-    pnlCycles.Color := $5FAFFF;
-    pnlCycles.ShowHint := True;
+    // color fade from lime to red -> HSV(2/6) to HSV(0/6)
+    lbReachedSpeed.Caption := Format('%d%%', [Floor(FProcessor.OverloadFactor * 100 + 0.5)]);
+    pnlReachedSpeed.Color := TColorRGB.HSV(FProcessor.OverloadFactor * 2, 0.8, 1.0).ToWinColor;
   end
   else
   begin
-    pnlCycles.ParentColor := True;
-    pnlCycles.ShowHint := False;
+    lbReachedSpeed.Caption := '-';
+    pnlReachedSpeed.ParentColor := True;
   end;
 end;
 
@@ -1304,18 +1310,31 @@ procedure TfrmMain.IdleHandler(Sender: TObject; var ADone: Boolean);
 begin
   if FProcessor.Running then
   begin
-    FProcessor.CatchUp;
+    try
+      try
+        FProcessor.CatchUp;
+      except
+        on E: ENotImplemented do
+        begin
+          FProcessor.Stop;
+          raise;
+        end;
+      end;
+    finally
 
-    if not FProcessor.Running then
-    begin
-      UpdateALUInfo;
-      UpdateMemView;
-      UpdateSynEditMarkup;
-      UpdateSynEditScroll;
+      if not FProcessor.Running then
+      begin
+        UpdateALUInfo;
+        UpdateMemView;
+        UpdateSynEditMarkup;
+        UpdateSynEditScroll;
+      end;
+
+      UpdateCycles;
+      Sleep(5);
+
     end;
 
-    UpdateCycles;
-    Sleep(5);
     ADone := False;
   end
   else

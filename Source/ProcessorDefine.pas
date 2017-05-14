@@ -5,7 +5,7 @@ unit ProcessorDefine;
 interface
 
 uses
-  Classes, windows, SysUtils, Dialogs, Lists, Delegates, PinDefine;
+  Classes, windows, SysUtils, Dialogs, Lists, Delegates, PinDefine, Math;
 
 type
 
@@ -347,7 +347,7 @@ type
     FFrequency: Int64;
     FStartTime: Int64;        // Changes for ResetSyncTime
     FSpeedFactor: Single;
-    FOverloaded: Boolean;     // Processor can't keep up
+    FOverloadFactor: Single;     // Actual speed in percentage to what the Processor should reach
     FBreakpoints: TCardinalSet;
 
     FHelpBreakpointDepth: TProgramCounterStackPos;
@@ -359,10 +359,12 @@ type
     function GetCurrentProgramPos: TProgramMemPos;
     function GetDataMem(P: TROMPointer): Byte;
     function GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
+    function GetOverloaded: Boolean;
     function GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
     function GetCode(P: TProgramCounter): TLineInstruction;
     function GetPCStackMem(P: TProgramCounterStackPointer): Byte;
     function GetProgramMem(P: TProgramMemPointer): Byte;
+    function GetTargetCycles: Integer;
     function GetTimeBehind: Single;
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
     function GetCarryFlag: Boolean;
@@ -486,6 +488,8 @@ type
     function StepOver: TStepInfo;
     function StepOut: TStepInfo;
     procedure CatchUp;
+
+    property TargetCycles: Integer read GetTargetCycles;
     property TimeBehind: Single read GetTimeBehind;
 
     property ProgramMem[P: TProgramMemPointer]: Byte read GetProgramMem;
@@ -517,7 +521,8 @@ type
 
     class function FormatInstruction(AInstruction: TInstruction): String;
 
-    property Overloaded: Boolean read FOverloaded;
+    property Overloaded: Boolean read GetOverloaded;
+    property OverloadFactor: Single read FOverloadFactor;
 
   published
     {$REGION --- Byte-Oriented File Register Operations --- }
@@ -958,6 +963,11 @@ begin
   end;
 end;
 
+function TProcessor.GetOverloaded: Boolean;
+begin
+  Result := FOverloadFactor < 1;
+end;
+
 function TProcessor.GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
 begin
   Result := FProgramCounterStack[P];
@@ -982,6 +992,14 @@ begin
     Result := (FProgramMem[P div 2].Instruction shr 8) and $FF
   else
     Result := FProgramMem[P div 2].Instruction and $FF;
+end;
+
+function TProcessor.GetTargetCycles: Integer;
+var
+  T: Int64;
+begin
+  QueryPerformanceCounter(T);
+  Result := Floor((T - FStartTime) / FFrequency * FSpeedFactor * OperationFrequeny + 0.5);
 end;
 
 function TProcessor.GetTimeBehind: Single;
@@ -1189,7 +1207,8 @@ begin
   begin
     FSkipPortWrite := True;
     Flag[b0PORTA, APin.Index] := APin.State;
-    OnAsyncMemoryChange.Call(Self);
+    if not Running then
+      OnAsyncMemoryChange.Call(Self);
     FSkipPortWrite := False;
   end;
 end;
@@ -1286,7 +1305,7 @@ procedure TProcessor.Stop;
 begin
   FHelpBreakpointEnabled := False;
   FRunning := False;
-  FOverloaded := False;
+  FOverloadFactor := 1;
 end;
 
 procedure TProcessor.ProcessInstruction(AInstruction: TInstruction; ALine: Integer);
@@ -1381,7 +1400,7 @@ procedure TProcessor.CatchUp;
 const
   MaxTimeBehind = 0.02; // 20 ms
 begin
-  FOverloaded := False;
+  FOverloadFactor := 1;
   while TimeBehind > 0 do
   begin
     StepIn;
@@ -1393,7 +1412,7 @@ begin
     end;
     if TimeBehind > MaxTimeBehind * FSpeedFactor then
     begin
-      FOverloaded := True;
+      FOverloadFactor := FCyclesFromStart / TargetCycles;
       ResetSyncTime;
       Break;
     end;

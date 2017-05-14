@@ -733,19 +733,20 @@ object frmMain: TfrmMain
       end
       object gbStateInfo: TGroupBox
         Left = 6
-        Height = 120
+        Height = 145
         Top = 346
         Width = 134
         Align = alTop
+        AutoSize = True
         BorderSpacing.Around = 5
         Caption = 'State-Info'
-        ClientHeight = 100
+        ClientHeight = 125
         ClientWidth = 130
         TabOrder = 2
         object pnlWRegister: TPanel
           Left = 0
           Height = 25
-          Top = 25
+          Top = 50
           Width = 130
           Align = alTop
           BevelOuter = bvNone
@@ -779,7 +780,7 @@ object frmMain: TfrmMain
         object pnlFlags: TPanel
           Left = 0
           Height = 25
-          Top = 50
+          Top = 75
           Width = 130
           Align = alTop
           BevelOuter = bvNone
@@ -813,7 +814,6 @@ object frmMain: TfrmMain
         object pnlCycles: TPanel
           Left = 0
           Height = 25
-          Hint = 'Processor can''t keep up'
           Top = 0
           Width = 130
           Align = alTop
@@ -849,7 +849,7 @@ object frmMain: TfrmMain
         object pnlPreScaler: TPanel
           Left = 0
           Height = 25
-          Top = 75
+          Top = 100
           Width = 130
           Align = alTop
           BevelOuter = bvNone
@@ -876,6 +876,41 @@ object frmMain: TfrmMain
             Alignment = taRightJustify
             BorderSpacing.Right = 5
             Caption = '00h/0'
+            Layout = tlCenter
+            ParentColor = False
+          end
+        end
+        object pnlReachedSpeed: TPanel
+          Left = 0
+          Height = 25
+          Top = 25
+          Width = 130
+          Align = alTop
+          BevelOuter = bvNone
+          ClientHeight = 25
+          ClientWidth = 130
+          ParentColor = False
+          TabOrder = 4
+          object lbReachedSpeedTitle: TLabel
+            Left = 5
+            Height = 25
+            Top = 0
+            Width = 83
+            Align = alLeft
+            BorderSpacing.Left = 5
+            Caption = 'Reached Speed:'
+            Layout = tlCenter
+            ParentColor = False
+          end
+          object lbReachedSpeed: TLabel
+            Left = 88
+            Height = 25
+            Top = 0
+            Width = 37
+            Align = alClient
+            Alignment = taRightJustify
+            BorderSpacing.Right = 5
+            Caption = '-'
             Layout = tlCenter
             ParentColor = False
           end
