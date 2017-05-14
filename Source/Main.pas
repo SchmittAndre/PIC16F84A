@@ -1157,7 +1157,7 @@ begin
         SetCodePage(FileData, DefaultSystemCodePage);
         FFileData.Text := FileData;
         ParseStringListFromLST(FFileData);
-        FProcessor.LoadProgram(FFileData);
+        FProcessor.LoadFromLST(FFileData);
         Compiled := True;
         UpdateActions;
         UpdateMemView;
