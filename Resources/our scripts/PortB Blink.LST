@@ -11,9 +11,9 @@
 0002 1283           00011           bcf 03h, 5    ; Bank 0
 0003 30AA           00012           movlw AAh     ; W = AA
 0004 0086           00013           movwf 06h     ; PortB = W = AA
-                    00014  
+                    00014
 0005 30FF           00015           movlw FFh
                     00016  ende
-0006 0686           00017           xorwf 06h, f
+0006 0686           00017           xorwf 06h
 0007 2806           00018           goto ende     ;Endlosschleife, verhindert Nirwana
                     00019

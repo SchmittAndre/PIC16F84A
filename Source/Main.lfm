@@ -959,7 +959,7 @@ object frmMain: TfrmMain
             end          
             item
               Title.Caption = 'Message'
-              Width = 486
+              Width = 507
             end>
           FixedCols = 0
           MouseWheelOption = mwGrid
@@ -971,7 +971,7 @@ object frmMain: TfrmMain
           ColWidths = (
             60
             42
-            486
+            507
           )
         end
       end
