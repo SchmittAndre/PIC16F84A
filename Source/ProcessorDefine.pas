@@ -80,6 +80,14 @@ type
     );
     {$ENDREGION}
 
+    {$REGION TEEPROMState}
+    TEEPROMState = (
+      esNotinit,
+      esOnInit,
+      esReady
+    );
+    {$ENDREGION}
+
     {$REGION Custom Ranges}
     TProgramCounter = $0 .. $1FFF;
     TProgramCounterStackPos = 0 .. StackSize - 1;
@@ -331,6 +339,7 @@ type
 
     // EEPROM
     FROM: array [TROMPointer] of Byte;
+    FEEPROMState: TEEPROMState;
 
     // Pins
     FPortAPins: TPinArray;
@@ -360,6 +369,7 @@ type
     function GetCurrentInstruction: TLineInstruction;
     function GetCurrentProgramPos: TProgramMemPos;
     function GetDataMem(P: TROMPointer): Byte;
+    procedure setDataMem(P: TROMPointer; AValue: Byte);
     function GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
     function GetOverloaded: Boolean;
     function GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
@@ -418,6 +428,7 @@ type
 
     property FileMap[P: TRAMPointer]: Byte read GetFileMap write SetFileMap;
     property Flag[P: TRAMPointer; ABit: TBitIndex]: Boolean read GetFlag write SetFlag;
+    property EEPROM[P: TROMPointer]: Byte read GetDataMem write setDataMem;
 
     property CarryFlag: Boolean read GetCarryFlag write SetCarryFlag;
     property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
@@ -1149,6 +1160,11 @@ begin
   end;
 end;
 
+procedure TProcessor.setDataMem(P: TROMPointer; AValue: Byte);
+begin
+  FROM[P] := AValue;
+end;
+
 function TProcessor.GetEEWriteDoneInterruptFlag: Boolean;
 begin
   Result := Flag[b1EECON1, 4];
@@ -1278,6 +1294,7 @@ begin
   FileMap[b1OPTION] := $FF;
   FileMap[b1TRISA] := $1F;
   FileMap[b1TRISB] := $FF;
+  FEEPROMState := esNotinit;
 end;
 
 function TProcessor.GetBank1Selected: Boolean;
@@ -1386,7 +1403,26 @@ begin
   begin
     FProgramCounter := FProgramCounter and $1F00;
     FProgramCounter := FProgramCounter or AValue;
+  end
+  else if P = Ord(b1EECON2) then
+  begin
+    if (AValue = $55) and (FEEPROMState = esNotinit) then
+      FEEPROMState := esOnInit
+    else if (AValue = $AA) and (FEEPROMState = esOnInit) then
+      FEEPROMState := esReady;
+  end
+  else if (P = Ord(b1EECON1)) then
+  begin
+    Diff := FileMap[P] xor AValue;
+    Diff := Diff and 2;
+    if ((DIff = 2) and ((AValue and 2) = 2)) and (Flag[b1EECON1,2]) and (FEEPROMState = esReady) then
+    begin
+      EEPROM[FileMap[b0EEADR]] := FileMap[b0EEDATA];
+      FileMap[b1EECON1] := $14;
+      Exit;
+    end;
   end;
+
 
   if not FSkipPortWrite then
   begin
@@ -1422,6 +1458,11 @@ begin
     // all assignments to TMR0 will clear the prescaler
     FPreScaler := 0;
     FInhibitTimer0 := 2;
+  end
+  else if ((P = Ord(b1EECON1)) and (Flag[b1EECON1,0])) then
+  begin
+    FileMap[b0EEDATA] := EEPROM[FileMap[b0EEADR]];
+    Flag[b1EECON1,0] := False;
   end;
 end;
 
@@ -1441,6 +1482,7 @@ begin
     FileMap[P] := FileMap[P] or (1 shl ABit)
   else           // clear
     FileMap[P] := FileMap[P] and not (1 shl ABit);
+
 end;
 
 procedure TProcessor.SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean);
