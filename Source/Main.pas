@@ -6,7 +6,7 @@ uses
 
   // Standard Units
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList, StdCtrls, Grids,
-  ComCtrls, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses, Math, LazUTF8,
+  ComCtrls, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses, Math, LazUTF8, LazFileUtils,
   // Domis Units
   Color,
   // Our Units
@@ -26,8 +26,7 @@ type
     lfCenter
   );
 
-  TLoadType = (ltAssembler = 1, ltCompiled, ltBinary);
-  TSaveType = (stAssembler = 1, stCompiledCommented, stCompiledUncommented, stBinary);
+  TFileType = (ftAssembler = 1, ftCompiled, ftBinary);
 
   { TfrmMain }
 
@@ -69,6 +68,7 @@ type
     gbFile: TGroupBox;
     gbStateInfo: TGroupBox;
     gbPeripherals: TGroupBox;
+    gbCompileOutput: TGroupBox;
     ilMarker: TImageList;
     lbCycles: TLabel;
     lbReachedSpeed: TLabel;
@@ -114,6 +114,7 @@ type
     miPlaceholder: TMenuItem;
     miFile: TMenuItem;
     mmMainMenu: TMainMenu;
+    pnlCode: TPanel;
     pnlReachedSpeed: TPanel;
     pnlLeft: TPanel;
     pnlControl: TPanel;
@@ -126,8 +127,10 @@ type
     pnlFlags: TPanel;
     sbStatus: TStatusBar;
     sgSpecialFunction: TStringGrid;
-    synEditor: TSynEdit;
     sgMemView: TStringGrid;
+    Splitter1: TSplitter;
+    sgCompileOutput: TStringGrid;
+    synEditor: TSynEdit;
     synHighlighter: TSynAnySyn;
     synCompletion: TSynCompletion;
     procedure actCloseAllPeripheralsExecute(Sender: TObject);
@@ -164,6 +167,7 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
     procedure FormShow(Sender: TObject);
+    procedure sgCompileOutputSelection(Sender: TObject; aCol, aRow: Integer);
     procedure sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);
     procedure sgMemViewPrepareCanvas(Sender: TObject; aCol, aRow: Integer; aState: TGridDrawState);
     function synCompletionMeasureItem(const AKey: string; ACanvas: TCanvas; {%H-}Selected: boolean;
@@ -183,6 +187,7 @@ type
     FProcessor: TProcessor;
     FFileData: TStringList;
     FCompiled: Boolean;
+    FFileName: String;
     FFlags: TProcessor.TCalcFlags;
     FLineFollowMode: TLineFollowMode;
     FLineFollowRange: Cardinal;
@@ -258,8 +263,7 @@ type
 
     procedure IdleHandler(Sender: TObject; var ADone: Boolean);
 
-    procedure LoadFile(AFileName: String);
-    function ExtractFileType(AFileName: String): TLoadType;
+    function ExtractFileType(AFileName: String): TFileType;
 
     procedure ProcessParams;
 
@@ -267,6 +271,13 @@ type
     procedure GeneratePeripheralLists;
 
     procedure OnAsyncProcessorChange(Sender: TProcessor);
+
+    procedure SaveFile(AFileName: String; AFileType: TFileType); overload;
+    procedure SaveFile(AFileName: String); overload;
+
+    procedure LoadFile(AFileName: String; AFileType: TFileType); overload;
+    procedure LoadFile(AFileName: String); overload;
+
 
   protected
     procedure UpdateActions; override;
@@ -278,35 +289,21 @@ type
 
   end;
 
-  { EUnsupportedException }
+  { EUnsupported }
 
-  EUnsupportedException = class (Exception)
+  EUnsupported = class (Exception)
     constructor Create(AExtension: String);
   end;
 
 const
-  LoadTypeNames: array [TLoadType] of String = (
+  FileTypeNames: array [TFileType] of String = (
     'Assembler Program',
     'Compiled Program',
     'Binary Program'
   );
 
-  LoadExtensions: array [TLoadType] of String = (
+  FileExtensions: array [TFileType] of String = (
     '.asm',
-    '.lst',
-    '.hex'
-  );
-
-  SaveTypeNames: array [TSaveType] of String = (
-    'Assembler Program',
-    'Compiled Program Commented',
-    'Compiled Program Uncommented',
-    'Binary Program'
-  );
-
-  SaveExtensions: array [TSaveType] of String = (
-    '.asm',
-    '.lst',
     '.lst',
     '.hex'
   );
@@ -322,9 +319,9 @@ implementation
 
 {$R *.lfm}
 
-{ EUnsupportedException }
+{ EUnsupported }
 
-constructor EUnsupportedException.Create(AExtension: String);
+constructor EUnsupported.Create(AExtension: String);
 begin
   inherited Create('Extension "' + AExtension + '" is not supported!');
 end;
@@ -386,9 +383,33 @@ begin
 end;
 
 procedure TfrmMain.actCompileExecute(Sender: TObject);
+var
+  Compiler: TCompiler;
+  I: Integer;
 begin
-  // TODO: Compile
-  raise ENotImplemented.Create('Compiling not implemented');
+  Compiler := TCompiler.Create(FProcessor, synEditor.Lines);
+
+  sgCompileOutput.RowCount := Compiler.LogLength + 1;
+  for I := 0 to Compiler.LogLength - 1 do
+  begin
+    sgCompileOutput.Rows[I + 1][0] := TCompiler.ImpactStrings[Compiler.Log[I].ImpactLevel];
+    sgCompileOutput.Rows[I + 1][1] := Compiler.Log[I].Line.ToString;
+    sgCompileOutput.Rows[I + 1][2] := Compiler.Log[I].ErrorString;
+  end;
+
+  if Compiler.Success then
+    Compiled := True;
+
+    DisableAlign;
+  if Compiler.LogLength > 0 then
+    gbCompileOutput.Height := Max(gbCompileOutput.Height, 120)
+  else
+    gbCompileOutput.Height := 1;
+  EnableAlign;
+
+  UpdateMemView;
+
+  Compiler.Free;
 end;
 
 procedure TfrmMain.actCloseAllPeripheralsExecute(Sender: TObject);
@@ -402,7 +423,7 @@ end;
 
 procedure TfrmMain.actCompileUpdate(Sender: TObject);
 begin
-  actCompile.Enabled := not Compiled;
+  actCompile.Enabled := not Compiled and not FProcessor.Running;
   if Compiled then
     actCompile.Caption := 'Compiled'
   else
@@ -417,14 +438,16 @@ end;
 
 procedure TfrmMain.actOpenFileExecute(Sender: TObject);
 var
-  T: TLoadType;
+  T: TFileType;
 begin
   with TOpenDialog.Create(Self) do
   begin
-     try
-      for T := Low(TLoadType) to High(TLoadType) do
-        Filter := Filter + LoadTypeNames[T] + '|*' + LoadExtensions[T] + '|';
-      FilterIndex := Integer(ltCompiled);
+    try
+      for T := Low(TFileType) to High(TFileType) do
+      Filter := Filter + FileTypeNames[T] + '|*' + FileExtensions[T] + '|';
+
+      FilterIndex := Integer(ftCompiled);
+
       if Execute then
         LoadFile(FileName);
     finally
@@ -473,8 +496,40 @@ begin
 end;
 
 procedure TfrmMain.actSaveFileAsExecute(Sender: TObject);
+var
+  T: TFileType;
+  S: String;
 begin
+  with TSaveDialog.Create(Self) do
+  begin
+    try
+      for T := Low(T) to High(T) do
+        Filter := Filter + FileTypeNames[T] + '|*' + FileExtensions[T] + '|';
 
+      if not FFileName.IsEmpty then
+      begin
+        FileName := ExtractFileNameOnly(FFileName);
+        InitialDir := ExtractFilePath(FFileName);
+        try
+          FilterIndex := Integer(ExtractFileType(FFileName))
+        except
+          on E: EUnsupported do
+          begin
+            FilterIndex := Integer(ftCompiled);
+          end;
+        end;
+      end
+      else
+        FilterIndex := Integer(ftCompiled);
+
+
+      if Execute then
+        SaveFile(FileName, TFileType(FilterIndex));
+
+    finally
+      Free;
+    end;
+  end;
 end;
 
 procedure TfrmMain.actSaveFileAsUpdate(Sender: TObject);
@@ -483,53 +538,13 @@ begin
 end;
 
 procedure TfrmMain.actSaveFileExecute(Sender: TObject);
-var
-  T: TSaveType;
 begin
-  with TSaveDialog.Create(Self) do
-  begin
-    try
-      for T := Low(TSaveType) to High(TSaveType) do
-        Filter := Filter + SaveTypeNames[T] + '|*' + SaveExtensions[T] + '|';
-      FilterIndex := Integer(stAssembler);
-      if Execute then
-      begin
-        raise ENotImplemented.Create('Can''t save! Saving not implemented!');
-        T := TSaveType(FilterIndex);
-        if T = stAssembler then
-        begin
-
-        end
-        else
-        begin
-          //if not Compiled then
-          //  MessageDlg('Please compile, before saving to a compiled file!', mtError, [mbOk], 0);
-
-          case T of
-            stCompiledCommented:
-            begin
-
-            end;
-            stCompiledUncommented:
-            begin
-
-            end;
-            stBinary:
-            begin
-
-            end;
-          end;
-        end;
-      end;
-    finally
-      Free;
-    end;
-  end;
+  SaveFile(FFileName);
 end;
 
 procedure TfrmMain.actSaveFileUpdate(Sender: TObject);
 begin
-  actSaveFile.Enabled := not FProcessor.Running;
+  actSaveFile.Enabled := not FProcessor.Running and not FFileName.IsEmpty;
 end;
 
 procedure TfrmMain.actShowAllExecute(Sender: TObject);
@@ -560,7 +575,7 @@ end;
 
 procedure TfrmMain.actStartStopUpdate(Sender: TObject);
 begin
-  actStartStop.Enabled := Compiled;
+  actStartStop.Enabled := Compiled or FProcessor.Running;
   if FProcessor.Running then
     actStartStop.Caption := 'Stop'
   else
@@ -649,7 +664,7 @@ end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: boolean);
 begin
-  // TODO: Do you want to save? dialog
+  // TODO: Do you want to SaveFile? dialog
   CanClose := True;
 end;
 
@@ -678,6 +693,19 @@ begin
   MemViewAutoWidth;
   sgSpecialFunction.Invalidate;
   ProcessParams;
+end;
+
+procedure TfrmMain.sgCompileOutputSelection(Sender: TObject; aCol, aRow: Integer);
+var
+  Line: Integer;
+begin
+  if aRow >= 1 then
+  begin
+    if TryStrToInt(sgCompileOutput.Rows[aRow][1], Line) then
+      synEditor.CaretY := Line;
+    synEditor.CaretX := synEditor.Lines[Line - 1].Length - synEditor.Lines[Line - 1].TrimLeft.Length + 1;
+    synEditor.SetFocus;
+  end;
 end;
 
 {
@@ -735,7 +763,7 @@ begin
       end;
       mtProgram:
       begin
-        HintText := TProcessor.FormatInstruction(FProcessor.Code[I div 2].Instruction);
+        HintText := TCompiler.FormatInstruction(FProcessor.Code[I div 2].Instruction);
       end;
       mtProgramCounterStack:
       begin
@@ -890,7 +918,7 @@ const
   ColorBreakpoint = $2233FF;
   ColorPCBreakpoint = $4466FF;
 begin
-  if not FProcessor.Running then
+  if Compiled and not FProcessor.Running then
   begin
     if Line = FProcessor.CurrentInstruction.Line then
     begin
@@ -1137,19 +1165,19 @@ begin
   PeripheralClasses[MenuItem.Tag].Create(Self);
 end;
 
-procedure TfrmMain.LoadFile(AFileName: String);
+procedure TfrmMain.LoadFile(AFileName: String; AFileType: TFileType);
 var
   FileData: RawByteString;
-  LoadType: TLoadType;
+  I: TProcessor.TProgramMemPos;
 begin
   try
-    LoadType := ExtractFileType(AFileName);
-    case LoadType of
-      ltAssembler:
+    case AFileType of
+      ftAssembler:
       begin
-        raise ENotImplemented.Create('Can''t load! Loading not implemented!');
+        synEditor.Lines.LoadFromFile(AFileName);
+        Compiled := False;
       end;
-      ltCompiled:
+      ftCompiled:
       begin
         FFileData.LoadFromFile(AFileName);
         FileData := FFileData.Text;
@@ -1167,29 +1195,38 @@ begin
         UpdateSynEditScroll;
         UpdateSynEditMarkup;
       end;
-      ltBinary:
+      ftBinary:
       begin
-        raise ENotImplemented.Create('Can''t load! Loading not implemented!');
+        synEditor.BeginUpdate;
+        synEditor.Clear;
+        FProcessor.LoadProgram(AFileName, synEditor.Lines);
+        synEditor.EndUpdate;
       end;
     end;
+    FFileName := AFileName;
   except
-    on E: EUnsupportedException do
+    on E: EUnsupported do
     begin
       MessageDlg(E.Message, mtError, [mbOK], 0);
     end;
   end;
 end;
 
-function TfrmMain.ExtractFileType(AFileName: String): TLoadType;
+procedure TfrmMain.LoadFile(AFileName: String);
+begin
+  LoadFile(AFileName, ExtractFileType(AFileName));
+end;
+
+function TfrmMain.ExtractFileType(AFileName: String): TFileType;
 var
-  LoadType: TLoadType;
+  LoadType: TFileType;
   Ext: String;
 begin
   Ext := LowerCase(ExtractFileExt(AFileName));
   for LoadType := Low(LoadType) to High(LoadType) do
-    if LoadExtensions[LoadType] = Ext then
+    if FileExtensions[LoadType] = Ext then
       Exit(LoadType);
-  raise EUnsupportedException.Create(Ext);
+  raise EUnsupported.Create(Ext);
 end;
 
 function TfrmMain.GetPortsVisible: Boolean;
@@ -1253,7 +1290,10 @@ begin
   sgMemView.RowCount := Ceil(TProcessor.MemorySize[MemViewType] / MemViewColumns) + 1;
   for R := 0 to sgMemView.RowCount - 2 do
   begin
-    sgMemView.Rows[R + 1][0] := Format('0x%.4x', [R * MemViewColumns]);
+    if MemViewType in TProcessor.DoubleWordMemories then
+      sgMemView.Rows[R + 1][0] := Format('0x%.4x', [R * MemViewColumns div 2])
+    else
+      sgMemView.Rows[R + 1][0] := Format('0x%.4x', [R * MemViewColumns]);
     for C := 0 to MemViewColumns - 1 do
     begin
       P := C + R * MemViewColumns;
@@ -1405,6 +1445,29 @@ procedure TfrmMain.OnAsyncProcessorChange(Sender: TProcessor);
 begin
   UpdateMemView;
   UpdateSpecialFunction;
+end;
+
+procedure TfrmMain.SaveFile(AFileName: String; AFileType: TFileType);
+begin
+  case AFileType of
+    ftAssembler:
+    begin
+      synEditor.Lines.SaveToFile(AFileName);
+    end;
+    ftCompiled:
+    begin
+      raise ENotImplemented.Create('Saving compiled file not implemented.');
+    end;
+    ftBinary:
+    begin
+      FProcessor.SaveProgram(AFileName);
+    end;
+  end;
+end;
+
+procedure TfrmMain.SaveFile(AFileName: String);
+begin
+  SaveFile(AFileName, ExtractFileType(AFileName));
 end;
 
 end.

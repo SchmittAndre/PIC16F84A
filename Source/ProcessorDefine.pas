@@ -5,7 +5,7 @@ unit ProcessorDefine;
 interface
 
 uses
-  Classes, windows, SysUtils, Dialogs, Lists, Delegates, PinDefine, Math;
+  Classes, Windows, SysUtils, Dialogs, Lists, Delegates, PinDefine, Math;
 
 type
 
@@ -205,7 +205,7 @@ type
     {$REGION Memory Info}
     MemorySize: array [TMemoryType] of Word = (
       RAMFullSize,
-      ProgramMemorySize,
+      ProgramMemorySize * 2,
       ROMSize,
       StackSize * 2
     );
@@ -217,6 +217,8 @@ type
       'PC-Stack'
     );
     {$ENDREGION}
+
+    DoubleWordMemories = [mtProgram, mtProgramCounterStack];
 
     {$REGION Special Functions}
       RegisterBank0Name: array [TRegisterBank0] of String = (
@@ -291,10 +293,10 @@ type
       (Name: 'goto';   SignificantBits: 3;  Instruction: $2800; Params: [ipPC]),
       (Name: 'iorlw';  SignificantBits: 6;  Instruction: $3800; Params: [ipBL]),
       (Name: 'movlw';  SignificantBits: 4;  Instruction: $3000; Params: [ipBL]),
-      (Name: 'retfie'; SignificantBits: 14; Instruction: $0009; Params: [ipBL]),
+      (Name: 'retfie'; SignificantBits: 14; Instruction: $0009; Params: []),
       (Name: 'retlw';  SignificantBits: 4;  Instruction: $3400; Params: [ipBL]),
-      (Name: 'return'; SignificantBits: 14; Instruction: $0008; Params: [ipBL]),
-      (Name: 'sleep';  SignificantBits: 14; Instruction: $0063; Params: [ipBL]),
+      (Name: 'return'; SignificantBits: 14; Instruction: $0008; Params: []),
+      (Name: 'sleep';  SignificantBits: 14; Instruction: $0063; Params: []),
       (Name: 'sublw';  SignificantBits: 5;  Instruction: $3C00; Params: [ipBL]),
       (Name: 'xorlw';  SignificantBits: 6;  Instruction: $3A00; Params: [ipBL])
     );
@@ -471,6 +473,8 @@ type
     destructor Destroy; override;
 
     procedure LoadFromLST(AFileData: TStrings);
+    procedure SaveProgram(AFileName: String);
+    procedure LoadProgram(AFileName: String; AGeneratedCode: TStrings = nil);
 
     procedure ClearProgramMemory;
 
@@ -521,8 +525,6 @@ type
     property SpeedFactor: Single read FSpeedFactor write SetSpeedFactor;
 
     property Breakpoint[ALine: Cardinal]: Boolean read GetBreakpoint write SetBreakpoint;
-
-    class function FormatInstruction(AInstruction: TInstruction): String;
 
     property Overloaded: Boolean read GetOverloaded;
     property OverloadFactor: Single read FOverloadFactor;
@@ -582,11 +584,12 @@ type
   end;
 
 
-  // TODO: [ERROR] Not enough ProgramMemory
+  // DONE: [ERROR] Memory out of bounds
   // TODO: [HINT]  Unused Macro
-  // TODO: [ERROR] ByteLiteral Number out of range (0 .. 255)
-  // TODO: [ERROR] FileAdressLiteral out of range  (0 .. 127)
-  // TODO: [ERROR] BitIndex out of range (0 .. 7)
+  // TODO: [HINT]  Unused Label
+  // DONE: [ERROR] ByteLiteral Number out of range (0 .. 255)
+  // DONE: [ERROR] FileAdressLiteral out of range  (0 .. 127)
+  // DONE: [ERROR] BitIndex out of range (0 .. 7)
   // TODO: [HINT]  Processor not defined
   // TODO: [WARN]  Incompatible Processor defined
 
@@ -600,14 +603,14 @@ type
 
       TCodePosition = (cpHeader, cpCode);
 
-      { TLabelInfo }
+      { TTodoLabelInfo }
 
-      TLabelInfo = record
+      TTodoLabelInfo = record
         ProgramPos: TProcessor.TProgramMemPos;
         LabelName: String;
       end;
 
-      TImpactLevel = (ilVerbose, ilHint, ilWarning, ilError);
+      TImpactLevel = (ilVerbose, ilHint, ilWarning, ilError, ilFatal);
 
       { TLogEntry }
 
@@ -634,7 +637,15 @@ type
       Number = ['0' .. '9'];
       AlphaNum = Alpha + Number;
 
-      NumChars = Number + ['a' .. 'f', 'h'];
+      NumChars = Number + ['a' .. 'f', 'A' .. 'F', 'h', 'H'];
+
+      ImpactStrings: array [TImpactLevel] of String = (
+        'Verbose',
+        'Hint',
+        'Warning',
+        'Error',
+        'Fatal'
+      );
 
   private
     // "Constant"
@@ -645,10 +656,10 @@ type
 
     // Used in compilation
     FCodePosition: TCodePosition;
-    FProgramPos: TProcessor.TProgramMemPos;
+    FProgramPos: Integer;
 
     FLabelList: TStringMap<TProcessor.TProgramMemPos>;
-    FTodoLabels: TArrayList<TLabelInfo>;
+    FTodoLabels: TArrayList<TTodoLabelInfo>;
 
     // Error handling
     FLog: TArrayList<TLogEntry>;
@@ -662,6 +673,7 @@ type
     function GetLog(AIndex: Integer): TLogEntry;
 
     procedure ProcessLine(const ALine: String);
+    procedure FinishTodoLabels;
 
     // Removes comment and trims away any spaces being left
     class function RemoveComment(const ALine: String): String;
@@ -684,9 +696,13 @@ type
     // Tries to skip a comma and returns true if it found one and skipped it
     class function SkipComma(var ALine: String): Boolean;
 
+    procedure RaiseMemoryOutOfBounds(AMemoryPos: Integer);
+
   public
     constructor Create(AProcessor: TProcessor; ACode: TStrings);
     destructor Destroy; override;
+
+    class function FormatInstruction(AInstruction: TProcessor.TInstruction): String;
 
     property Success: Boolean read FSuccess;
 
@@ -754,7 +770,12 @@ begin
         Exit;
       end
       else if ExtractIdentifier(CodeLine) = MacroCommand then
+      begin
         FMacros[Identifier] := CodeLine;
+        CodeLine := '';
+      end
+      else
+        raise ECompileError.CreateFmt('Expected EQU, got "%s"', [CodeLine]);
     end;
     cpCode:
     begin
@@ -768,12 +789,37 @@ begin
         AddLabel(Identifier);
         if CodeLine = ':' then
           CodeLine := CodeLine.Substring(1);
+        ProcessLine(CodeLine);
+        Exit;
       end;
     end;
   end;
 
   if not CodeLine.IsEmpty then
     raise ECompileError.CreateFmt('Expected comment or line break, got "%s"', [CodeLine]);
+end;
+
+procedure TCompiler.FinishTodoLabels;
+var
+  Entry: TTodoLabelInfo;
+  ProgramPos: TProcessor.TProgramMemPos;
+begin
+  for Entry in FTodoLabels do
+  begin
+    if FLabelList.Get(Entry.LabelName, ProgramPos) then
+    begin
+      RaiseMemoryOutOfBounds(Entry.ProgramPos);
+      FProcessor.FProgramMem[Entry.ProgramPos].Instruction := FProcessor.FProgramMem[Entry.ProgramPos].Instruction or
+                                                              ProgramPos;
+    end
+    else
+    begin
+      FLog.Add(TLogEntry.Create(FProcessor.FProgramMem[Entry.ProgramPos].Line,
+                                Format('The label "%s" does not exist', [Entry.LabelName]),
+                                ilError));
+      FSuccess := False;
+    end;
+  end;
 end;
 
 class function TCompiler.RemoveComment(const ALine: String): String;
@@ -783,7 +829,7 @@ begin
   Result := ALine;
   I := Result.IndexOf(CommentStart);
   if I <> -1 then
-    Result := Result.Substring(I);
+    Result := Result.Substring(0, I);
   Result := Trim(Result);
 end;
 
@@ -801,7 +847,7 @@ var
   I: Integer;
 begin
   Result := '';
-  if ALine[1] in Alpha then
+  if not ALine.isEmpty and (ALine[1] in Alpha) then
     Result := Result + ALine[1]
   else
     raise ECompileError.CreateFmt('Expected an identifier, got "%s"', [ALine]);
@@ -819,7 +865,7 @@ var
   Instruction: TProcessor.TInstruction;
   Num: Integer;
   MemPos: TProcessor.TProgramMemPos;
-  LabelInfo: TLabelInfo;
+  LabelInfo: TTodoLabelInfo;
 begin
   Instruction := TProcessor.InstructionInfo[AInstructionType].Instruction;
   if ipFA in TProcessor.InstructionInfo[AInstructionType].Params then
@@ -831,11 +877,10 @@ begin
   end;
   if ipDT in TProcessor.InstructionInfo[AInstructionType].Params then
   begin
-    if not SkipComma(AParamString) or not AParamString.IsEmpty and (LowerCase(AParamString[1]) <> 'w') then
-    begin
+    if SkipComma(AParamString) and not AParamString.IsEmpty and (LowerCase(AParamString[1]) = 'w') then
+      AParamString := AParamString.Substring(1)
+    else
       Instruction := Instruction or $80;
-      AParamString := AParamString.Substring(1);
-    end;
   end;
   if ipBI in TProcessor.InstructionInfo[AInstructionType].Params then
   begin
@@ -848,9 +893,10 @@ begin
   end;
   if ipBL in TProcessor.InstructionInfo[AInstructionType].Params then
   begin
-     Num := ExtractNumber(AParamString);
+    Num := ExtractNumber(AParamString);
     if (Num < Low(Byte)) or (Num > High(Byte)) then
       raise ECompileError.CreateFmt('Byte literal %.2xh out of range [00h .. FFh]', [Num]);
+    Instruction := Instruction or Num;
   end;
   if ipPC in TProcessor.InstructionInfo[AInstructionType].Params then
   begin
@@ -861,18 +907,22 @@ begin
     end
     else
     begin
+      RaiseMemoryOutOfBounds(FProgramPos);
       LabelInfo.ProgramPos := FProgramPos;
       FTodoLabels.Add(LabelInfo);
     end;
   end;
+  RaiseMemoryOutOfBounds(FProgramPos);
   FProcessor.FProgramMem[FProgramPos].Instruction := Instruction;
   FProcessor.FProgramMem[FProgramPos].Line := FLine;
+  Inc(FProgramPos);
 end;
 
 procedure TCompiler.AddLabel(AIdentifier: String);
 begin
   if FLabelList.HasKey(AIdentifier) then
     raise ECompileError.CreateFmt('Duplicate Label "%s"', [AIdentifier]);
+  RaiseMemoryOutOfBounds(FProgramPos);
   FLabelList[AIdentifier] := FProgramPos;
 end;
 
@@ -897,7 +947,9 @@ begin
   begin
     if (ALine.Length < 3) or (ALine[3] <> '''') then
       raise ECompileError.CreateFmt('Invalid char statement: "%s"', [ALine]);
-    Exit(Ord(ALine[2]));
+    Result := Ord(ALine[2]);
+    ALine := ALine.Substring(3);
+    Exit;
   end;
 
   Num := '';
@@ -908,22 +960,27 @@ begin
     Inc(I);
   end;
 
-  if Num[Num.Length] = 'h' then
+  if Num.IsEmpty then
+    raise ECompileError.CreateFmt('Expected number, got "%s"', [ALine]);
+
+  ALine := ALine.Substring(I - 1);
+
+  if LowerCase(Num[Num.Length]) = 'h' then
   begin
     Base := 16;
     NumLen := Num.Length - 1;
   end
-  else if Num[Num.Length] = 'b' then
+  else if LowerCase(Num[Num.Length]) = 'b' then
   begin
     Base := 2;
     NumLen := Num.Length - 1;
   end
-  else if (Num[Num.Length] = 'd') then
+  else if LowerCase(Num[Num.Length]) = 'd' then
   begin
     Base := 10;
     NumLen := Num.Length - 1;
   end
-  else if (Num[Num.Length] in Number) then
+  else if Num[Num.Length] in Number then
   begin
     Base := 10;
     NumLen := Num.Length;
@@ -933,10 +990,10 @@ begin
 
   Result := 0;
   Significance := 1;
-  for I := 0 to NumLen - 1 do
+  for I := NumLen - 1 downto 0 do
   begin
     if (Base = 16) and not (Num[I + 1] in ['a' .. 'f', 'A' .. 'F', '0' .. '9']) or
-       (Ord(Num[I + 1]) < Ord('0')) or (Ord(Num[I + 1]) >= Ord('0') + Base) then
+       (Base <= 10) and ((Ord(Num[I + 1]) < Ord('0')) or (Ord(Num[I + 1]) >= Ord('0') + Base)) then
       raise ECompileError.CreateFmt('The char "%s" is not allowed for a literal in base %d',
                                     [String(Num[I + 1]), Base]);
 
@@ -961,13 +1018,22 @@ begin
   end;
 end;
 
+procedure TCompiler.RaiseMemoryOutOfBounds(AMemoryPos: Integer);
+begin
+  if (AMemoryPos < Low(TProcessor.TProgramMemPos)) or (AMemoryPos > High(TProcessor.TProgramMemPos)) then
+    raise ECompileError.CreateFmt('Program memory adress %.3xh out of bounds [0 .. 3FFh]', [AMemoryPos]);
+end;
+
 procedure TCompiler.GenerateInstructionList;
 var
   InstructionType: TProcessor.TInstructionType;
 begin
   FInstructionList := TStringMap<TProcessor.TInstructionType>.Create;
   for InstructionType := Low(InstructionType) to High(InstructionType) do
-    FInstructionList[TProcessor.InstructionInfo[InstructionType].Name] := InstructionType;
+  begin
+    if not (InstructionType in [itNOP2 .. itNOP4]) then
+      FInstructionList[TProcessor.InstructionInfo[InstructionType].Name] := InstructionType;
+  end;
 end;
 
 function TCompiler.GetLogLength: Integer;
@@ -985,28 +1051,73 @@ var
   I: Integer;
 begin
   GenerateInstructionList;
+
   FProcessor := AProcessor;
+  FProcessor.ResetPowerON;
   FProcessor.ClearProgramMemory;
-  FSuccess := True;
-  FCodePosition := cpHeader;
-  for I := 0 to ACode.Count - 1 do
-  begin
-    FLine := I;
-    try
-      ProcessLine(ACode[I]);
-    except
-      on E: ECompileError do
-      begin
-        FLog.Add(TLogEntry.Create(I + 1, E.Message, ilError));
-        FSuccess := False;
+
+  FLabelList := TStringMap<TProcessor.TProgramMemPos>.Create;
+  FTodoLabels := TArrayList<TTodoLabelInfo>.Create;
+  FMacros := TStringMap<String>.Create;
+
+  FLog := TArrayList<TLogEntry>.Create;
+
+  try
+    FSuccess := True;
+    FCodePosition := cpHeader;
+    for I := 0 to ACode.Count - 1 do
+    begin
+      FLine := I + 1;
+      try
+        ProcessLine(ACode[I]);
+      except
+        on E: ECompileError do
+        begin
+          FLog.Add(TLogEntry.Create(I + 1, E.Message, ilError));
+          FSuccess := False;
+        end;
+        on E: Exception do
+        begin
+          FLog.Add(TLogEntry.Create(I + 1, E.Message, ilFatal));
+          FSuccess := False;
+        end;
       end;
     end;
+
+    FinishTodoLabels;
+
+  finally
+    FInstructionList.Free;
+    FLabelList.Free;
+    FTodoLabels.Free;
+    FMacros.Free;
   end;
 end;
 
 destructor TCompiler.Destroy;
 begin
+  FLog.Free;
   inherited Destroy;
+end;
+
+class function TCompiler.FormatInstruction(AInstruction: TProcessor.TInstruction): String;
+var
+  I: TProcessor.TInstructionType;
+  Info: TProcessor.TInstructionInfo;
+begin
+  I := TProcessor.FInstructionArray[AInstruction];
+  Info := TProcessor.InstructionInfo[I];
+  Result := Info.Name;
+  if (ipFA in Info.Params) then
+    Result := Result + Format(' %.2xh', [TProcessor.ExtractFileAdress(AInstruction)]);
+  if (ipBL in Info.Params) then
+    Result := Result + Format(' %.2xh', [TProcessor.ExtractByteLiteral(AInstruction)]);
+  if (ipPC in Info.Params) then
+    Result := Result + Format(' %.3xh', [TProcessor.ExtractProgramCounter(AInstruction)]);
+  if (ipBI in Info.Params) then
+    Result := Result + Format(', %d', [TProcessor.ExtractBitIndex(AInstruction)]);
+  if (ipDT in Info.Params) and not TProcessor.ExtractDestIsFile(AInstruction) then
+    Result := Result + ', w';
 end;
 
 { TProcessor }
@@ -1719,6 +1830,78 @@ begin
   end;
 end;
 
+procedure TProcessor.SaveProgram(AFileName: String);
+var
+  FileStream: TFileStream;
+  LineInstruction: TLineInstruction;
+begin
+  FileStream := TFileStream.Create(AFileName, fmCreate or fmOpenWrite);
+  try
+    for LineInstruction in FProgramMem do
+      FileStream.Write(LineInstruction.Instruction, SizeOf(TInstruction));
+  finally
+    FileStream.Free;
+  end;
+end;
+
+procedure TProcessor.LoadProgram(AFileName: String; AGeneratedCode: TStrings);
+const
+  StartLine = 11;
+var
+  FileStream: TFileStream;
+  I: Integer;
+  InstructionType: TInstructionType;
+  LabelList: array [TProgramMemPos] of String;
+  LastLabel: Integer;
+begin
+  FileStream := TFileStream.Create(AFileName, fmOpenRead);
+  try
+    for I := 0 to ProgramMemorySize - 1 do
+    begin
+      FileStream.Read(FProgramMem[I].Instruction, SizeOf(TInstruction));
+      FProgramMem[I].Line := StartLine + I;
+    end;
+  finally
+    FileStream.Free;
+  end;
+
+  AGeneratedCode.Add('         ; ---');
+  AGeneratedCode.Add('         ; ' + ExtractFileName(AFileName));
+  AGeneratedCode.Add('         ; ---');
+  AGeneratedCode.Add('         ; Automagically generated from Binary-Data');
+  AGeneratedCode.Add('');
+  AGeneratedCode.Add('         list c=132');
+  AGeneratedCode.Add('         device 16F84');
+  AGeneratedCode.Add('');
+  AGeneratedCode.Add('         org 0');
+  AGeneratedCode.Add('');
+
+  LastLabel := 1;
+  for I := 0 to TProcessor.ProgramMemorySize - 1 do
+  begin
+    InstructionType := FInstructionArray[Code[I].Instruction];
+    if ipPC in InstructionInfo[InstructionType].Params then
+    begin
+      LabelList[ExtractProgramCounter(Code[I].Instruction)] := 'Label' + IntToStr(LastLabel);
+      AGeneratedCode.Add('         ' + Instructioninfo[InstructionType].Name + ' Label' + IntToStr(LastLabel));
+      Inc(LastLabel);
+    end
+    else
+      AGeneratedCode.Add('         ' + TCompiler.FormatInstruction(Code[I].Instruction));
+  end;
+
+  for I := 0 to TProcessor.ProgramMemorySize - 1 do
+    if not LabelList[I].IsEmpty then
+    begin
+      AGeneratedCode[I + StartLine - 1] := LabelList[I] +
+        AGeneratedCode[I + StartLine - 1].Substring(Min(LabelList[I].Length, 8));
+    end;
+
+  while AGeneratedCode[AGeneratedCode.Count - 1] = '         ' + TProcessor.InstructionInfo[itNOP1].Name do
+    AGeneratedCode.Delete(AGeneratedCode.Count - 1);
+
+end;
+
 procedure TProcessor.ClearProgramMemory;
 begin
   FillByte(FProgramMem, SizeOf(FProgramMem), 0);
@@ -1832,7 +2015,7 @@ end;
 
 procedure TProcessor.CatchUp;
 const
-  MaxTimeBehind = 0.02; // 20 ms
+  MaxTimeBehind = 0.05; // 50 ms
 begin
   FOverloadFactor := 1;
   while TimeBehind > 0 do
@@ -1851,26 +2034,6 @@ begin
       Break;
     end;
   end;
-end;
-
-class function TProcessor.FormatInstruction(AInstruction: TInstruction): String;
-var
-  I: TInstructionType;
-  Info: TInstructionInfo;
-begin
-  I := FInstructionArray[AInstruction];
-  Info := InstructionInfo[I];
-  Result := Info.Name;
-  if (ipFA in Info.Params) then
-    Result := Result + Format(' %.2xh', [ExtractFileAdress(AInstruction)]);
-  if (ipBL in Info.Params) then
-    Result := Result + Format(' %.2xh', [ExtractByteLiteral(AInstruction)]);
-  if (ipPC in Info.Params) then
-    Result := Result + Format(' %.3xh', [ExtractProgramCounter(AInstruction)]);
-  if (ipBI in Info.Params) then
-    Result := Result + Format(', %d', [ExtractBitIndex(AInstruction)]);
-  if (ipDT in Info.Params) and not ExtractDestIsFile(AInstruction) then
-    Result := Result + ', w';
 end;
 
 {$REGION METHODS}
