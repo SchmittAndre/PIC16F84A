@@ -6,7 +6,7 @@ uses
 
   // Standard Units
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs, ExtCtrls, Menus, ActnList, StdCtrls, Grids,
-  ComCtrls, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses, Math, LazUTF8, LazFileUtils,
+  ComCtrls, SynCompletion, SynHighlighterAny, Types, LCLType, SynEditMiscClasses, Math, LazUTF8, LazFileUtils, ShellApi,
   // Domis Units
   Color,
   // Our Units
@@ -312,6 +312,8 @@ const
     TPeripheralLEDArray
   );
 
+   HelpLink = 'https://github.com/SchmittAndre/PIC16F84A/blob/master/Resources/Documentation.pdf';
+
 var
   frmMain: TfrmMain;
 
@@ -379,7 +381,7 @@ end;
 
 procedure TfrmMain.actHelpExecute(Sender: TObject);
 begin
-   raise ENotImplemented.Create('Help is not Implemented');
+   ShellExecute(Handle, 'open', HelpLink ,nil,nil, SW_SHOWNORMAL);
 end;
 
 procedure TfrmMain.actCompileExecute(Sender: TObject);
