@@ -1197,6 +1197,10 @@ begin
     // indirect adressing
     Result := FRAM[NormalizeRAMPointer(FileMap[b0FSR])];
   end
+  else if P = Ord(b0PCL) then
+  begin
+    Result := FProgramCounter and $00FF;
+  end
   else
     Result := FRAM[P];
 end;
@@ -1266,6 +1270,11 @@ begin
     for B := Low(B) to High(B) do
       if Diff shr B and $01 = 1 then
         FPortBPins[B].Direction := TPin.TDirection(AValue shr B and $01);
+  end
+  else if P = Ord(b0PCL) then
+  begin
+    FProgramCounter := FProgramCounter and $1F00;
+    FProgramCounter := FProgramCounter or AValue;
   end;
 
   if not FSkipPortWrite then
