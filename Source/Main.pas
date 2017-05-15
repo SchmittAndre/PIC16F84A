@@ -36,6 +36,7 @@ type
     actCompile: TAction;
     actHelp: TAction;
     actCloseAllPeripherals: TAction;
+    acHelpprog: TAction;
     actProcessorMCLR: TAction;
     actProcessorPortB: TAction;
     actProcessorPortA: TAction;
@@ -86,6 +87,7 @@ type
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem4: TMenuItem;
+    MenuItem6: TMenuItem;
     miShowMCLR: TMenuItem;
     miShowPortA: TMenuItem;
     miShowPortB: TMenuItem;
@@ -134,6 +136,7 @@ type
     synEditor: TSynEdit;
     synHighlighter: TSynAnySyn;
     synCompletion: TSynCompletion;
+    procedure acHelpprogExecute(Sender: TObject);
     procedure actCloseAllPeripheralsExecute(Sender: TObject);
     procedure actCompileExecute(Sender: TObject);
     procedure actCompileUpdate(Sender: TObject);
@@ -317,6 +320,7 @@ const
   );
 
    HelpLink = 'https://github.com/SchmittAndre/PIC16F84A/blob/master/Resources/Documentation.pdf';
+   HelpprogLink = 'https://github.com/SchmittAndre/PIC16F84A/blob/master/Resources/PIC16F84A.pdf';
 
 var
   frmMain: TfrmMain;
@@ -399,6 +403,11 @@ begin
   for I := ComponentCount - 1 downto 0 do
     if Components[I] is TPeripheralForm then
       Components[I].Free;
+end;
+
+procedure TfrmMain.acHelpprogExecute(Sender: TObject);
+begin
+  ShellExecute(Handle, 'open', HelpprogLink ,nil,nil, SW_SHOWNORMAL);
 end;
 
 procedure TfrmMain.actCompileUpdate(Sender: TObject);

@@ -34,12 +34,12 @@
 0006 1683           00034           bsf       status,5            ;auf Bank 1
 0007 1208           00035           bcf       eecon1,4            ;EEIF zurücksetzen, wird überwacht
 0008 1508           00036           bsf       eecon1,2            ;WREN-Bit setzen, sonst kein schreiben möglich
-                    00037           
-0009 3055           00038           movlw     55h                 ;State-Machine anwerfen
-000A 0089           00039           movwf     eecon2
-000B 30AA           00040           movlw     0AAh
-000C 0089           00041           movwf     eecon2              ;Schreibvorgang beginnt jetzt
-000D 1488           00042           bsf       eecon1,1            ;WR-Bit setzen
+0009 1488           00037           bsf       eecon1,1            ;WR-Bit setzen
+                    00038
+000A 3055           00039           movlw     55h                 ;State-Machine anwerfen
+000B 0089           00040           movwf     eecon2
+000C 30AA           00041           movlw     0AAh
+000D 0089           00042           movwf     eecon2              ;Schreibvorgang beginnt jetzt
                     00043
                     00044  warte
 000E 1E08           00045           btfss     eecon1,4            ;warte bis EEIF auf 1 ist
