@@ -650,7 +650,6 @@ end;
 procedure TPinConnectionForm.actShowPinsExecute(Sender: TObject);
 begin
   PinsVisible := not PinsVisible;
-  AutoWidth;
 end;
 
 procedure TPinConnectionForm.actShowPinsUpdate(Sender: TObject);
@@ -663,8 +662,8 @@ end;
 
 procedure TPinConnectionForm.actVisiblePinsExecute(Sender: TObject);
 begin
-  frmVisiblePinSelection.Execute(PinArray);
-  GeneratePinArrays;
+  if frmVisiblePinSelection.Execute(PinArray) then
+    GeneratePinArrays;
 end;
 
 procedure TPinConnectionForm.actVisiblePinsUpdate(Sender: TObject);
@@ -769,7 +768,7 @@ begin
     gbPins.BorderSpacing.Around := 0;
   end;
   EnableAlign;
-  UpdateActions;
+  GeneratePinArrays;
 end;
 
 procedure TPinConnectionForm.GeneratePinArrays;
@@ -795,6 +794,7 @@ begin
   AutoWidth;
 
   FDisplayPinArrays.First.Left := pnlPins.Width - FDisplayPinArrays.First.Width - 10;
+
   Diff := pnlPins.Width - FDisplayPinArrays.Last.Bounds.Right - 10;
   for I := 1 to PinArray.VisiblePinArrayCount do
     FDisplayPinArrays[I].Left := FDisplayPinArrays[I].Left + Diff;

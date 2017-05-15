@@ -38,7 +38,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
-    procedure Execute(APinArray: TPinArray);
+    function Execute(APinArray: TPinArray): Boolean;
 
     procedure RegisterArray(APinArray: TPinArray);
     procedure UnregisterArray(APinArray: TPinArray);
@@ -191,10 +191,11 @@ begin
   inherited Destroy;
 end;
 
-procedure TfrmVisiblePinSelection.Execute(APinArray: TPinArray);
+function TfrmVisiblePinSelection.Execute(APinArray: TPinArray): Boolean;
 begin
   LoadPinArray(APinArray);
-  if ShowModal = mrOK then
+  Result := ShowModal = mrOK;
+  if Result then
     SavePinArray(APinArray);
 end;
 
