@@ -170,7 +170,7 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
     procedure FormShow(Sender: TObject);
-    procedure sgCompileOutputSelection(Sender: TObject; aCol, aRow: Integer);
+    procedure sgCompileOutputSelection(Sender: TObject; {%H-}aCol, aRow: Integer);
     procedure sgMemViewGetCellHint(Sender: TObject; ACol, ARow: Integer; var HintText: String);
     procedure sgMemViewPrepareCanvas(Sender: TObject; aCol, aRow: Integer; aState: TGridDrawState);
     function synCompletionMeasureItem(const AKey: string; ACanvas: TCanvas; {%H-}Selected: boolean;
@@ -188,7 +188,6 @@ type
     FCycles: Cardinal;
     FWRegister: Byte;
     FProcessor: TProcessor;
-    FFileData: TStringList;
     FCompiled: Boolean;
     FFileName: String;
     FFlags: TProcessor.TCalcFlags;
@@ -281,6 +280,9 @@ type
     procedure LoadFile(AFileName: String; AFileType: TFileType); overload;
     procedure LoadFile(AFileName: String); overload;
 
+    procedure NotCompiledError;
+
+    procedure Compile;
 
   protected
     procedure UpdateActions; override;
@@ -341,7 +343,6 @@ begin
   FProcessor := TProcessor.Create;
   FProcessor.OnAsyncMemoryChange.Add(OnAsyncProcessorChange);
 
-  FFileData := TStringList.Create;
   LineFollowRange := 3;
   LineFollowMode := lfBorder;
   InitSynEdit;
@@ -389,33 +390,8 @@ begin
 end;
 
 procedure TfrmMain.actCompileExecute(Sender: TObject);
-var
-  Compiler: TCompiler;
-  I: Integer;
 begin
-  Compiler := TCompiler.Create(FProcessor, synEditor.Lines);
-
-  sgCompileOutput.RowCount := Compiler.LogLength + 1;
-  for I := 0 to Compiler.LogLength - 1 do
-  begin
-    sgCompileOutput.Rows[I + 1][0] := TCompiler.ImpactStrings[Compiler.Log[I].ImpactLevel];
-    sgCompileOutput.Rows[I + 1][1] := Compiler.Log[I].Line.ToString;
-    sgCompileOutput.Rows[I + 1][2] := Compiler.Log[I].ErrorString;
-  end;
-
-  if Compiler.Success then
-    Compiled := True;
-
-    DisableAlign;
-  if Compiler.LogLength > 0 then
-    gbCompileOutput.Height := Max(gbCompileOutput.Height, 120)
-  else
-    gbCompileOutput.Height := 1;
-  EnableAlign;
-
-  UpdateMemView;
-
-  Compiler.Free;
+  Compile;
 end;
 
 procedure TfrmMain.actCloseAllPeripheralsExecute(Sender: TObject);
@@ -509,7 +485,6 @@ end;
 procedure TfrmMain.actSaveFileAsExecute(Sender: TObject);
 var
   T: TFileType;
-  S: String;
 begin
   with TSaveDialog.Create(Self) do
   begin
@@ -686,7 +661,7 @@ begin
   FProcessorPortBForm.Free;
   FProcessorMasterClearForm.Free;
   FProcessor.Free;
-  FFileData.Free;
+  // FFileData.Free;
 end;
 
 procedure TfrmMain.FormDropFiles(Sender: TObject; const FileNames: array of String);
@@ -1178,8 +1153,8 @@ end;
 
 procedure TfrmMain.LoadFile(AFileName: String; AFileType: TFileType);
 var
-  FileData: RawByteString;
-  I: TProcessor.TProgramMemPos;
+  FileText: RawByteString;
+  FileData: TStringList;
 begin
   try
     case AFileType of
@@ -1190,13 +1165,15 @@ begin
       end;
       ftCompiled:
       begin
-        FFileData.LoadFromFile(AFileName);
-        FileData := FFileData.Text;
-        SetCodePage(FileData, 1252, False);
-        SetCodePage(FileData, DefaultSystemCodePage);
-        FFileData.Text := FileData;
-        ParseStringListFromLST(FFileData);
-        FProcessor.LoadFromLST(FFileData);
+        FileData := TStringList.Create;
+        FileData.LoadFromFile(AFileName);
+        FileText := FileData.Text;
+        SetCodePage(FileText, 1252, False);
+        SetCodePage(FileText, DefaultSystemCodePage);
+        FileData.Text := FileText;
+        ParseStringListFromLST(FileData);
+        FProcessor.LoadFromLST(FileData);
+        FileData.Free;
         Compiled := True;
         UpdateActions;
         UpdateMemView;
@@ -1226,6 +1203,44 @@ end;
 procedure TfrmMain.LoadFile(AFileName: String);
 begin
   LoadFile(AFileName, ExtractFileType(AFileName));
+end;
+
+procedure TfrmMain.NotCompiledError;
+begin
+  MessageDlg('Could not compile and therefore not save the code', mtError, [mbOK], 0);
+end;
+
+procedure TfrmMain.Compile;
+var
+  Compiler: TCompiler;
+  I: Integer;
+begin
+  if Compiled then
+    Exit;
+
+  Compiler := TCompiler.Create(FProcessor, synEditor.Lines);
+
+  sgCompileOutput.RowCount := Compiler.LogLength + 1;
+  for I := 0 to Compiler.LogLength - 1 do
+  begin
+    sgCompileOutput.Rows[I + 1][0] := TCompiler.ImpactStrings[Compiler.Log[I].ImpactLevel];
+    sgCompileOutput.Rows[I + 1][1] := Compiler.Log[I].Line.ToString;
+    sgCompileOutput.Rows[I + 1][2] := Compiler.Log[I].ErrorString;
+  end;
+
+  if Compiler.Success then
+    Compiled := True;
+
+    DisableAlign;
+  if Compiler.LogLength > 0 then
+    gbCompileOutput.Height := Max(gbCompileOutput.Height, 120)
+  else
+    gbCompileOutput.Height := 1;
+  EnableAlign;
+
+  UpdateMemView;
+
+  Compiler.Free;
 end;
 
 function TfrmMain.ExtractFileType(AFileName: String): TFileType;
@@ -1459,6 +1474,10 @@ begin
 end;
 
 procedure TfrmMain.SaveFile(AFileName: String; AFileType: TFileType);
+var
+  FileData: TStringList;
+  I: Integer;
+  FileText: RawByteString;
 begin
   case AFileType of
     ftAssembler:
@@ -1467,13 +1486,49 @@ begin
     end;
     ftCompiled:
     begin
-      raise ENotImplemented.Create('Saving compiled file not implemented.');
+      Compile;
+
+      if not Compiled then
+      begin
+        NotCompiledError;
+        Exit;
+      end;
+
+      FileData := TStringList.Create;
+      FileData.Assign(synEditor.Lines);
+
+      for I := 0 to FileData.Count - 1 do
+        FileData[I] := Format('                    %.5d  %s', [I + 1, FileData[I]]).TrimRight;
+
+      for I := 0 to TProcessor.ProgramMemorySize - 1 do
+        if FProcessor.Code[I].Line > 0 then
+        begin
+          FileData[FProcessor.Code[I].Line - 1] :=
+            Format('%.4x %.4x %s',
+            [I, FProcessor.Code[I].Instruction, FileData[FProcessor.Code[I].Line - 1].Substring(10)]);
+        end;
+
+      FileText := FileData.Text;
+      SetCodePage(FileText, DefaultSystemCodePage, False);
+      SetCodePage(FileText, 1252);
+      FileData.Text := FileText;
+
+      FileData.SaveToFile(AFileName);
+
+      FileData.Free;
     end;
     ftBinary:
     begin
+      Compile;
+
+      if not Compiled then
+        NotCompiledError;
+
       FProcessor.SaveProgram(AFileName);
     end;
   end;
+
+  synEditor.MarkTextAsSaved;
 end;
 
 procedure TfrmMain.SaveFile(AFileName: String);

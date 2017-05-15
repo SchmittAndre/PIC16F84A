@@ -690,10 +690,10 @@ type
     class function RemoveComment(const ALine: String): String;
 
     // Replace all found macros
-    function ReplaceMacros(const ALine: String): String;
+    function ReplaceMacros(ALine: String): String;
 
     // A letter followed by letters or numbers
-    class function ExtractIdentifier(var ALine: String): String;
+    class function ExtractIdentifier(var ALine: String; out AResult: String; ATrim: Boolean = True): Boolean;
 
     // Combine the given InstructionType with the Parameters and add it into the processor memory
     procedure ParseInstruction(AInstructionType: TProcessor.TInstructionType; var AParamString: String);
@@ -752,7 +752,7 @@ end;
 
 procedure TCompiler.ProcessLine(const ALine: String);
 var
-  CodeLine, Identifier: String;
+  CodeLine, Identifier, MacroText: String;
   InstructionType: TProcessor.TInstructionType;
 begin
   CodeLine := RemoveComment(ALine);
@@ -765,7 +765,8 @@ begin
   case FCodePosition of
     cpHeader:
     begin
-      Identifier := ExtractIdentifier(CodeLine);
+      if not ExtractIdentifier(CodeLine, Identifier) then
+        raise ECompileError.CreateFmt('Expected identifier, got "%s"', [CodeLine]);
       if Identifier = OriginCommand then
       begin
         FProgramPos := ExtractNumber(CodeLine);
@@ -780,7 +781,7 @@ begin
         FDevice := CodeLine;
         Exit;
       end
-      else if ExtractIdentifier(CodeLine) = MacroCommand then
+      else if ExtractIdentifier(CodeLine, MacroText) and (MacroText = MacroCommand)  then
       begin
         FMacros[Identifier] := CodeLine;
         CodeLine := '';
@@ -790,7 +791,8 @@ begin
     end;
     cpCode:
     begin
-      Identifier := ExtractIdentifier(CodeLine);
+      if not ExtractIdentifier(CodeLine, Identifier) then
+        raise ECompileError.CreateFmt('Identifier expected, got "%s"', [CodeLine]);
       if FInstructionList.Get(Identifier, InstructionType) then
         ParseInstruction(InstructionType, CodeLine)
       else if Identifier = OriginCommand then
@@ -844,31 +846,50 @@ begin
   Result := Trim(Result);
 end;
 
-function TCompiler.ReplaceMacros(const ALine: String): String;
+function TCompiler.ReplaceMacros(ALine: String): String;
 var
-  Macro: TPair<String, String>;
+  Ident, RepString: String;
 begin
-  Result := ALine;
-  for Macro in FMacros do
-    Result := Result.Replace(Macro.Key, Macro.Data, [rfReplaceAll, rfIgnoreCase]);
+  Result := '';
+  while not ALine.IsEmpty do
+  begin
+    if ExtractIdentifier(ALine, Ident, False) then
+    begin
+      if FMacros.Get(Ident, RepString) then
+      begin
+        Result := Result + RepString;
+        // FLog.Add(TLogEntry.Create(FLine, Format('Replaced %s with %s', [Ident, RepString]), ilVerbose));
+      end
+      else
+        Result := Result + Ident;
+    end
+    else
+    begin
+      Result := Result + ALine[1];
+      ALine := ALine.Substring(1);
+    end;
+  end;
 end;
 
-class function TCompiler.ExtractIdentifier(var ALine: String): String;
+class function TCompiler.ExtractIdentifier(var ALine: String; out AResult: String; ATrim: Boolean): Boolean;
 var
   I: Integer;
 begin
-  Result := '';
+  AResult := '';
   if not ALine.isEmpty and (ALine[1] in Alpha) then
-    Result := Result + ALine[1]
+    AResult := AResult + ALine[1]
   else
-    raise ECompileError.CreateFmt('Expected an identifier, got "%s"', [ALine]);
+    Exit(False);
   I := 2;
   while (I <= ALine.Length) and (ALine[I] in AlphaNum) do
   begin
-    Result := Result + ALine[I];
+    AResult := AResult + ALine[I];
     Inc(I);
   end;
-  ALine := ALine.Substring(I).TrimLeft;
+  ALine := ALine.Substring(I - 1);
+  if ATrim then
+    Aline := ALine.TrimLeft;
+  Result := True;
 end;
 
 procedure TCompiler.ParseInstruction(AInstructionType: TProcessor.TInstructionType; var AParamString: String);
@@ -911,7 +932,9 @@ begin
   end;
   if ipPC in TProcessor.InstructionInfo[AInstructionType].Params then
   begin
-    LabelInfo.LabelName := ExtractIdentifier(AParamString);
+    if not ExtractIdentifier(AParamString, LabelInfo.LabelName) then
+      raise ECompileError.CreateFmt('Expected a label, got "%s"', [AParamString]);
+    LabelInfo.LabelName := LowerCase(LabelInfo.LabelName);
     if FLabelList.Get(LabelInfo.LabelName, MemPos) then
     begin
       Instruction := Instruction or MemPos;
@@ -931,6 +954,7 @@ end;
 
 procedure TCompiler.AddLabel(AIdentifier: String);
 begin
+  AIdentifier := LowerCase(AIdentifier);
   if FLabelList.HasKey(AIdentifier) then
     raise ECompileError.CreateFmt('Duplicate Label "%s"', [AIdentifier]);
   RaiseMemoryOutOfBounds(FProgramPos);
