@@ -408,6 +408,8 @@ type
     procedure SetBank1Selected(AValue: Boolean);
     function GetExtClockSrc: Boolean;
     procedure SetExtClockSrc(AValue: Boolean);
+    function GetExtClockRisingEdge: Boolean;
+    procedure SetExtClockRisingEdge(AValue: Boolean);
     function GetPreScalerAssignment: TPreScalerAssignment;
     function GetPreScalerMax: Byte;
     procedure SetPreScalerAssignment(AValue: TPreScalerAssignment);
@@ -423,6 +425,7 @@ type
     property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
     property ExtClockSrc: Boolean read GetExtClockSrc write SetExtClockSrc;
+    property ExtClockRisingEdge: Boolean read GetExtClockRisingEdge write SetExtClockRisingEdge;
     property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
     property PreScalerAssignment: TPreScalerAssignment read GetPreScalerAssignment write SetPreScalerAssignment;
     property GlobalInterruptEnable: Boolean read GetGlobalInterruptEnable write SetGlobalInterruptEnable;
@@ -460,7 +463,7 @@ type
     procedure PushStack(AProgramCounter: TProgramCounter);
     function PopStack: TProgramCounter;
 
-    procedure ProcessTimer(ACount: Cardinal = 1);
+    procedure ProcessTimer(ACount: Cardinal = 1; AExtClockTick: Boolean = False);
     procedure CheckTimer0Overflow;
 
     procedure OnPortAChanged(APin: TPin);
@@ -1173,6 +1176,16 @@ begin
   end;
 end;
 
+function TProcessor.GetExtClockRisingEdge: Boolean;
+begin
+  Result := Flag[b1OPTION, 4];
+end;
+
+procedure TProcessor.SetExtClockRisingEdge(AValue: Boolean);
+begin
+  Flag[b1OPTION, 4] := AValue;
+end;
+
 function TProcessor.GetEEWriteDoneInterruptFlag: Boolean;
 begin
   Result := Flag[b1EECON1, 4];
@@ -1407,10 +1420,7 @@ begin
         FPortBPins[B].Direction := TPin.TDirection(AValue shr B and $01);
   end
   else if P = Ord(b0PCL) then
-  begin
-    FProgramCounter := FProgramCounter and $1F00;
-    FProgramCounter := FProgramCounter or AValue;
-  end;
+    FProgramCounter := FProgramCounter and $1F00 or AValue;
 
   if not FSkipPortWrite then
   begin
@@ -1719,7 +1729,7 @@ begin
   Result := FProgramCounterStack[FProgramCounterStackPos];
 end;
 
-procedure TProcessor.ProcessTimer(ACount: Cardinal);
+procedure TProcessor.ProcessTimer(ACount: Cardinal; AExtClockTick: Boolean);
 var
   I: Integer;
 begin
@@ -1728,9 +1738,9 @@ begin
     if PreScalerAssignment = paTimer0 then
     begin
       // use PreScaler for Timer0
-      if not ExtClockSrc or ExtClockSrc and False then // TODO: check for rising/falling edge
+      if not ExtClockSrc or AExtClockTick then
       begin
-        if not ExtClockSrc and (FInhibitTimer0 > 0) then
+        if FInhibitTimer0 > 0 then
           Dec(FInhibitTimer0)
         else
         begin
@@ -1739,8 +1749,8 @@ begin
           begin
             FPreScaler := 0;
             // using FileMap here will set the inhibit
-              FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
-              CheckTimer0Overflow;
+            FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
+            CheckTimer0Overflow;
           end;
         end;
       end;
@@ -1750,7 +1760,7 @@ begin
     else
     begin
       // process Timer0 without PreScaler
-      if not ExtClockSrc or ExtClockSrc and False then // TODO: check for rising/falling edge
+      if not ExtClockSrc or AExtClockTick then
       begin
         if not ExtClockSrc and (FInhibitTimer0 > 0) then
           Dec(FInhibitTimer0)
@@ -1783,6 +1793,12 @@ begin
     if not Running then
       OnAsyncMemoryChange.Call(Self);
     FSkipPortWrite := False;
+
+    if ExtClockSrc and (APin.Index = 4) then
+    begin
+      if ExtClockRisingEdge = APin.State then
+        ProcessTimer(1, True);
+    end;
   end;
 end;
 

@@ -106,6 +106,7 @@ type
     procedure actVisiblePinsExecute(Sender: TObject);
     procedure actVisiblePinsUpdate(Sender: TObject);
     procedure pnlDrawSurfaceMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure pnlDrawSurfaceMouseLeave(Sender: TObject);
     procedure pnlDrawSurfaceMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure pnlDrawSurfaceMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure pnlDrawSurfacePaint(Sender: TObject);
@@ -153,6 +154,7 @@ type
     procedure DrawSurfaceMouseDown(X, Y: Integer; AButton: TMouseButton); virtual;
     procedure DrawSurfaceMouseMove(X, Y: Integer); virtual;
     procedure DrawSurfaceMouseUp(X, Y: Integer; AButton: TMouseButton); virtual;
+    procedure DrawSurfaceMouseLeave; virtual;
 
     function GetPinArray: TPinArray; virtual; abstract;
     property PinArray: TPinArray read GetPinArray;
@@ -676,6 +678,11 @@ begin
   DrawSurfaceMouseDown(X, Y, Button);
 end;
 
+procedure TPinConnectionForm.pnlDrawSurfaceMouseLeave(Sender: TObject);
+begin
+  DrawSurfaceMouseLeave;
+end;
+
 procedure TPinConnectionForm.pnlDrawSurfaceMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 begin
   DrawSurfaceMouseMove(X, Y);
@@ -889,6 +896,11 @@ begin
 end;
 
 procedure TPinConnectionForm.DrawSurfaceMouseUp(X, Y: Integer; AButton: TMouseButton);
+begin
+  // nothing by default
+end;
+
+procedure TPinConnectionForm.DrawSurfaceMouseLeave;
 begin
   // nothing by default
 end;

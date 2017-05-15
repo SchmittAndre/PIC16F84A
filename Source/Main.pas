@@ -16,7 +16,8 @@ uses
   PinDefine,
   // Peripherals
   ProcessorFormDefine,
-  PeripheralLEDArray;
+  PeripheralLEDArray,
+  PeripheralButtonPanel;
 
 type
 
@@ -310,8 +311,9 @@ const
     '.hex'
   );
 
-  PeripheralClasses: array [0 .. 0] of TPeripheralFormClass = (
-    TPeripheralLEDArray
+  PeripheralClasses: array [0 .. 1] of TPeripheralFormClass = (
+    TPeripheralLEDArray,
+    TPeripheralButtonPanel
   );
 
    HelpLink = 'https://github.com/SchmittAndre/PIC16F84A/blob/master/Resources/Documentation.pdf';

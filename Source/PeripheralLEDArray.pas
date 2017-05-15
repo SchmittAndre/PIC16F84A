@@ -16,7 +16,6 @@ type
 
     procedure OnShowSettings(Sender: TObject);
 
-    procedure OnLEDArrayWidthChange(Sender: TLEDArray);
     procedure OnLEDArrayHeightChange(Sender: TLEDArray);
 
   protected
@@ -40,11 +39,6 @@ procedure TPeripheralLEDArray.OnShowSettings(Sender: TObject);
 begin
   if frmLEDArraySettings.Execute(FLEDArray) then
     GeneratePinArrays;
-end;
-
-procedure TPeripheralLEDArray.OnLEDArrayWidthChange(Sender: TLEDArray);
-begin
-  GeneratePinArrays;
 end;
 
 procedure TPeripheralLEDArray.OnLEDArrayHeightChange(Sender: TLEDArray);
@@ -72,15 +66,14 @@ constructor TPeripheralLEDArray.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
   FLEDArray := TLEDArray.Create(pnlDrawSurface, PinArray);
-  FLEDArray.OnWidthChange.Add(OnLEDArrayWidthChange);
   FLEDArray.OnHeightChange.Add(OnLEDArrayHeightChange);
+  GeneratePinArrays;
   OnLEDArrayHeightChange(FLEDArray);
   SetSettingsFunc(OnShowSettings);
 end;
 
 destructor TPeripheralLEDArray.Destroy;
 begin
-  FLEDArray.OnWidthChange.Del(OnLEDArrayWidthChange);
   FLEDArray.OnHeightChange.Del(OnLEDArrayHeightChange);
   FLEDArray.Free;
   inherited Destroy;
