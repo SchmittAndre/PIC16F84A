@@ -104,13 +104,14 @@ object frmMain: TfrmMain
       TabOrder = 0
       object gbFile: TGroupBox
         Left = 6
-        Height = 149
+        Height = 150
         Top = 6
         Width = 134
         Align = alTop
+        AutoSize = True
         BorderSpacing.Around = 5
         Caption = 'File'
-        ClientHeight = 124
+        ClientHeight = 125
         ClientWidth = 130
         TabOrder = 0
         object btnSave: TButton
@@ -156,19 +157,20 @@ object frmMain: TfrmMain
       end
       object gbControl: TGroupBox
         Left = 6
-        Height = 181
-        Top = 160
+        Height = 210
+        Top = 161
         Width = 134
         Align = alTop
+        AutoSize = True
         BorderSpacing.Around = 5
         Caption = 'Control'
-        ClientHeight = 156
+        ClientHeight = 185
         ClientWidth = 130
         TabOrder = 1
         object btnStartStop: TButton
           Left = 5
           Height = 25
-          Top = 35
+          Top = 65
           Width = 120
           Action = actStartStop
           Align = alTop
@@ -188,7 +190,7 @@ object frmMain: TfrmMain
         object btnStep: TButton
           Left = 5
           Height = 25
-          Top = 65
+          Top = 95
           Width = 120
           Action = actStepIn
           Align = alTop
@@ -198,7 +200,7 @@ object frmMain: TfrmMain
         object btnStepOver: TButton
           Left = 5
           Height = 25
-          Top = 95
+          Top = 125
           Width = 120
           Action = actStepOver
           Align = alTop
@@ -208,18 +210,28 @@ object frmMain: TfrmMain
         object btnStepOut: TButton
           Left = 5
           Height = 25
-          Top = 125
+          Top = 155
           Width = 120
           Action = actStepOut
           Align = alTop
           BorderSpacing.Around = 5
           TabOrder = 4
         end
+        object btnClearROM: TButton
+          Left = 5
+          Height = 25
+          Top = 35
+          Width = 120
+          Action = actClearROM
+          Align = alTop
+          BorderSpacing.Around = 5
+          TabOrder = 5
+        end
       end
       object gbStateInfo: TGroupBox
         Left = 6
         Height = 150
-        Top = 346
+        Top = 376
         Width = 134
         Align = alTop
         AutoSize = True
@@ -1268,6 +1280,12 @@ object frmMain: TfrmMain
       Category = 'Peripheral'
       Caption = 'MCLR'
       OnExecute = actProcessorMCLRExecute
+    end
+    object actClearROM: TAction
+      Category = 'Processor'
+      Caption = 'Clear EEPROM'
+      OnExecute = actClearROMExecute
+      OnUpdate = actClearROMUpdate
     end
   end
   object synCompletion: TSynCompletion

@@ -37,6 +37,7 @@ type
     actHelp: TAction;
     actCloseAllPeripherals: TAction;
     acHelpprog: TAction;
+    actClearROM: TAction;
     actProcessorMCLR: TAction;
     actProcessorPortB: TAction;
     actProcessorPortA: TAction;
@@ -57,6 +58,7 @@ type
     btnCompile: TButton;
     btnOpen: TButton;
     btnReset: TButton;
+    btnClearROM: TButton;
     btnSave: TButton;
     btnSaveAs: TButton;
     btnStartStop: TButton;
@@ -137,6 +139,8 @@ type
     synHighlighter: TSynAnySyn;
     synCompletion: TSynCompletion;
     procedure acHelpprogExecute(Sender: TObject);
+    procedure actClearROMExecute(Sender: TObject);
+    procedure actClearROMUpdate(Sender: TObject);
     procedure actCloseAllPeripheralsExecute(Sender: TObject);
     procedure actCompileExecute(Sender: TObject);
     procedure actCompileUpdate(Sender: TObject);
@@ -283,7 +287,7 @@ type
 
     procedure NotCompiledError;
 
-    procedure Compile;
+    function Compile: Boolean;
 
   protected
     procedure UpdateActions; override;
@@ -408,6 +412,17 @@ end;
 procedure TfrmMain.acHelpprogExecute(Sender: TObject);
 begin
   ShellExecute(Handle, 'open', HelpprogLink ,nil,nil, SW_SHOWNORMAL);
+end;
+
+procedure TfrmMain.actClearROMExecute(Sender: TObject);
+begin
+  FProcessor.ClearROM;
+  UpdateMemView;
+end;
+
+procedure TfrmMain.actClearROMUpdate(Sender: TObject);
+begin
+  actClearROM.Enabled := not FProcessor.RUnning;
 end;
 
 procedure TfrmMain.actCompileUpdate(Sender: TObject);
@@ -550,10 +565,8 @@ begin
     UpdateSynEditMarkup;
     UpdateSynEditScroll;
   end
-  else
-  begin
+  else if Compile then
     FProcessor.Start;
-  end;
   UpdateCycles;
   UpdateSynEditMarkup;
   UpdateMemView;
@@ -563,7 +576,6 @@ end;
 
 procedure TfrmMain.actStartStopUpdate(Sender: TObject);
 begin
-  actStartStop.Enabled := Compiled or FProcessor.Running;
   if FProcessor.Running then
     actStartStop.Caption := 'Stop'
   else
@@ -1191,6 +1203,7 @@ begin
         synEditor.Clear;
         FProcessor.LoadProgram(AFileName, synEditor.Lines);
         synEditor.EndUpdate;
+        Compiled := True;
       end;
     end;
     FFileName := AFileName;
@@ -1212,13 +1225,13 @@ begin
   MessageDlg('Could not compile and therefore not save the code', mtError, [mbOK], 0);
 end;
 
-procedure TfrmMain.Compile;
+function TfrmMain.Compile: Boolean;
 var
   Compiler: TCompiler;
   I: Integer;
 begin
   if Compiled then
-    Exit;
+    Exit(True);
 
   Compiler := TCompiler.Create(FProcessor, synEditor.Lines);
 
@@ -1230,10 +1243,10 @@ begin
     sgCompileOutput.Rows[I + 1][2] := Compiler.Log[I].ErrorString;
   end;
 
-  if Compiler.Success then
-    Compiled := True;
+  Compiled := Compiler.Success;
+  Result := Compiled;
 
-    DisableAlign;
+  DisableAlign;
   if Compiler.LogLength > 0 then
     gbCompileOutput.Height := Max(gbCompileOutput.Height, 120)
   else
@@ -1488,9 +1501,7 @@ begin
     end;
     ftCompiled:
     begin
-      Compile;
-
-      if not Compiled then
+      if not Compile then
       begin
         NotCompiledError;
         Exit;
@@ -1521,9 +1532,7 @@ begin
     end;
     ftBinary:
     begin
-      Compile;
-
-      if not Compiled then
+      if not Compile then
         NotCompiledError;
 
       FProcessor.SaveProgram(AFileName);

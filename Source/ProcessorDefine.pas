@@ -82,8 +82,8 @@ type
 
     {$REGION TEEPROMState}
     TEEPROMState = (
-      esNotinit,
-      esOnInit,
+      esNotReady,
+      esSequenceStarted,
       esReady
     );
     {$ENDREGION}
@@ -425,6 +425,14 @@ type
     procedure SetPreScalerAssignment(AValue: TPreScalerAssignment);
     function GetEEWriteDoneInterruptFlag: Boolean;
     procedure SetEEWriteDoneInterruptFlag(AValue: Boolean);
+    function GetEEReadControl: Boolean;
+    function GetEEWriteControl: Boolean;
+    function GetEEWriteEnable: Boolean;
+    function GetEEWriteErrorFlag: Boolean;
+    procedure SetEEReadControl(AValue: Boolean);
+    procedure SetEEWriteControl(AValue: Boolean);
+    procedure SetEEWriteEnable(AValue: Boolean);
+    procedure SetEEWriteErrorFlag(AValue: Boolean);
 
     procedure SetSpeedFactor(AValue: Single);
 
@@ -432,13 +440,18 @@ type
     property Flag[P: TRAMPointer; ABit: TBitIndex]: Boolean read GetFlag write SetFlag;
     property EEPROM[P: TROMPointer]: Byte read GetDataMem write setDataMem;
 
+    // STATUS
     property CarryFlag: Boolean read GetCarryFlag write SetCarryFlag;
     property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
+    property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
+
+    // OPTION
     property ExtClockSrc: Boolean read GetExtClockSrc write SetExtClockSrc;
     property ExtClockRisingEdge: Boolean read GetExtClockRisingEdge write SetExtClockRisingEdge;
-    property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
     property PreScalerAssignment: TPreScalerAssignment read GetPreScalerAssignment write SetPreScalerAssignment;
+
+    // INTCON
     property GlobalInterruptEnable: Boolean read GetGlobalInterruptEnable write SetGlobalInterruptEnable;
     property EEWriteDoneInterruptEnable: Boolean read GetEEWriteDoneInterruptEnable write SetEEWriteDoneInterruptEnable;
     property Timer0InterruptEnable: Boolean read GetTimer0InterruptEnable write SetTimer0InterruptEnable;
@@ -447,6 +460,12 @@ type
     property Timer0InterruptFlag: Boolean read GetTimer0InterruptFlag write SetTimer0InterruptFlag;
     property ExternalInterruptFlag: Boolean read GetExternalInterruptFlag write SetExternalInterruptFlag;
     property PortBInterruptChangeFlag: Boolean read GetPortBInterruptChangeFlag write SetPortBInterruptChangeFlag;
+
+    // EECON1
+    property EEReadControl: Boolean read GetEEReadControl write SetEEReadControl;
+    property EEWriteControl: Boolean read GetEEWriteControl write SetEEWriteControl;
+    property EEWriteEnable: Boolean read GetEEWriteEnable write SetEEWriteEnable;
+    property EEWriteErrorFlag: Boolean read GetEEWriteErrorFlag write SetEEWriteErrorFlag;
     property EEWriteDoneInterruptFlag: Boolean read GetEEWriteDoneInterruptFlag write SetEEWriteDoneInterruptFlag;
 
     property PreScalerMax: Byte read GetPreScalerMax; // returns 0 instead of 256, as the byte perfectly overflows
@@ -492,7 +511,7 @@ type
 
     procedure ClearProgramMemory;
 
-    procedure ResetROM;
+    procedure ClearROM;
     procedure ResetPowerON;
 
     procedure Start;
@@ -1187,6 +1206,46 @@ begin
   end;
 end;
 
+function TProcessor.GetEEReadControl: Boolean;
+begin
+  Result := Flags[b1EECON1, 0];
+end;
+
+function TProcessor.GetEEWriteControl: Boolean;
+begin
+  Result := Flags[b1EECON1, 1];
+end;
+
+function TProcessor.GetEEWriteEnable: Boolean;
+begin
+  Result := Flags[b1EECON1, 2];
+end;
+
+function TProcessor.GetEEWriteErrorFlag: Boolean;
+begin
+  Result := Flags[b1EECON1, 3];
+end;
+
+procedure TProcessor.SetEEReadControl(AValue: Boolean);
+begin
+  Flags[b1EECON1, 0] := AValue;
+end;
+
+procedure TProcessor.SetEEWriteControl(AValue: Boolean);
+begin
+  Flags[b1EECON1, 1] := AValue;
+end;
+
+procedure TProcessor.SetEEWriteEnable(AValue: Boolean);
+begin
+  Flags[b1EECON1, 2] := AValue;
+end;
+
+procedure TProcessor.SetEEWriteErrorFlag(AValue: Boolean);
+begin
+  Flags[b1EECON1, 3] := AValue;
+end;
+
 function TProcessor.GetExtClockRisingEdge: Boolean;
 begin
   Result := Flag[b1OPTION, 4];
@@ -1331,7 +1390,7 @@ begin
   FileMap[b1OPTION] := $FF;
   FileMap[b1TRISA] := $1F;
   FileMap[b1TRISB] := $FF;
-  FEEPROMState := esNotinit;
+  FEEPROMState := esNotReady;
 end;
 
 function TProcessor.GetBank1Selected: Boolean;
@@ -1440,23 +1499,30 @@ begin
     FProgramCounter := FProgramCounter and $1F00 or AValue
   else if P = Ord(b1EECON2) then
   begin
-    if (AValue = $55) and (FEEPROMState = esNotinit) then
-      FEEPROMState := esOnInit
-    else if (AValue = $AA) and (FEEPROMState = esOnInit) then
+    if (AValue = $55) and (FEEPROMState = esNotReady) then
+      FEEPROMState := esSequenceStarted
+    else if (AValue = $AA) and (FEEPROMState = esSequenceStarted) then
       FEEPROMState := esReady;
+    Exit;
   end
   else if (P = Ord(b1EECON1)) then
   begin
-    Diff := FileMap[P] xor AValue;
-    Diff := Diff and 2;
-    if ((DIff = 2) and ((AValue and 2) = 2)) and (Flag[b1EECON1,2]) and (FEEPROMState = esReady) then
+    if FEEPROMState = esReady then
     begin
-      EEPROM[FileMap[b0EEADR]] := FileMap[b0EEDATA];
-      FileMap[b1EECON1] := $14;
-      Exit;
+      Diff := FileMap[P] xor AValue;
+      if (Diff and AValue shr 1 and $01 = 1) and EEWriteEnable then
+      begin
+        // TODO: make this have a random delay (delay as in cycles)
+        // If you need help on how to do this or verify your solution, scroll to the right --->                                                                                                                                                                                                                                                                                                                                                                     Variable, which gets set via "X := Random(4) + 2", getting decreased every cycles. once it reaches 1, do the write and set it to zero, disabling the counting
+        // Also prevent clearing of the WriteControlFlag, as this does not work, as long as the write is in progress
+        EEPROM[FileMap[b0EEADR]] := FileMap[b0EEDATA];
+        // TODO: Following line is NOT human friendly, and possibly wrong
+        //       Use the flag properties instead (I wrote all of them for you)
+        FileMap[b1EECON1] := $14;
+        Exit;
+      end;
     end;
   end;
-
 
   if not FSkipPortWrite then
   begin
@@ -1998,7 +2064,7 @@ begin
   FillByte(FProgramMem, SizeOf(FProgramMem), 0);
 end;
 
-procedure TProcessor.ResetROM;
+procedure TProcessor.ClearROM;
 begin
   FillByte(FROM, SizeOf(FROM), 0);
 end;
