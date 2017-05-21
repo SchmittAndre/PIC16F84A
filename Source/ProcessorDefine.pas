@@ -326,6 +326,7 @@ type
     // Program
     FProgramCounter: TProgramCounter;
     FProgramMem: array [TProgramMemPos] of TLineInstruction;
+    FSleep: Boolean;
 
     // Program Stack
     FProgramCounterStackPos: TProgramCounterStackPos;
@@ -360,6 +361,7 @@ type
     FSpeedFactor: Single;
     FOverloadFactor: Single;     // Actual speed in percentage to what the Processor should reach
     FBreakpoints: TCardinalSet;
+    FEEPROMDelay: Integer;
 
     FHelpBreakpointDepth: TProgramCounterStackPos;
     FHelpBreakpointEnabled: Boolean;
@@ -602,7 +604,7 @@ type
     procedure InstructionRETFIE({%H-}AInstruction: TInstruction);
     procedure InstructionRETLW(AInstruction: TInstruction);
     procedure InstructionRETURN({%H-}AInstruction: TInstruction);
-    // TODO: procedure InstructionSLEEP(AInstruction: TInstruction);
+    procedure InstructionSLEEP(AInstruction: TInstruction);
     procedure InstructionSUBLW(AInstruction: TInstruction);
     procedure InstructionXORLW(AInstruction: TInstruction);
     {$ENDREGION}
@@ -1208,42 +1210,42 @@ end;
 
 function TProcessor.GetEEReadControl: Boolean;
 begin
-  Result := Flags[b1EECON1, 0];
+  Result := Flag[b1EECON1, 0];
 end;
 
 function TProcessor.GetEEWriteControl: Boolean;
 begin
-  Result := Flags[b1EECON1, 1];
+  Result := Flag[b1EECON1, 1];
 end;
 
 function TProcessor.GetEEWriteEnable: Boolean;
 begin
-  Result := Flags[b1EECON1, 2];
+  Result := Flag[b1EECON1, 2];
 end;
 
 function TProcessor.GetEEWriteErrorFlag: Boolean;
 begin
-  Result := Flags[b1EECON1, 3];
+  Result := Flag[b1EECON1, 3];
 end;
 
 procedure TProcessor.SetEEReadControl(AValue: Boolean);
 begin
-  Flags[b1EECON1, 0] := AValue;
+  Flag[b1EECON1, 0] := AValue;
 end;
 
 procedure TProcessor.SetEEWriteControl(AValue: Boolean);
 begin
-  Flags[b1EECON1, 1] := AValue;
+  Flag[b1EECON1, 1] := AValue;
 end;
 
 procedure TProcessor.SetEEWriteEnable(AValue: Boolean);
 begin
-  Flags[b1EECON1, 2] := AValue;
+  Flag[b1EECON1, 2] := AValue;
 end;
 
 procedure TProcessor.SetEEWriteErrorFlag(AValue: Boolean);
 begin
-  Flags[b1EECON1, 3] := AValue;
+  Flag[b1EECON1, 3] := AValue;
 end;
 
 function TProcessor.GetExtClockRisingEdge: Boolean;
@@ -1391,6 +1393,7 @@ begin
   FileMap[b1TRISA] := $1F;
   FileMap[b1TRISB] := $FF;
   FEEPROMState := esNotReady;
+  FEEPROMDelay := -1;
 end;
 
 function TProcessor.GetBank1Selected: Boolean;
@@ -1505,22 +1508,20 @@ begin
       FEEPROMState := esReady;
     Exit;
   end
+
+  //EEPROM Write
   else if (P = Ord(b1EECON1)) then
   begin
     if FEEPROMState = esReady then
     begin
       Diff := FileMap[P] xor AValue;
-      if (Diff and AValue shr 1 and $01 = 1) and EEWriteEnable then
+      if ((Diff and AValue shr 1 and $01 = 1) and EEWriteEnable) then
       begin
         // TODO: make this have a random delay (delay as in cycles)
         // If you need help on how to do this or verify your solution, scroll to the right --->                                                                                                                                                                                                                                                                                                                                                                     Variable, which gets set via "X := Random(4) + 2", getting decreased every cycles. once it reaches 1, do the write and set it to zero, disabling the counting
         // Also prevent clearing of the WriteControlFlag, as this does not work, as long as the write is in progress
-        EEPROM[FileMap[b0EEADR]] := FileMap[b0EEDATA];
-        // TODO: Following line is NOT human friendly, and possibly wrong
-        //       Use the flag properties instead (I wrote all of them for you)
-        FileMap[b1EECON1] := $14;
-        Exit;
-      end;
+        FEEPROMDelay := RandomRange(2,9);
+      end
     end;
   end;
 
@@ -1559,11 +1560,12 @@ begin
     FPreScaler := 0;
     FInhibitTimer0 := 2;
   end
-  else if ((P = Ord(b1EECON1)) and (Flag[b1EECON1,0])) then
+//EEPROM Read
+  else if ((P = Ord(b1EECON1)) and (EEReadControl)) then
   begin
     FileMap[b0EEDATA] := EEPROM[FileMap[b0EEADR]];
-    Flag[b1EECON1,0] := False;
-  end;
+    EEReadControl := False;
+  end
 end;
 
 procedure TProcessor.SetFileMap(P: TRegisterBank0; AValue: Byte);
@@ -2125,20 +2127,40 @@ end;
 
 procedure TProcessor.StepIn;
 begin
-  if GlobalInterruptEnable then
+  if (FEEPROMDelay = 0)then
   begin
-    if (EEWriteDoneInterruptEnable and EEWriteDoneInterruptFlag) or
-       (Timer0InterruptEnable and Timer0InterruptFlag) or
-       (ExternalInterruptEnable and ExternalInterruptFlag) or
-       (PortBInterruptChangeEnable and PortBInterruptChangeFlag)
-    then
+    EEPROM[FileMap[b0EEADR]] := FileMap[b0EEDATA];
+    EEWriteDoneInterruptFlag := true;
+    EEWriteControl := false;
+    FEEPROMDelay := -1;
+  end
+  else if (FEEPROMDelay = -1) then
+  begin
+
+  end
+  else
+  begin
+    FEEPROMDelay := FEEPROMDelay - 1;
+  end;
+  if (EEWriteDoneInterruptEnable and EEWriteDoneInterruptFlag) or
+     ((Timer0InterruptEnable and Timer0InterruptFlag) and (FSleep = false)) or
+     (ExternalInterruptEnable and ExternalInterruptFlag) or
+     (PortBInterruptChangeEnable and PortBInterruptChangeFlag)
+  then
+  begin
+    FSleep := false;
+    if GlobalInterruptEnable then
     begin
-      GlobalInterruptEnable := False;
-      PushStack(FProgramCounter);
-      FProgramCounter := InterruptEntryAdress;
+    GlobalInterruptEnable := False;
+    PushStack(FProgramCounter);
+    FProgramCounter := InterruptEntryAdress;
     end;
   end;
-  ProcessInstruction(CurrentInstruction);
+
+  if (FSleep = false) then
+  begin
+    ProcessInstruction(CurrentInstruction);
+  end;
 end;
 
 function TProcessor.StepOver: TStepInfo;
@@ -2548,6 +2570,11 @@ procedure TProcessor.InstructionRETURN(AInstruction: TInstruction);
 begin
   FProgramCounter := PopStack;
   KeepProgramCounter;
+end;
+
+procedure TProcessor.InstructionSLEEP(AInstruction: TInstruction);
+begin
+  FSleep := True;
 end;
 
 procedure TProcessor.InstructionSUBLW(AInstruction: TInstruction);
