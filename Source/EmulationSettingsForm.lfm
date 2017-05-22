@@ -1,7 +1,7 @@
 object frmEmulationSettings: TfrmEmulationSettings
-  Left = 0
+  Left = 658
   Height = 247
-  Top = 0
+  Top = 387
   Width = 364
   ActiveControl = btnOK
   BorderStyle = bsToolWindow
@@ -13,19 +13,19 @@ object frmEmulationSettings: TfrmEmulationSettings
   LCLVersion = '1.6.4.0'
   object pnlControl: TPanel
     Left = 5
-    Height = 30
-    Top = 212
+    Height = 25
+    Top = 217
     Width = 354
     Align = alBottom
     AutoSize = True
     BorderSpacing.Around = 5
     BevelOuter = bvNone
-    ClientHeight = 30
+    ClientHeight = 25
     ClientWidth = 354
     TabOrder = 1
     object btnOK: TButton
       Left = 279
-      Height = 30
+      Height = 25
       Top = 0
       Width = 75
       Align = alRight
@@ -37,7 +37,7 @@ object frmEmulationSettings: TfrmEmulationSettings
     end
     object btnCancel: TButton
       Left = 199
-      Height = 30
+      Height = 25
       Top = 0
       Width = 75
       Align = alRight
@@ -50,13 +50,13 @@ object frmEmulationSettings: TfrmEmulationSettings
   end
   object pnlSettingsArea: TPanel
     Left = 5
-    Height = 202
+    Height = 207
     Top = 5
     Width = 354
     Align = alClient
     BorderSpacing.Around = 5
     BevelOuter = bvNone
-    ClientHeight = 202
+    ClientHeight = 207
     ClientWidth = 354
     TabOrder = 0
     object pnlCrystalFrequency: TPanel
@@ -68,7 +68,7 @@ object frmEmulationSettings: TfrmEmulationSettings
       AutoSize = True
       BorderSpacing.Around = 5
       BevelOuter = bvNone
-      ClientHeight = 28
+      ClientHeight = 23
       ClientWidth = 344
       TabOrder = 0
       object lbCrystalFrequency: TLabel
@@ -85,7 +85,7 @@ object frmEmulationSettings: TfrmEmulationSettings
       end
       object edtCrystalFrequency: TEdit
         Left = 211
-        Height = 28
+        Height = 23
         Top = 0
         Width = 133
         Align = alRight
@@ -96,14 +96,14 @@ object frmEmulationSettings: TfrmEmulationSettings
     end
     object pnlOperationTime: TPanel
       Left = 5
-      Height = 28
-      Top = 71
+      Height = 23
+      Top = 61
       Width = 344
       Align = alTop
       AutoSize = True
       BorderSpacing.Around = 5
       BevelOuter = bvNone
-      ClientHeight = 28
+      ClientHeight = 23
       ClientWidth = 344
       TabOrder = 2
       object lbOperationTime: TLabel
@@ -120,7 +120,7 @@ object frmEmulationSettings: TfrmEmulationSettings
       end
       object edtOperationTime: TEdit
         Left = 211
-        Height = 28
+        Height = 23
         Top = 0
         Width = 133
         Align = alRight
@@ -131,14 +131,14 @@ object frmEmulationSettings: TfrmEmulationSettings
     end
     object pnlOperationFrequency: TPanel
       Left = 5
-      Height = 28
-      Top = 38
+      Height = 23
+      Top = 33
       Width = 344
       Align = alTop
       AutoSize = True
       BorderSpacing.Around = 5
       BevelOuter = bvNone
-      ClientHeight = 28
+      ClientHeight = 23
       ClientWidth = 344
       TabOrder = 1
       object lbOperationFrequency: TLabel
@@ -155,7 +155,7 @@ object frmEmulationSettings: TfrmEmulationSettings
       end
       object edtOperationFrequency: TEdit
         Left = 211
-        Height = 28
+        Height = 23
         Top = 0
         Width = 133
         Align = alRight
@@ -168,19 +168,19 @@ object frmEmulationSettings: TfrmEmulationSettings
       Left = 5
       Height = 19
       Top = 89
-      Width = 317
+      Width = 344
       Align = alTop
       AutoSize = True
       BorderSpacing.Around = 5
       BevelOuter = bvNone
       ClientHeight = 19
-      ClientWidth = 317
+      ClientWidth = 344
       TabOrder = 3
       object lbwdte: TLabel
         Left = 0
         Height = 19
         Top = 0
-        Width = 179
+        Width = 206
         Align = alClient
         Alignment = taRightJustify
         BorderSpacing.Right = 5
@@ -189,7 +189,7 @@ object frmEmulationSettings: TfrmEmulationSettings
         ParentColor = False
       end
       object cbWatchDogEnabled: TCheckBox
-        Left = 184
+        Left = 211
         Height = 19
         Top = 0
         Width = 133

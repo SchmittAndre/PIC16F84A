@@ -40,6 +40,7 @@ type
     actClearROM: TAction;
     actHelpProg: TAction;
     actEmulationSettings: TAction;
+    actCreatePeripheral: TAction;
     actProcessorMCLR: TAction;
     actProcessorPortB: TAction;
     actProcessorPortA: TAction;
@@ -67,7 +68,9 @@ type
     btnStep: TButton;
     btnStepOver: TButton;
     btnStepOut: TButton;
+    btnCreatePeripheral: TButton;
     cbMemorySelection: TComboBox;
+    cbPeripherals: TComboBox;
     gbControl: TGroupBox;
     gbMemory: TGroupBox;
     gbSpecialFunction: TGroupBox;
@@ -141,6 +144,7 @@ type
     synEditor: TSynEdit;
     synHighlighter: TSynAnySyn;
     synCompletion: TSynCompletion;
+    procedure actCreatePeripheralExecute(Sender: TObject);
     procedure actEmulationSettingsExecute(Sender: TObject);
     procedure actHelpProgExecute(Sender: TObject);
     procedure actClearROMExecute(Sender: TObject);
@@ -423,6 +427,11 @@ end;
 procedure TfrmMain.actEmulationSettingsExecute(Sender: TObject);
 begin
   frmEmulationSettings.Execute(FProcessor.EmulationSettings);
+end;
+
+procedure TfrmMain.actCreatePeripheralExecute(Sender: TObject);
+begin
+  PeripheralClasses[cbPeripherals.ItemIndex].Create(Self);
 end;
 
 procedure TfrmMain.actClearROMExecute(Sender: TObject);
@@ -1483,6 +1492,7 @@ var
   MenuItem: TMenuItem;
   I: Integer;
 begin
+  cbPeripherals.Clear;
   for I := 0 to Length(PeripheralClasses) - 1 do
   begin
     MenuItem := TMenuItem.Create(miPeripherals);
@@ -1490,7 +1500,10 @@ begin
     MenuItem.OnClick := OnPeripheralAdd;
     MenuItem.Tag := I;
     miPeripherals.Add(MenuItem);
+
+    cbPeripherals.Items.Add(PeripheralClasses[I].GetDefaultPeripheralName);
   end;
+  cbPeripherals.ItemIndex := 0;
 end;
 
 procedure TfrmMain.OnAsyncProcessorChange(Sender: TProcessor);
