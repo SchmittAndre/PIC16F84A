@@ -14,6 +14,7 @@ type
   TEmulationSettings = class
   private
     FCrystalFrequency: Single;
+    FWatchDogEnabled: Boolean;
 
     function GetCycleFrequency: Single;
     function GetCycleTime: Single;
@@ -26,6 +27,8 @@ type
     property CrystalFrequency: Single read FCrystalFrequency write FCrystalFrequency;
     property CycleFrequency: Single read GetCycleFrequency write SetCycleFrequency;
     property CycleTime: Single read GetCycleTime write SetCycleTime;
+
+    property WatchDogEnabled: Boolean read FWatchDogEnabled write FWatchDogEnabled;
 
   end;
 
@@ -864,6 +867,7 @@ end;
 constructor TEmulationSettings.Create;
 begin
   FCrystalFrequency := 4e6;
+  FWatchDogEnabled := True;
 end;
 
 { TCompiler.TLogEntry }
@@ -1985,6 +1989,8 @@ begin
     // 1111 1111+1 -> all the 1s will cause the carry to get all through independent of A, and the result will be A
     Result := A;
     CarryFlag := True;
+    DigitCarryFlag := True;
+    ZeroFlag := Result = 0;
   end
   else
     Result := DoAdd(A, not B + 1); // don't need a 0xFF Mask, as this only happenes for B = 0 and that is spereate
@@ -2033,8 +2039,11 @@ begin
         end;
       end;
 
-      Inc(FWatchDogTimer);
-      CheckWatchDogDone;
+      if EmulationSettings.WatchDogEnabled then
+      begin
+        Inc(FWatchDogTimer);
+        CheckWatchDogDone;
+      end;
     end
     else
     begin
@@ -2051,12 +2060,15 @@ begin
         end;
       end;
 
-      FPreScaler := (FPreScaler + 1) and High(Byte);
-      if FPreScaler = PreScalerMax then
+      if EmulationSettings.WatchDogEnabled then
       begin
-        FPreScaler := 0;
-        Inc(FWatchDogTimer);
-        CheckWatchDogDone;
+        FPreScaler := (FPreScaler + 1) and High(Byte);
+        if FPreScaler = PreScalerMax then
+        begin
+          FPreScaler := 0;
+          Inc(FWatchDogTimer);
+          CheckWatchDogDone;
+        end;
       end;
     end;
   end;

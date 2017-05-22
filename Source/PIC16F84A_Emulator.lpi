@@ -162,7 +162,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="13">
+    <Units Count="12">
       <Unit0>
         <Filename Value="PIC16F84A_Emulator.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -226,12 +226,6 @@
         <Filename Value="ButtonPanelDefine.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit11>
-      <Unit12>
-        <Filename Value="EmulationSettingsForm.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="frmEmulationSettings"/>
-        <ResourceBaseClass Value="Form"/>
-      </Unit12>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
