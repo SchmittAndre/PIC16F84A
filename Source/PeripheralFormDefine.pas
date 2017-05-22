@@ -959,6 +959,7 @@ begin
   PinArray.OnPinDisconnect.Del(OnPinConnectionChange);
   PinArray.OnVisibilityChange.Del(OnVisibilityChanged);
   PinArray.OnPinRedirect.Del(OnPinRedirect);
+  PinArray.OnNameChange.Del(OnNameChange);
   inherited BeforeDestruction;
 end;
 

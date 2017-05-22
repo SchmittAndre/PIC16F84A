@@ -19,7 +19,7 @@ type
     // Program Memory
     ProgramMemorySize = $400;
     //Intersrupt entry ardress
-    InterruptEntryAdress = $004;
+    InterruptEntryAddress = $004;
     // Ram
     FileMapOffset = $80;
     RAMStart = $0C;
@@ -33,6 +33,8 @@ type
     // Timing
     OperationTime = 1e-6;
     OperationFrequeny = 1 / OperationTime;
+    WatchDogTime = 0.018;
+    WatchDogCycles = WatchDogTime / OperationTime;
     // Ports
     PortACount = 5;
     PortBCount = 8;
@@ -316,7 +318,6 @@ type
       Line: Integer;
     end;
 
-
   private class var
     FInstructionArray: array [TInstruction] of TInstructionType;
 
@@ -326,7 +327,6 @@ type
     // Program
     FProgramCounter: TProgramCounter;
     FProgramMem: array [TProgramMemPos] of TLineInstruction;
-    FSleep: Boolean;
 
     // Program Stack
     FProgramCounterStackPos: TProgramCounterStackPos;
@@ -351,6 +351,9 @@ type
     // Function Pointer
     FMethods: array [TInstructionType] of TInstructionMethod;
     FKeepProgramCounter: Boolean;
+
+    // WatchDog
+    FWatchDogTimer: Cardinal;
 
     // State
     FRunning: Boolean;
@@ -398,6 +401,8 @@ type
     function GetCarryFlag: Boolean;
     function GetDigitCarryFlag: Boolean;
     function GetZeroFlag: Boolean;
+    function GetPowerDown: Boolean;
+    function GetTimeOut: Boolean;
     function GetBank1Selected: Boolean;
 
     // OPTION-Register
@@ -442,6 +447,8 @@ type
     procedure SetCarryFlag(AValue: Boolean);
     procedure SetDigitCarryFlag(AValue: Boolean);
     procedure SetZeroFlag(AValue: Boolean);
+    procedure SetPowerDown(AValue: Boolean);
+    procedure SetTimeOut(AValue: Boolean);
     procedure SetBank1Selected(AValue: Boolean);
 
     // OPTION-Register
@@ -481,6 +488,8 @@ type
     property CarryFlag: Boolean read GetCarryFlag write SetCarryFlag;
     property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
+    property PowerDown: Boolean read GetPowerDown write SetPowerDown;
+    property TimeOut: Boolean read GetTimeOut write SetTimeOut;
     property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
 
     // OPTION-Register
@@ -538,6 +547,7 @@ type
 
     procedure ProcessTimer(ACount: Cardinal = 1; AExtClockTick: Boolean = False);
     procedure CheckTimer0Overflow;
+    procedure CheckWatchDogDone;
 
     procedure OnPortAChanged(APin: TPin);
     procedure OnPortBChanged(APin: TPin);
@@ -555,6 +565,8 @@ type
     procedure ClearROM;
 
     procedure ResetPowerON;
+    procedure WatchDogReset;
+    procedure WakeUpFromSleep;
 
     procedure Start;
     procedure Stop;
@@ -639,7 +651,7 @@ type
     procedure InstructionADDLW(AInstruction: TInstruction);
     procedure InstructionANDLW(AInstruction: TInstruction);
     procedure InstructionCALL(AInstruction: TInstruction);
-    // TODO: procedure InstructionCLRWDT(AInstruction: TInstruction);
+    procedure InstructionCLRWDT(AInstruction: TInstruction);
     procedure InstructionGOTO(AInstruction: TInstruction);
     procedure InstructionIORLW(AInstruction: TInstruction);
     procedure InstructionMOVLW(AInstruction: TInstruction);
@@ -1250,6 +1262,26 @@ begin
   end;
 end;
 
+function TProcessor.GetPowerDown: Boolean;
+begin
+  Result := not Flag[b0STATUS, 3];
+end;
+
+function TProcessor.GetTimeOut: Boolean;
+begin
+  Result := not Flag[b0STATUS, 4];
+end;
+
+procedure TProcessor.SetPowerDown(AValue: Boolean);
+begin
+  Flag[b0STATUS, 3] := not AValue;
+end;
+
+procedure TProcessor.SetTimeOut(AValue: Boolean);
+begin
+  Flag[b0STATUS, 4] := not AValue;
+end;
+
 function TProcessor.GetInteruptRisingEdge: Boolean;
 begin
   Result := Flag[b1OPTION, 6];
@@ -1456,6 +1488,25 @@ begin
   FileMap[b1TRISB] := $FF;
   FEEPROMState := esNotReady;
   FEEPROMDelay := -1;
+  TimeOut := False;
+  PowerDown := False;
+end;
+
+procedure TProcessor.WatchDogReset;
+begin
+  FProgramCounter := 0;
+  FileMap[b0PCLATH] := $00;
+  FileMap[b1OPTION] := $FF;
+  FileMap[b0INTCON] := FileMap[b0INTCON] and $01;
+  FileMap[b1TRISA] := $1F;
+  FileMap[b1TRISB] := $FF;
+  FileMap[b1EECON1] := FileMap[b1EECON1] and $08;
+end;
+
+procedure TProcessor.WakeUpFromSleep;
+begin
+  PowerDown := False;
+  FileMap[b1EECON1] := FileMap[b1EECON1] and $0F;
 end;
 
 function TProcessor.GetBank1Selected: Boolean;
@@ -1570,20 +1621,14 @@ begin
       FEEPROMState := esReady;
     Exit;
   end
-
-  //EEPROM Write
   else if (P = Ord(b1EECON1)) then
   begin
+    //EEPROM Write
     if FEEPROMState = esReady then
     begin
       Diff := FileMap[P] xor AValue;
       if ((Diff and AValue shr 1 and $01 = 1) and EEWriteEnable) then
-      begin
-        // TODO: make this have a random delay (delay as in cycles)
-        // If you need help on how to do this or verify your solution, scroll to the right --->                                                                                                                                                                                                                                                                                                                                                                     Variable, which gets set via "X := Random(4) + 2", getting decreased every cycles. once it reaches 1, do the write and set it to zero, disabling the counting
-        // Also prevent clearing of the WriteControlFlag, as this does not work, as long as the write is in progress
         FEEPROMDelay := Random(4) + 2;
-      end
     end;
   end;
 
@@ -1591,16 +1636,17 @@ begin
   begin
     if P = Ord(b0PORTA) then
     begin
+      AValue := AValue and $1F;
       Diff := FileMap[P] xor AValue;
       for B := Low(B) to High(B) do
-        if Diff shr B and $01 = 1 then
+        if (Diff shr B and $01 = 1) and (TPin.TDirection(Flag[b1TRISA, B]) = pdWrite) then
           FPortAPins[B].State := AValue shr B and $01 <> 0;
     end
     else if P = Ord(b0PORTB) then
     begin
       Diff := FileMap[P] xor AValue;
       for B := Low(B) to High(B) do
-        if Diff shr B and $01 = 1 then
+        if (Diff shr B and $01 = 1) and (TPin.TDirection(Flag[b1TRISB, B]) = pdWrite) then
           FPortBPins[B].State := AValue shr B and $01 <> 0;
     end;
   end;
@@ -1622,9 +1668,9 @@ begin
     FPreScaler := 0;
     FInhibitTimer0 := 2;
   end
-//EEPROM Read
   else if ((P = Ord(b1EECON1)) and (EEReadControl)) then
   begin
+    //EEPROM Read
     FileMap[b0EEDATA] := EEPROM[FileMap[b0EEADR]];
     EEReadControl := False;
   end
@@ -1646,7 +1692,6 @@ begin
     FileMap[P] := FileMap[P] or (1 shl ABit)
   else           // clear
     FileMap[P] := FileMap[P] and not (1 shl ABit);
-
 end;
 
 procedure TProcessor.SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean);
@@ -1910,7 +1955,7 @@ begin
     if PreScalerAssignment = paTimer0 then
     begin
       // use PreScaler for Timer0
-      if not ExtClockSrc or AExtClockTick then
+      if not PowerDown and (not ExtClockSrc or AExtClockTick) then
       begin
         if FInhibitTimer0 > 0 then
           Dec(FInhibitTimer0)
@@ -1927,12 +1972,13 @@ begin
         end;
       end;
 
-      // TODO: inc WDT without PreScaler
+      Inc(FWatchDogTimer);
+      CheckWatchDogDone;
     end
     else
     begin
       // process Timer0 without PreScaler
-      if not ExtClockSrc or AExtClockTick then
+      if not PowerDown and (not ExtClockSrc or AExtClockTick) then
       begin
         if not ExtClockSrc and (FInhibitTimer0 > 0) then
           Dec(FInhibitTimer0)
@@ -1942,10 +1988,15 @@ begin
           FRAM[Ord(b0TMR0)] := (FRAM[Ord(b0TMR0)] + 1) and High(Byte);
           CheckTimer0Overflow;
         end;
-
       end;
 
-      // TODO: WDT selected for PreScaler
+      FPreScaler := (FPreScaler + 1) and High(Byte);
+      if FPreScaler = PreScalerMax then
+      begin
+        FPreScaler := 0;
+        Inc(FWatchDogTimer);
+        CheckWatchDogDone;
+      end;
     end;
   end;
 end;
@@ -1954,6 +2005,19 @@ procedure TProcessor.CheckTimer0Overflow;
 begin
   if FRAM[Ord(b0TMR0)] = 0 then
     Timer0InterruptFlag := True;
+end;
+
+procedure TProcessor.CheckWatchDogDone;
+begin
+  if FWatchDogTimer >= WatchDogCycles then
+  begin
+    FWatchDogTimer := 0;
+    TimeOut := True;
+    if PowerDown then
+      WakeUpFromSleep
+    else
+      WatchDogReset;
+  end;
 end;
 
 procedure TProcessor.OnPortAChanged(APin: TPin);
@@ -1978,6 +2042,14 @@ procedure TProcessor.OnPortBChanged(APin: TPin);
 begin
   if APin.Direction = pdRead then
   begin
+    if (APin.Index = 0) then
+    begin
+      if InteruptRisingEdge = APin.State then
+        ExternalInterruptFlag := True;
+    end
+    else if (APin.Index >= 4) and (APin.Index <= 7) then
+      PortBInterruptChangeFlag := True;
+
     FSkipPortWrite := True;
     Flag[b0PORTB, APin.Index] := APin.State;
     OnAsyncMemoryChange.Call(Self);
@@ -2189,42 +2261,44 @@ end;
 
 procedure TProcessor.StepIn;
 begin
-  if (FEEPROMDelay = 0)then
+  if FEEPROMDelay = 0 then
   begin
     EEPROM[FileMap[b0EEADR]] := FileMap[b0EEDATA];
     EEWriteDoneInterruptFlag := true;
     EEWriteControl := false;
     FEEPROMDelay := -1;
   end
-  else if (FEEPROMDelay = -1) then
-  begin
-
-  end
-  else
+  else if FEEPROMDelay > 0 then
   begin
     FEEPROMDelay := FEEPROMDelay - 1;
   end;
-  if (EEWriteDoneInterruptFlag or ExternalInterruptFlag or PortBInterruptChangeFlag) then
+
+  if PowerDown then
   begin
-    FSleep := False;
-  end;
-  if (not FSleep) then
+    if EEWriteDoneInterruptFlag or ExternalInterruptFlag or PortBInterruptChangeFlag then
+    begin
+      WakeUpFromSleep;
+      ProcessInstruction(CurrentInstruction);
+    end;
+    AdvanceCycles;
+    ProcessTimer;
+  end
+  else
   begin
     if GlobalInterruptEnable then
     begin
-      if (EEWriteDoneInterruptEnable and EEWriteDoneInterruptFlag) or
-         ((Timer0InterruptEnable and Timer0InterruptFlag)) or
-         (ExternalInterruptEnable and ExternalInterruptFlag) or
-         (PortBInterruptChangeEnable and PortBInterruptChangeFlag) then
+      if EEWriteDoneInterruptEnable and EEWriteDoneInterruptFlag or
+         Timer0InterruptEnable and Timer0InterruptFlag or
+         ExternalInterruptEnable and ExternalInterruptFlag or
+         PortBInterruptChangeEnable and PortBInterruptChangeFlag then
       begin
         GlobalInterruptEnable := False;
         PushStack(FProgramCounter);
-        FProgramCounter := InterruptEntryAdress;
+        FProgramCounter := InterruptEntryAddress;
       end;
-     end;
     end;
     ProcessInstruction(CurrentInstruction);
-  end;
+  end
 end;
 
 function TProcessor.StepOver: TStepInfo;
@@ -2272,7 +2346,8 @@ begin
     end;
     if TimeBehind > MaxTimeBehind * FSpeedFactor then
     begin
-      FOverloadFactor := FCyclesFromStart / TargetCycles;
+      if not PowerDown then
+        FOverloadFactor := FCyclesFromStart / TargetCycles;
       ResetSyncTime;
       Break;
     end;
@@ -2599,6 +2674,13 @@ begin
   KeepProgramCounter;
 end;
 
+procedure TProcessor.InstructionCLRWDT(AInstruction: TInstruction);
+begin
+  FWatchDogTimer := 0;
+  TimeOut := False;
+  PowerDown := False;
+end;
+
 procedure TProcessor.InstructionGOTO(AInstruction: TInstruction);
 begin
   FProgramCounter := ExtractProgramCounter(AInstruction);
@@ -2638,7 +2720,13 @@ end;
 
 procedure TProcessor.InstructionSLEEP(AInstruction: TInstruction);
 begin
-  FSleep := True;
+  if Timer0InterruptFlag or ExternalInterruptFlag or PortBInterruptChangeFlag then
+    Exit;
+  TimeOut := False;
+  PowerDown := True;
+  FWatchDogTimer := 0;
+  if PreScalerAssignment = paWatchdog then
+    FPreScaler := 0;
 end;
 
 procedure TProcessor.InstructionSUBLW(AInstruction: TInstruction);

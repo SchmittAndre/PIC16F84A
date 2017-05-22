@@ -20,7 +20,7 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
-      <BuildNr Value="34"/>
+      <BuildNr Value="35"/>
       <Attributes pvaPrivateBuild="True"/>
       <StringTable Comments="Best Program" CompanyName="VS42 Inc." FileDescription="PIC16F84A Emulator" ProductVersion=""/>
     </VersionInfo>
@@ -151,7 +151,7 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="&quot;..\..\..\Resources\testscripts\TPicSim12.LST&quot;"/>
+        <CommandLineParams Value="&quot;..\..\..\Resources\testscripts\TPicSim9.LST&quot;"/>
       </local>
     </RunParams>
     <RequiredPackages Count="2">

@@ -323,8 +323,8 @@ const
     TPeripheralButtonPanel
   );
 
-   HelpLink = 'https://github.com/SchmittAndre/PIC16F84A/blob/master/Resources/Documentation.pdf';
-   HelpprogLink = 'https://github.com/SchmittAndre/PIC16F84A/blob/master/Resources/PIC16F84A.pdf';
+  HelpLink = 'https://github.com/SchmittAndre/PIC16F84A/blob/master/Resources/Documentation.pdf';
+  HelpProgLink = 'https://github.com/SchmittAndre/PIC16F84A/blob/master/Resources/PIC16F84A.pdf';
 
 var
   frmMain: TfrmMain;
@@ -392,7 +392,7 @@ end;
 
 procedure TfrmMain.actHelpExecute(Sender: TObject);
 begin
-   ShellExecute(Handle, 'open', HelpLink ,nil,nil, SW_SHOWNORMAL);
+   ShellExecute(Handle, 'open', HelpLink, nil ,nil, SW_SHOWNORMAL);
 end;
 
 procedure TfrmMain.actCompileExecute(Sender: TObject);
@@ -411,7 +411,7 @@ end;
 
 procedure TfrmMain.actHelpProgExecute(Sender: TObject);
 begin
-  ShellExecute(Handle, 'open', HelpprogLink ,nil,nil, SW_SHOWNORMAL);
+  ShellExecute(Handle, 'open', HelpProgLink, nil, nil, SW_SHOWNORMAL);
 end;
 
 procedure TfrmMain.actClearROMExecute(Sender: TObject);
