@@ -230,6 +230,7 @@
         <Filename Value="EmulationSettingsForm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmEmulationSettings"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
       </Unit12>
     </Units>

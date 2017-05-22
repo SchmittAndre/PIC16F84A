@@ -929,7 +929,7 @@ const
   ColorBreakpoint = $2233FF;
   ColorPCBreakpoint = $4466FF;
 begin
-  if Compiled and not FProcessor.Running then
+  if Compiled and (not FProcessor.Running or FSlowMode) then
   begin
     if Line = FProcessor.CurrentInstruction.Line then
     begin

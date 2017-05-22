@@ -1,13 +1,13 @@
 object frmEmulationSettings: TfrmEmulationSettings
   Left = 0
-  Height = 329
+  Height = 247
   Top = 0
-  Width = 337
+  Width = 364
   ActiveControl = btnOK
   BorderStyle = bsToolWindow
   Caption = 'Emulation Settings'
-  ClientHeight = 329
-  ClientWidth = 337
+  ClientHeight = 247
+  ClientWidth = 364
   OnCreate = FormCreate
   Position = poOwnerFormCenter
   LCLVersion = '1.6.4.0'
@@ -15,17 +15,17 @@ object frmEmulationSettings: TfrmEmulationSettings
   object pnlControl: TPanel
     Left = 5
     Height = 30
-    Top = 294
-    Width = 327
+    Top = 212
+    Width = 354
     Align = alBottom
     AutoSize = True
     BorderSpacing.Around = 5
     BevelOuter = bvNone
     ClientHeight = 30
-    ClientWidth = 327
+    ClientWidth = 354
     TabOrder = 1
     object btnOK: TButton
-      Left = 252
+      Left = 279
       Height = 30
       Top = 0
       Width = 75
@@ -37,7 +37,7 @@ object frmEmulationSettings: TfrmEmulationSettings
       TabOrder = 0
     end
     object btnCancel: TButton
-      Left = 172
+      Left = 199
       Height = 30
       Top = 0
       Width = 75
@@ -51,32 +51,32 @@ object frmEmulationSettings: TfrmEmulationSettings
   end
   object pnlSettingsArea: TPanel
     Left = 5
-    Height = 284
+    Height = 202
     Top = 5
-    Width = 327
+    Width = 354
     Align = alClient
     BorderSpacing.Around = 5
     BevelOuter = bvNone
-    ClientHeight = 284
-    ClientWidth = 327
+    ClientHeight = 202
+    ClientWidth = 354
     TabOrder = 0
     object pnlCrystalFrequency: TPanel
       Left = 5
       Height = 28
       Top = 5
-      Width = 317
+      Width = 344
       Align = alTop
       AutoSize = True
       BorderSpacing.Around = 5
       BevelOuter = bvNone
       ClientHeight = 28
-      ClientWidth = 317
+      ClientWidth = 344
       TabOrder = 0
       object lbCrystalFrequency: TLabel
         Left = 0
         Height = 28
         Top = 0
-        Width = 179
+        Width = 206
         Align = alClient
         Alignment = taRightJustify
         BorderSpacing.Right = 5
@@ -85,7 +85,7 @@ object frmEmulationSettings: TfrmEmulationSettings
         ParentColor = False
       end
       object edtCrystalFrequency: TEdit
-        Left = 184
+        Left = 211
         Height = 28
         Top = 0
         Width = 133
@@ -99,19 +99,19 @@ object frmEmulationSettings: TfrmEmulationSettings
       Left = 5
       Height = 28
       Top = 71
-      Width = 317
+      Width = 344
       Align = alTop
       AutoSize = True
       BorderSpacing.Around = 5
       BevelOuter = bvNone
       ClientHeight = 28
-      ClientWidth = 317
+      ClientWidth = 344
       TabOrder = 2
       object lbOperationTime: TLabel
         Left = 0
         Height = 28
         Top = 0
-        Width = 179
+        Width = 206
         Align = alClient
         Alignment = taRightJustify
         BorderSpacing.Right = 5
@@ -120,7 +120,7 @@ object frmEmulationSettings: TfrmEmulationSettings
         ParentColor = False
       end
       object edtOperationTime: TEdit
-        Left = 184
+        Left = 211
         Height = 28
         Top = 0
         Width = 133
@@ -134,19 +134,19 @@ object frmEmulationSettings: TfrmEmulationSettings
       Left = 5
       Height = 28
       Top = 38
-      Width = 317
+      Width = 344
       Align = alTop
       AutoSize = True
       BorderSpacing.Around = 5
       BevelOuter = bvNone
       ClientHeight = 28
-      ClientWidth = 317
+      ClientWidth = 344
       TabOrder = 1
       object lbOperationFrequency: TLabel
         Left = 0
         Height = 28
         Top = 0
-        Width = 179
+        Width = 206
         Align = alClient
         Alignment = taRightJustify
         BorderSpacing.Right = 5
@@ -155,7 +155,7 @@ object frmEmulationSettings: TfrmEmulationSettings
         ParentColor = False
       end
       object edtOperationFrequency: TEdit
-        Left = 184
+        Left = 211
         Height = 28
         Top = 0
         Width = 133
