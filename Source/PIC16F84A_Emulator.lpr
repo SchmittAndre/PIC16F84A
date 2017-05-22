@@ -7,7 +7,7 @@ uses
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, Main, ProcessorDefine, PeripheralFormDefine, LEDDefine, PinDefine, ProcessorFormDefine, LEDArraySettingsForm,
-  PeripheralButtonPanel, ButtonPanelDefine
+  PeripheralButtonPanel, ButtonPanelDefine, EmulationSettingsForm
   { you can add units after this };
 
 {$R *.res}
@@ -20,6 +20,7 @@ begin
   Application.Initialize;
   Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TfrmLEDArraySettings, frmLEDArraySettings);
+  Application.CreateForm(TfrmEmulationSettings, frmEmulationSettings);
   Application.Run;
 end.
 

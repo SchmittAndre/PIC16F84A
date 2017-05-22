@@ -14,6 +14,7 @@ uses
   VisiblePinSelectionDefine,
   PeripheralFormDefine,
   PinDefine,
+  EmulationSettingsForm,
   // Peripherals
   ProcessorFormDefine,
   PeripheralLEDArray,
@@ -38,6 +39,7 @@ type
     actCloseAllPeripherals: TAction;
     actClearROM: TAction;
     actHelpProg: TAction;
+    actEmulationSettings: TAction;
     actProcessorMCLR: TAction;
     actProcessorPortB: TAction;
     actProcessorPortA: TAction;
@@ -89,7 +91,8 @@ type
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem4: TMenuItem;
-    MenuItem6: TMenuItem;
+    miEmulationSettings: TMenuItem;
+    miEmulationSplitter2: TMenuItem;
     miShowMCLR: TMenuItem;
     miShowPortA: TMenuItem;
     miShowPortB: TMenuItem;
@@ -138,6 +141,7 @@ type
     synEditor: TSynEdit;
     synHighlighter: TSynAnySyn;
     synCompletion: TSynCompletion;
+    procedure actEmulationSettingsExecute(Sender: TObject);
     procedure actHelpProgExecute(Sender: TObject);
     procedure actClearROMExecute(Sender: TObject);
     procedure actClearROMUpdate(Sender: TObject);
@@ -198,6 +202,8 @@ type
     FFlags: TProcessor.TCalcFlags;
     FLineFollowMode: TLineFollowMode;
     FLineFollowRange: Cardinal;
+
+    FSlowMode: Boolean;
 
     FProcessorPortAForm: TProcessorPortAForm;
     FProcessorPortBForm: TProcessorPortBForm;
@@ -412,6 +418,11 @@ end;
 procedure TfrmMain.actHelpProgExecute(Sender: TObject);
 begin
   ShellExecute(Handle, 'open', HelpProgLink, nil, nil, SW_SHOWNORMAL);
+end;
+
+procedure TfrmMain.actEmulationSettingsExecute(Sender: TObject);
+begin
+  frmEmulationSettings.Execute(FProcessor.EmulationSettings);
 end;
 
 procedure TfrmMain.actClearROMExecute(Sender: TObject);
@@ -1393,7 +1404,7 @@ begin
   begin
     try
       try
-        FProcessor.CatchUp;
+        FSlowMode := FProcessor.CatchUp <= 1;
       except
         on E: ENotImplemented do
         begin
@@ -1403,7 +1414,7 @@ begin
       end;
     finally
 
-      if not FProcessor.Running then
+      if not FProcessor.Running or FSlowMode then
       begin
         UpdateALUInfo;
         UpdateMemView;

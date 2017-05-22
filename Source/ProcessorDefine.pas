@@ -9,6 +9,26 @@ uses
 
 type
 
+  { TEmulationSettings }
+
+  TEmulationSettings = class
+  private
+    FCrystalFrequency: Single;
+
+    function GetCycleFrequency: Single;
+    function GetCycleTime: Single;
+    procedure SetCycleFrequency(AValue: Single);
+    procedure SetCycleTime(AValue: Single);
+
+  public
+    constructor Create;
+
+    property CrystalFrequency: Single read FCrystalFrequency write FCrystalFrequency;
+    property CycleFrequency: Single read GetCycleFrequency write SetCycleFrequency;
+    property CycleTime: Single read GetCycleTime write SetCycleTime;
+
+  end;
+
   { TProcessor }
 
   TProcessor = class
@@ -31,10 +51,7 @@ type
     // EEPRom
     ROMSize = $40;
     // Timing
-    OperationTime = 1e-6;
-    OperationFrequeny = 1 / OperationTime;
     WatchDogTime = 0.018;
-    WatchDogCycles = WatchDogTime / OperationTime;
     // Ports
     PortACount = 5;
     PortBCount = 8;
@@ -356,6 +373,7 @@ type
     FWatchDogTimer: Cardinal;
 
     // State
+    FEmulationSettings: TEmulationSettings;
     FRunning: Boolean;
     FCycles: Int64;           // All Cycles that happened after a call of Start
     FCyclesFromStart: Int64;  // Cycles from StartTime
@@ -382,6 +400,7 @@ type
     function GetTargetCycles: Integer;
     function GetTimeBehind: Single;
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
+    function GetWatchDogCycles: Cardinal;
     procedure SetBreakpoint(ALine: Cardinal; AValue: Boolean);
 
     procedure SetSpeedFactor(AValue: Single);
@@ -568,13 +587,15 @@ type
     procedure WatchDogReset;
     procedure WakeUpFromSleep;
 
+    property EmulationSettings: TEmulationSettings read FEmulationSettings;
+
     procedure Start;
     procedure Stop;
 
     procedure StepIn;
     function StepOver: TStepInfo;
     function StepOut: TStepInfo;
-    procedure CatchUp;
+    function CatchUp: Cardinal;
     property TargetCycles: Integer read GetTargetCycles;
 
     property TimeBehind: Single read GetTimeBehind;
@@ -601,6 +622,8 @@ type
     property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
     property CalcFlags: TCalcFlags read GetCalcFlags;
     {$ENDREGION}
+
+    property WatchDogCycles: Cardinal read GetWatchDogCycles;
 
     property PortAPins: TPinArray read FPortAPins;
     property PortBPins: TPinArray read FPortBPins;
@@ -809,6 +832,39 @@ type
   end;
 
 implementation
+
+{ TEmulationSettings }
+
+function TEmulationSettings.GetCycleFrequency: Single;
+begin
+  Result := FCrystalFrequency / 4;
+end;
+
+function TEmulationSettings.GetCycleTime: Single;
+begin
+  Result := 1 / CycleFrequency;
+end;
+
+procedure TEmulationSettings.SetCycleFrequency(AValue: Single);
+begin
+  AValue := AValue * 4;
+  if FCrystalFrequency = AValue then
+    Exit;
+  FCrystalFrequency := AValue;
+end;
+
+procedure TEmulationSettings.SetCycleTime(AValue: Single);
+begin
+  AValue := 4 / AValue;
+  if FCrystalFrequency = AValue then
+    Exit;
+  FCrystalFrequency := AValue;
+end;
+
+constructor TEmulationSettings.Create;
+begin
+  FCrystalFrequency := 4e6;
+end;
 
 { TCompiler.TLogEntry }
 
@@ -1799,7 +1855,7 @@ var
   T: Int64;
 begin
   QueryPerformanceCounter(T);
-  Result := Floor((T - FStartTime) / FFrequency * FSpeedFactor * OperationFrequeny + 0.5);
+  Result := Floor((T - FStartTime) / FFrequency * FSpeedFactor * EmulationSettings.CycleFrequency + 0.5);
 end;
 
 function TProcessor.GetTimeBehind: Single;
@@ -1807,7 +1863,7 @@ var
   T: Int64;
 begin
   QueryPerformanceCounter(T);
-  Result := (T - FStartTime) / FFrequency * FSpeedFactor - FCyclesFromStart * OperationTime;
+  Result := (T - FStartTime) / FFrequency * FSpeedFactor - FCyclesFromStart * EmulationSettings.CycleTime;
 end;
 
 function TProcessor.GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
@@ -1837,6 +1893,11 @@ begin
       Assert(False, 'Unhandled TMemoryType in GetReadAsZero');
     end;
   end;
+end;
+
+function TProcessor.GetWatchDogCycles: Cardinal;
+begin
+  Result := Floor(WatchDogTime / EmulationSettings.CycleTime + 0.5);
 end;
 
 function TProcessor.NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
@@ -2086,10 +2147,12 @@ begin
   FPortBPins.OnPinChange.Add(OnPortBChanged);
   FMasterClearPin := TPinArray.Create('MCLR');
   FMasterClearPin.OnPinChange.Add(OnMasterClearChanged);
+  FEmulationSettings := TEmulationSettings.Create;
 end;
 
 destructor TProcessor.Destroy;
 begin
+  FEmulationSettings.Free;
   FBreakpoints.Free;
   FPortAPins.Free;
   FPortBPins.Free;
@@ -2330,14 +2393,16 @@ begin
     Result := StepOver;
 end;
 
-procedure TProcessor.CatchUp;
+function TProcessor.CatchUp: Cardinal;
 const
   MaxTimeBehind = 0.05; // 50 ms
 begin
   FOverloadFactor := 1;
+  Result := 0;
   while TimeBehind > 0 do
   begin
     StepIn;
+    Inc(Result);
     if Breakpoint[CurrentInstruction.Line] or
        FHelpBreakpointEnabled and (FProgramCounterStackPos = FHelpBreakpointDepth) then
     begin
