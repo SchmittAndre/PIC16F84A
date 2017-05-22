@@ -368,8 +368,6 @@ type
     function GetCalcFlags: TCalcFlags;
     function GetCurrentInstruction: TLineInstruction;
     function GetCurrentProgramPos: TProgramMemPos;
-    function GetDataMem(P: TROMPointer): Byte;
-    procedure setDataMem(P: TROMPointer; AValue: Byte);
     function GetMemory(AType: TMemoryType; APos: Cardinal): Byte;
     function GetOverloaded: Boolean;
     function GetPCStack(P: TProgramCounterStackPos): TProgramCounter;
@@ -379,119 +377,162 @@ type
     function GetTargetCycles: Integer;
     function GetTimeBehind: Single;
     function GetReadAsZero(AType: TMemoryType; APos: Cardinal): Boolean;
-    function GetCarryFlag: Boolean;
-    function GetDigitCarryFlag: Boolean;
+    procedure SetBreakpoint(ALine: Cardinal; AValue: Boolean);
+
+    procedure SetSpeedFactor(AValue: Single);
+
+    {$REGION Property-Getter}
+
+    // Writable Memory Access
     function GetFileMap(P: TRAMPointer): Byte; overload;
     function GetFileMap(P: TRegisterBank0): Byte; overload;
     function GetFileMap(P: TRegisterBank1): Byte; overload;
     function GetFlag(P: TRAMPointer; ABit: TBitIndex): Boolean; overload;
     function GetFlag(P: TRegisterBank0; ABit: TBitIndex): Boolean; overload;
     function GetFlag(P: TRegisterBank1; ABit: TBitIndex): Boolean; overload;
+    function GetEEPROM(P: TROMPointer): Byte;
+
+    // STATUS-Register
+    function GetCarryFlag: Boolean;
+    function GetDigitCarryFlag: Boolean;
     function GetZeroFlag: Boolean;
-    function GetGlobalInterruptEnable: Boolean;
-    procedure SetGlobalInterruptEnable(AValue: Boolean);
-    function GetEEWriteDoneInterruptEnable: Boolean;
-    function GetExternalInterruptEnable: Boolean;
-    function GetExternalInterruptFlag: Boolean;
-    function GetPortBInterruptChangeEnable: Boolean;
+    function GetBank1Selected: Boolean;
+
+    // OPTION-Register
+    function GetPreScalerMax: Byte;
+    function GetPreScalerAssignment: TPreScalerAssignment;
+    function GetExtClockFallingEdge: Boolean;
+    function GetExtClockSrc: Boolean;
+    function GetInteruptRisingEdge: Boolean;
+    function GetPortBPullUpEnabled: Boolean;
+
+    // INTCON-Register
     function GetPortBInterruptChangeFlag: Boolean;
-    function GetTimer0InterruptEnable: Boolean;
+    function GetExternalInterruptFlag: Boolean;
     function GetTimer0InterruptFlag: Boolean;
-    procedure SetEEWriteDoneInterruptEnable(AValue: Boolean);
-    procedure SetExternalInterruptEnable(AValue: Boolean);
-    procedure SetExternalInterruptFlag(AValue: Boolean);
-    procedure SetPortBInterruptChangeEnable(AValue: Boolean);
-    procedure SetPortBInterruptChangeFlag(AValue: Boolean);
-    procedure SetTimer0InterruptEnable(AValue: Boolean);
-    procedure SetTimer0InterruptFlag(AValue: Boolean);
-    procedure SetBreakpoint(ALine: Cardinal; AValue: Boolean);
-    procedure SetCarryFlag(AValue: Boolean);
-    procedure SetDigitCarryFlag(AValue: Boolean);
+    function GetPortBInterruptChangeEnable: Boolean;
+    function GetExternalInterruptEnable: Boolean;
+    function GetTimer0InterruptEnable: Boolean;
+    function GetEEWriteDoneInterruptEnable: Boolean;
+    function GetGlobalInterruptEnable: Boolean;
+
+    // EECON1-Register
+    function GetEEReadControl: Boolean;
+    function GetEEWriteControl: Boolean;
+    function GetEEWriteEnable: Boolean;
+    function GetEEWriteErrorFlag: Boolean;
+    function GetEEWriteDoneInterruptFlag: Boolean;
+
+    {$ENDREGION}
+
+    {$REGION Property-Setter}
+
+    // Writable Memory Access
     procedure SetFileMap(P: TRAMPointer; AValue: Byte); overload;
     procedure SetFileMap(P: TRegisterBank0; AValue: Byte); overload;
     procedure SetFileMap(P: TRegisterBank1; AValue: Byte); overload;
     procedure SetFlag(P: TRAMPointer; ABit: TBitIndex; AValue: Boolean); overload;
     procedure SetFlag(P: TRegisterBank0; ABit: TBitIndex; AValue: Boolean); overload;
     procedure SetFlag(P: TRegisterBank1; ABit: TBitIndex; AValue: Boolean); overload;
+    procedure SetEEPROM(P: TROMPointer; AValue: Byte);
+
+    // STATUS-Register
+    procedure SetCarryFlag(AValue: Boolean);
+    procedure SetDigitCarryFlag(AValue: Boolean);
     procedure SetZeroFlag(AValue: Boolean);
-    function GetBank1Selected: Boolean;
     procedure SetBank1Selected(AValue: Boolean);
-    function GetExtClockSrc: Boolean;
-    procedure SetExtClockSrc(AValue: Boolean);
-    function GetExtClockRisingEdge: Boolean;
-    procedure SetExtClockRisingEdge(AValue: Boolean);
-    function GetPreScalerAssignment: TPreScalerAssignment;
-    function GetPreScalerMax: Byte;
+
+    // OPTION-Register
     procedure SetPreScalerAssignment(AValue: TPreScalerAssignment);
-    function GetEEWriteDoneInterruptFlag: Boolean;
-    procedure SetEEWriteDoneInterruptFlag(AValue: Boolean);
-    function GetEEReadControl: Boolean;
-    function GetEEWriteControl: Boolean;
-    function GetEEWriteEnable: Boolean;
-    function GetEEWriteErrorFlag: Boolean;
+    procedure SetExtClockFallingEdge(AValue: Boolean);
+    procedure SetExtClockSrc(AValue: Boolean);
+    procedure SetInteruptRisingEdge(AValue: Boolean);
+    procedure SetPortBPullUpEnabled(AValue: Boolean);
+
+    // INTCON-Register
+    procedure SetPortBInterruptChangeFlag(AValue: Boolean);
+    procedure SetExternalInterruptFlag(AValue: Boolean);
+    procedure SetTimer0InterruptFlag(AValue: Boolean);
+    procedure SetPortBInterruptChangeEnable(AValue: Boolean);
+    procedure SetExternalInterruptEnable(AValue: Boolean);
+    procedure SetTimer0InterruptEnable(AValue: Boolean);
+    procedure SetEEWriteDoneInterruptEnable(AValue: Boolean);
+    procedure SetGlobalInterruptEnable(AValue: Boolean);
+
+    // EECON1-Register
     procedure SetEEReadControl(AValue: Boolean);
     procedure SetEEWriteControl(AValue: Boolean);
     procedure SetEEWriteEnable(AValue: Boolean);
     procedure SetEEWriteErrorFlag(AValue: Boolean);
+    procedure SetEEWriteDoneInterruptFlag(AValue: Boolean);
 
-    procedure SetSpeedFactor(AValue: Single);
+    {$ENDREGION}
 
+    // Writable Memory Access
     property FileMap[P: TRAMPointer]: Byte read GetFileMap write SetFileMap;
     property Flag[P: TRAMPointer; ABit: TBitIndex]: Boolean read GetFlag write SetFlag;
-    property EEPROM[P: TROMPointer]: Byte read GetDataMem write setDataMem;
+    property EEPROM[P: TROMPointer]: Byte read GetEEPROM write SetEEPROM;
 
-    // STATUS
+    {$REGION Flag-Properties}
+
+    // STATUS-Register
     property CarryFlag: Boolean read GetCarryFlag write SetCarryFlag;
     property DigitCarryFlag: Boolean read GetDigitCarryFlag write SetDigitCarryFlag;
     property ZeroFlag: Boolean read GetZeroFlag write SetZeroFlag;
     property Bank1Selected: Boolean read GetBank1Selected write SetBank1Selected;
 
-    // OPTION
-    property ExtClockSrc: Boolean read GetExtClockSrc write SetExtClockSrc;
-    property ExtClockRisingEdge: Boolean read GetExtClockRisingEdge write SetExtClockRisingEdge;
+    // OPTION-Register
+    property PreScalerMax: Byte read GetPreScalerMax; // returns 0 instead of 256, as the byte perfectly overflows
     property PreScalerAssignment: TPreScalerAssignment read GetPreScalerAssignment write SetPreScalerAssignment;
+    property ExtClockFallingEdge: Boolean read GetExtClockFallingEdge write SetExtClockFallingEdge;
+    property ExtClockSrc: Boolean read GetExtClockSrc write SetExtClockSrc;
+    property InteruptRisingEdge: Boolean read GetInteruptRisingEdge write SetInteruptRisingEdge;
+    property PortBPullUpEnabled: Boolean read GetPortBPullUpEnabled write SetPortBPullUpEnabled;
 
-    // INTCON
-    property GlobalInterruptEnable: Boolean read GetGlobalInterruptEnable write SetGlobalInterruptEnable;
-    property EEWriteDoneInterruptEnable: Boolean read GetEEWriteDoneInterruptEnable write SetEEWriteDoneInterruptEnable;
-    property Timer0InterruptEnable: Boolean read GetTimer0InterruptEnable write SetTimer0InterruptEnable;
-    property ExternalInterruptEnable: Boolean read GetExternalInterruptEnable write SetExternalInterruptEnable;
-    property PortBInterruptChangeEnable: Boolean read GetPortBInterruptChangeEnable write SetPortBInterruptChangeEnable;
-    property Timer0InterruptFlag: Boolean read GetTimer0InterruptFlag write SetTimer0InterruptFlag;
-    property ExternalInterruptFlag: Boolean read GetExternalInterruptFlag write SetExternalInterruptFlag;
+    // INTCON-Register
     property PortBInterruptChangeFlag: Boolean read GetPortBInterruptChangeFlag write SetPortBInterruptChangeFlag;
+    property ExternalInterruptFlag: Boolean read GetExternalInterruptFlag write SetExternalInterruptFlag;
+    property Timer0InterruptFlag: Boolean read GetTimer0InterruptFlag write SetTimer0InterruptFlag;
+    property PortBInterruptChangeEnable: Boolean read GetPortBInterruptChangeEnable write SetPortBInterruptChangeEnable;
+    property ExternalInterruptEnable: Boolean read GetExternalInterruptEnable write SetExternalInterruptEnable;
+    property Timer0InterruptEnable: Boolean read GetTimer0InterruptEnable write SetTimer0InterruptEnable;
+    property EEWriteDoneInterruptEnable: Boolean read GetEEWriteDoneInterruptEnable write SetEEWriteDoneInterruptEnable;
+    property GlobalInterruptEnable: Boolean read GetGlobalInterruptEnable write SetGlobalInterruptEnable;
 
-    // EECON1
+    // EECON1-Register
     property EEReadControl: Boolean read GetEEReadControl write SetEEReadControl;
     property EEWriteControl: Boolean read GetEEWriteControl write SetEEWriteControl;
     property EEWriteEnable: Boolean read GetEEWriteEnable write SetEEWriteEnable;
     property EEWriteErrorFlag: Boolean read GetEEWriteErrorFlag write SetEEWriteErrorFlag;
     property EEWriteDoneInterruptFlag: Boolean read GetEEWriteDoneInterruptFlag write SetEEWriteDoneInterruptFlag;
 
-    property PreScalerMax: Byte read GetPreScalerMax; // returns 0 instead of 256, as the byte perfectly overflows
+    {$ENDREGION}
 
-    // help-functions
-    procedure KeepProgramCounter;
-
+    {$REGION Instruction-Helper}
     class function ExtractFileAdress(AInstruction: TInstruction): TFileAdress; static;
     class function ExtractByteLiteral(AInstruction: TInstruction): Byte; static;
     class function ExtractProgramCounter(AInstruction: TInstruction): TProgramCounter; static;
     class function ExtractDestIsFile(AInstruction: TInstruction): Boolean; static;
     class function ExtractBitIndex(AInstruction: TInstruction): TBitIndex; static;
 
+    function AdressToRAMPointer(AAdress: TFileAdress): TRAMPointer;
     function ExtractRAMPointer(AInstruction: TInstruction): TRAMPointer;
 
-    function AdressToRAMPointer(AAdress: TFileAdress): TRAMPointer;
+    // call this when the instruction changed the ProgramCounter (jump, call, ...)
+    procedure KeepProgramCounter;
 
+    // calculates and sets all flags according to the calculation
     function DoAdd(A, B: Byte): Byte;
     function DoSub(A, B: Byte): Byte;
+
+    // push the ProgramCounter onto the Stack/pop it from the stack
+    procedure PushStack(AProgramCounter: TProgramCounter);
+    function PopStack: TProgramCounter;
+    {$ENDREGION}
 
     function NextProgramCounter(ACount: Integer = 1): TProgramCounter;
     procedure AdvanceProgramCounter(ACount: Integer = 1);
     procedure AdvanceCycles(ACount: Integer = 1);
-
-    procedure PushStack(AProgramCounter: TProgramCounter);
-    function PopStack: TProgramCounter;
 
     procedure ProcessTimer(ACount: Cardinal = 1; AExtClockTick: Boolean = False);
     procedure CheckTimer0Overflow;
@@ -501,7 +542,6 @@ type
     procedure OnMasterClearChanged(APin: TPin);
 
   public
-
     constructor Create;
     destructor Destroy; override;
 
@@ -510,28 +550,29 @@ type
     procedure LoadProgram(AFileName: String; AGeneratedCode: TStrings = nil);
 
     procedure ClearProgramMemory;
-
     procedure ClearROM;
+
     procedure ResetPowerON;
 
     procedure Start;
     procedure Stop;
 
-    procedure ProcessInstruction(AInstruction: TInstruction; ALine: Integer = -1); overload;
-    procedure ProcessInstruction(AInstruction: TLineInstruction); overload;
-
-    procedure ResetSyncTime;
-
-    function NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
-
     procedure StepIn;
     function StepOver: TStepInfo;
     function StepOut: TStepInfo;
     procedure CatchUp;
-
     property TargetCycles: Integer read GetTargetCycles;
+
     property TimeBehind: Single read GetTimeBehind;
 
+    procedure ResetSyncTime;
+
+    procedure ProcessInstruction(AInstruction: TInstruction; ALine: Integer = -1); overload;
+    procedure ProcessInstruction(AInstruction: TLineInstruction); overload;
+
+    function NormalizeRAMPointer(ARAMPointer: TRAMPointer): TRAMPointer;
+
+    {$REGION ReadOnly-Memory Properties}
     property ProgramMem[P: TProgramMemPointer]: Byte read GetProgramMem;
     property Code[P: TProgramCounter]: TLineInstruction read GetCode;
     property CurrentProgramPos: TProgramMemPos read GetCurrentProgramPos;
@@ -540,11 +581,12 @@ type
     property RAMBit[P: TRAMPointer; ABit: TBitIndex]: Boolean read GetFlag;
     property PreScaler: Byte read FPreScaler;
     property RAM[P: TRAMPointer]: Byte read GetFileMap;
-    property ROM[P: TROMPointer]: Byte read GetDataMem;
+    property ROM[P: TROMPointer]: Byte read GetEEPROM;
     property PCStackPos: TProgramCounterStackPos read FProgramCounterStackPos;
     property PCStack[P: TProgramCounterStackPos]: TProgramCounter read GetPCStack;
     property PCStackMem[P: TProgramCounterStackPointer]: Byte read GetPCStackMem;
     property CalcFlags: TCalcFlags read GetCalcFlags;
+    {$ENDREGION}
 
     property PortAPins: TPinArray read FPortAPins;
     property PortBPins: TPinArray read FPortBPins;
@@ -1206,57 +1248,77 @@ begin
   end;
 end;
 
+function TProcessor.GetInteruptRisingEdge: Boolean;
+begin
+  Result := Flag[b1OPTION, 6];
+end;
+
+function TProcessor.GetPortBPullUpEnabled: Boolean;
+begin
+  Result := not Flag[b1OPTION, 7];
+end;
+
+procedure TProcessor.SetInteruptRisingEdge(AValue: Boolean);
+begin
+  Flag[b1OPTION, 6] := AValue;
+end;
+
+procedure TProcessor.SetPortBPullUpEnabled(AValue: Boolean);
+begin
+  Flag[b1OPTION, 7] := not AValue;
+end;
+
 function TProcessor.GetEEReadControl: Boolean;
 begin
-  Result := Flags[b1EECON1, 0];
+  Result := Flag[b1EECON1, 0];
 end;
 
 function TProcessor.GetEEWriteControl: Boolean;
 begin
-  Result := Flags[b1EECON1, 1];
+  Result := Flag[b1EECON1, 1];
 end;
 
 function TProcessor.GetEEWriteEnable: Boolean;
 begin
-  Result := Flags[b1EECON1, 2];
+  Result := Flag[b1EECON1, 2];
 end;
 
 function TProcessor.GetEEWriteErrorFlag: Boolean;
 begin
-  Result := Flags[b1EECON1, 3];
+  Result := Flag[b1EECON1, 3];
 end;
 
 procedure TProcessor.SetEEReadControl(AValue: Boolean);
 begin
-  Flags[b1EECON1, 0] := AValue;
+  Flag[b1EECON1, 0] := AValue;
 end;
 
 procedure TProcessor.SetEEWriteControl(AValue: Boolean);
 begin
-  Flags[b1EECON1, 1] := AValue;
+  Flag[b1EECON1, 1] := AValue;
 end;
 
 procedure TProcessor.SetEEWriteEnable(AValue: Boolean);
 begin
-  Flags[b1EECON1, 2] := AValue;
+  Flag[b1EECON1, 2] := AValue;
 end;
 
 procedure TProcessor.SetEEWriteErrorFlag(AValue: Boolean);
 begin
-  Flags[b1EECON1, 3] := AValue;
+  Flag[b1EECON1, 3] := AValue;
 end;
 
-function TProcessor.GetExtClockRisingEdge: Boolean;
+function TProcessor.GetExtClockFallingEdge: Boolean;
 begin
   Result := Flag[b1OPTION, 4];
 end;
 
-procedure TProcessor.SetExtClockRisingEdge(AValue: Boolean);
+procedure TProcessor.SetExtClockFallingEdge(AValue: Boolean);
 begin
   Flag[b1OPTION, 4] := AValue;
 end;
 
-procedure TProcessor.setDataMem(P: TROMPointer; AValue: Byte);
+procedure TProcessor.SetEEPROM(P: TROMPointer; AValue: Byte);
 begin
   FROM[P] := AValue;
 end;
@@ -1600,7 +1662,7 @@ begin
   Flag[b0STATUS, 2] := AValue;
 end;
 
-function TProcessor.GetDataMem(P: TROMPointer): Byte;
+function TProcessor.GetEEPROM(P: TROMPointer): Byte;
 begin
   Result := FROM[P];
 end;
@@ -1904,7 +1966,7 @@ begin
 
     if ExtClockSrc and (APin.Index = 4) then
     begin
-      if ExtClockRisingEdge = APin.State then
+      if ExtClockFallingEdge = APin.State then
         ProcessTimer(1, True);
     end;
   end;
