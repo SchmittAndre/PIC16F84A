@@ -162,7 +162,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="13">
+    <Units Count="12">
       <Unit0>
         <Filename Value="PIC16F84A_Emulator.lpr"/>
         <IsPartOfProject Value="True"/>

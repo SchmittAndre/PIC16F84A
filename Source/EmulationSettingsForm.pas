@@ -13,12 +13,15 @@ type
     btnOK: TButton;
     btnCancel: TButton;
     edtCrystalFrequency: TEdit;
+    cbWatchDogEnabled: TCheckBox;
     edtOperationTime: TEdit;
     edtOperationFrequency: TEdit;
     lbCrystalFrequency: TLabel;
+    lbwdte: TLabel;
     lbOperationTime: TLabel;
     lbOperationFrequency: TLabel;
     pnlCrystalFrequency: TPanel;
+    pnlCrystalFrequency1: TPanel;
     pnlOperationTime: TPanel;
     pnlOperationFrequency: TPanel;
     pnlSettingsArea: TPanel;
@@ -131,12 +134,13 @@ begin
     on E: Exception do
       ShowMessage(E.Message);
   end;
-
+  cbWatchDogEnabled.Checked := AEmulationSettings.WatchDogEnabled;
 end;
 
 procedure TfrmEmulationSettings.SaveEmulationSettings(AEmulationSettings: TEmulationSettings);
 begin
   AEmulationSettings.CrystalFrequency := ParseFrequency(edtCrystalFrequency.Text);
+  AEmulationSettings.WatchDogEnabled := cbWatchDogEnabled.Checked;
 end;
 
 function TfrmEmulationSettings.FormatFrequency(AFreqeuncy: Single): String;
