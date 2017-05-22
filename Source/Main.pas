@@ -36,8 +36,8 @@ type
     actCompile: TAction;
     actHelp: TAction;
     actCloseAllPeripherals: TAction;
-    acHelpprog: TAction;
     actClearROM: TAction;
+    actHelpProg: TAction;
     actProcessorMCLR: TAction;
     actProcessorPortB: TAction;
     actProcessorPortA: TAction;
@@ -138,7 +138,7 @@ type
     synEditor: TSynEdit;
     synHighlighter: TSynAnySyn;
     synCompletion: TSynCompletion;
-    procedure acHelpprogExecute(Sender: TObject);
+    procedure actHelpProgExecute(Sender: TObject);
     procedure actClearROMExecute(Sender: TObject);
     procedure actClearROMUpdate(Sender: TObject);
     procedure actCloseAllPeripheralsExecute(Sender: TObject);
@@ -409,7 +409,7 @@ begin
       Components[I].Free;
 end;
 
-procedure TfrmMain.acHelpprogExecute(Sender: TObject);
+procedure TfrmMain.actHelpProgExecute(Sender: TObject);
 begin
   ShellExecute(Handle, 'open', HelpprogLink ,nil,nil, SW_SHOWNORMAL);
 end;

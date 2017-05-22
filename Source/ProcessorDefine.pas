@@ -1582,7 +1582,7 @@ begin
         // TODO: make this have a random delay (delay as in cycles)
         // If you need help on how to do this or verify your solution, scroll to the right --->                                                                                                                                                                                                                                                                                                                                                                     Variable, which gets set via "X := Random(4) + 2", getting decreased every cycles. once it reaches 1, do the write and set it to zero, disabling the counting
         // Also prevent clearing of the WriteControlFlag, as this does not work, as long as the write is in progress
-        FEEPROMDelay := RandomRange(2,9);
+        FEEPROMDelay := Random(4) + 2;
       end
     end;
   end;
@@ -2204,23 +2204,25 @@ begin
   begin
     FEEPROMDelay := FEEPROMDelay - 1;
   end;
-  if (EEWriteDoneInterruptEnable and EEWriteDoneInterruptFlag) or
-     ((Timer0InterruptEnable and Timer0InterruptFlag) and (FSleep = false)) or
-     (ExternalInterruptEnable and ExternalInterruptFlag) or
-     (PortBInterruptChangeEnable and PortBInterruptChangeFlag)
-  then
+  if (EEWriteDoneInterruptFlag or ExternalInterruptFlag or PortBInterruptChangeFlag) then
   begin
-    FSleep := false;
+    FSleep := False;
+  end;
+  if (not FSleep) then
+  begin
     if GlobalInterruptEnable then
     begin
-    GlobalInterruptEnable := False;
-    PushStack(FProgramCounter);
-    FProgramCounter := InterruptEntryAdress;
+      if (EEWriteDoneInterruptEnable and EEWriteDoneInterruptFlag) or
+         ((Timer0InterruptEnable and Timer0InterruptFlag)) or
+         (ExternalInterruptEnable and ExternalInterruptFlag) or
+         (PortBInterruptChangeEnable and PortBInterruptChangeFlag) then
+      begin
+        GlobalInterruptEnable := False;
+        PushStack(FProgramCounter);
+        FProgramCounter := InterruptEntryAdress;
+      end;
+     end;
     end;
-  end;
-
-  if (FSleep = false) then
-  begin
     ProcessInstruction(CurrentInstruction);
   end;
 end;
