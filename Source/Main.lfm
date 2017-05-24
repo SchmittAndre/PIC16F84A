@@ -1,6 +1,6 @@
 object frmMain: TfrmMain
   Left = 418
-  Height = 665
+  Height = 645
   Top = 206
   Width = 1150
   ActiveControl = btnSave
@@ -21,18 +21,18 @@ object frmMain: TfrmMain
   Visible = True
   object gbMemory: TGroupBox
     Left = 976
-    Height = 612
+    Height = 592
     Top = 5
     Width = 169
     Align = alRight
     BorderSpacing.Around = 5
     Caption = 'Memory'
-    ClientHeight = 592
+    ClientHeight = 572
     ClientWidth = 165
     TabOrder = 1
     object sgMemView: TStringGrid
       Left = 5
-      Height = 554
+      Height = 534
       Top = 33
       Width = 155
       Align = alClient
@@ -83,22 +83,22 @@ object frmMain: TfrmMain
   end
   object pnlCenter: TPanel
     Left = 202
-    Height = 622
+    Height = 602
     Top = 0
     Width = 769
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 622
+    ClientHeight = 602
     ClientWidth = 769
     TabOrder = 0
     object pnlControl: TPanel
       Left = 618
-      Height = 612
+      Height = 592
       Top = 5
       Width = 146
       Align = alRight
       BorderSpacing.Around = 5
-      ClientHeight = 612
+      ClientHeight = 592
       ClientWidth = 146
       Constraints.MinHeight = 472
       TabOrder = 0
@@ -416,17 +416,17 @@ object frmMain: TfrmMain
     end
     object pnlCode: TPanel
       Left = 0
-      Height = 622
+      Height = 602
       Top = 0
       Width = 613
       Align = alClient
       BevelOuter = bvNone
-      ClientHeight = 622
+      ClientHeight = 602
       ClientWidth = 613
       TabOrder = 1
       inline synEditor: TSynEdit
         Left = 5
-        Height = 604
+        Height = 584
         Top = 5
         Width = 603
         Align = alClient
@@ -942,7 +942,7 @@ object frmMain: TfrmMain
       object gbCompileOutput: TGroupBox
         Left = 0
         Height = 1
-        Top = 621
+        Top = 601
         Width = 613
         Align = alBottom
         Caption = 'Compile Output'
@@ -991,7 +991,7 @@ object frmMain: TfrmMain
         Cursor = crVSplit
         Left = 0
         Height = 7
-        Top = 614
+        Top = 594
         Width = 613
         Align = alBottom
         ResizeAnchor = akBottom
@@ -1001,17 +1001,17 @@ object frmMain: TfrmMain
   object sbStatus: TStatusBar
     Left = 0
     Height = 23
-    Top = 622
+    Top = 602
     Width = 1150
     Panels = <>
   end
   object pnlLeft: TPanel
     Left = 0
-    Height = 622
+    Height = 602
     Top = 0
     Width = 202
     Align = alLeft
-    ClientHeight = 622
+    ClientHeight = 602
     ClientWidth = 202
     TabOrder = 3
     object gbSpecialFunction: TGroupBox

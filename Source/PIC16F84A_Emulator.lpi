@@ -226,13 +226,6 @@
         <Filename Value="ButtonPanelDefine.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit11>
-      <Unit12>
-        <Filename Value="EmulationSettingsForm.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="frmEmulationSettings"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Form"/>
-      </Unit12>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

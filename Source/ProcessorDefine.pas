@@ -2221,6 +2221,7 @@ var
   InstructionType: TInstructionType;
   LabelList: array [TProgramMemPos] of String;
   LastLabel: Integer;
+  LabelPos: TProgramCounter;
 begin
   FileStream := TFileStream.Create(AFileName, fmOpenRead);
   try
@@ -2250,9 +2251,13 @@ begin
     InstructionType := FInstructionArray[Code[I].Instruction];
     if ipPC in InstructionInfo[InstructionType].Params then
     begin
-      LabelList[ExtractProgramCounter(Code[I].Instruction)] := 'Label' + IntToStr(LastLabel);
-      AGeneratedCode.Add('         ' + Instructioninfo[InstructionType].Name + ' Label' + IntToStr(LastLabel));
-      Inc(LastLabel);
+      LabelPos := ExtractProgramCounter(Code[I].Instruction);
+      if LabelList[LabelPos].IsEmpty then
+      begin
+        LabeLList[LabelPos] := 'Label' + IntToStr(LastLabel);
+        Inc(LastLabel);
+      end;
+      AGeneratedCode.Add('         ' + Instructioninfo[InstructionType].Name + ' ' + LabelList[LabelPos]);
     end
     else
       AGeneratedCode.Add('         ' + TCompiler.FormatInstruction(Code[I].Instruction));
