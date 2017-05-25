@@ -63,12 +63,12 @@ object frmMain: TfrmMain
     end
     object cbMemorySelection: TComboBox
       Left = 5
-      Height = 28
+      Height = 23
       Top = 5
       Width = 155
       Align = alTop
       BorderSpacing.Around = 5
-      ItemHeight = 20
+      ItemHeight = 15
       ItemIndex = 0
       Items.Strings = (
         'RAM'
@@ -104,7 +104,7 @@ object frmMain: TfrmMain
       TabOrder = 0
       object gbFile: TGroupBox
         Left = 6
-        Height = 150
+        Height = 145
         Top = 6
         Width = 134
         Align = alTop
@@ -157,8 +157,8 @@ object frmMain: TfrmMain
       end
       object gbControl: TGroupBox
         Left = 6
-        Height = 210
-        Top = 161
+        Height = 205
+        Top = 156
         Width = 134
         Align = alTop
         AutoSize = True
@@ -230,8 +230,8 @@ object frmMain: TfrmMain
       end
       object gbStateInfo: TGroupBox
         Left = 6
-        Height = 150
-        Top = 376
+        Height = 145
+        Top = 366
         Width = 134
         Align = alTop
         AutoSize = True
@@ -254,7 +254,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 17
+            Width = 14
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'W:'
@@ -262,10 +262,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbWRegister: TLabel
-            Left = 22
+            Left = 19
             Height = 25
             Top = 0
-            Width = 103
+            Width = 106
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -288,7 +288,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 37
+            Width = 30
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Flags:'
@@ -296,10 +296,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbFlags: TLabel
-            Left = 42
+            Left = 35
             Height = 25
             Top = 0
-            Width = 83
+            Width = 90
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -323,7 +323,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 44
+            Width = 37
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Cycles:'
@@ -331,10 +331,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbCycles: TLabel
-            Left = 49
+            Left = 42
             Height = 25
             Top = 0
-            Width = 76
+            Width = 83
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -357,7 +357,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 62
+            Width = 50
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Prescaler:'
@@ -365,10 +365,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbPreScaler: TLabel
-            Left = 67
+            Left = 55
             Height = 25
             Top = 0
-            Width = 58
+            Width = 70
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -392,7 +392,7 @@ object frmMain: TfrmMain
             Left = 5
             Height = 25
             Top = 0
-            Width = 106
+            Width = 83
             Align = alLeft
             BorderSpacing.Left = 5
             Caption = 'Reached Speed:'
@@ -400,10 +400,10 @@ object frmMain: TfrmMain
             ParentColor = False
           end
           object lbReachedSpeed: TLabel
-            Left = 111
+            Left = 88
             Height = 25
             Top = 0
-            Width = 14
+            Width = 37
             Align = alClient
             Alignment = taRightJustify
             BorderSpacing.Right = 5
@@ -1022,12 +1022,12 @@ object frmMain: TfrmMain
       Align = alTop
       BorderSpacing.Around = 5
       Caption = 'Special Function Register'
-      ClientHeight = 359
+      ClientHeight = 364
       ClientWidth = 186
       TabOrder = 0
       object sgSpecialFunction: TStringGrid
         Left = 5
-        Height = 349
+        Height = 354
         Top = 5
         Width = 176
         Align = alClient
@@ -1045,31 +1045,31 @@ object frmMain: TfrmMain
     end
     object gbPeripherals: TGroupBox
       Left = 6
-      Height = 93
+      Height = 83
       Top = 395
       Width = 190
       Align = alTop
       AutoSize = True
       BorderSpacing.Around = 5
       Caption = 'Peripherals'
-      ClientHeight = 68
+      ClientHeight = 63
       ClientWidth = 186
       TabOrder = 1
       object cbPeripherals: TComboBox
         Left = 5
-        Height = 28
+        Height = 23
         Top = 5
         Width = 176
         Align = alTop
         BorderSpacing.Around = 5
-        ItemHeight = 20
+        ItemHeight = 15
         Style = csDropDownList
         TabOrder = 0
       end
       object btnCreatePeripheral: TButton
         Left = 5
         Height = 25
-        Top = 38
+        Top = 33
         Width = 176
         Action = actCreatePeripheral
         Align = alTop
@@ -1321,6 +1321,7 @@ object frmMain: TfrmMain
       Category = 'Processor'
       Caption = 'Settings...'
       OnExecute = actEmulationSettingsExecute
+      OnUpdate = actEmulationSettingsUpdate
     end
     object actCreatePeripheral: TAction
       Category = 'Peripheral'

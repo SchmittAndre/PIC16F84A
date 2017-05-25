@@ -15,6 +15,7 @@ type
   private
     FCrystalFrequency: Single;
     FWatchDogEnabled: Boolean;
+    FLiveUpdate: Boolean;
 
     function GetCycleFrequency: Single;
     function GetCycleTime: Single;
@@ -27,6 +28,8 @@ type
     property CrystalFrequency: Single read FCrystalFrequency write FCrystalFrequency;
     property CycleFrequency: Single read GetCycleFrequency write SetCycleFrequency;
     property CycleTime: Single read GetCycleTime write SetCycleTime;
+
+    property LiveUpdate: Boolean read FLiveUpdate write FLiveUpdate;
 
     property WatchDogEnabled: Boolean read FWatchDogEnabled write FWatchDogEnabled;
 
