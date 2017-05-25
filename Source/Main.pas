@@ -325,7 +325,7 @@ const
   FileExtensions: array [TFileType] of String = (
     '.asm',
     '.lst',
-    '.hex'
+    '.bin'
   );
 
   PeripheralClasses: array [0 .. 1] of TPeripheralFormClass = (
