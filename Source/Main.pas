@@ -1292,7 +1292,7 @@ end;
 
 function TfrmMain.GetPortsVisible: Boolean;
 begin
-  Result := gbSpecialFunction.Visible;
+  Result := pnlLeft.Visible;
 end;
 
 procedure TfrmMain.SetPortsVisible(AValue: Boolean);
@@ -1300,7 +1300,7 @@ begin
   if PortsVisible = AValue then
     Exit;
   DisableAlign;
-  gbSpecialFunction.Visible := AValue;
+  pnlLeft.Visible := AValue;
   actTogglePortsVisible.Checked := AValue;
   EnableAlign;
 end;

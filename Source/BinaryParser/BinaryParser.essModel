@@ -1,0 +1,80 @@
+[Diagram:]
+OffsetX=0
+OffsetY=1496
+Visibility=0
+ShowAssoc=1
+
+[Box:  - ::BinaryParser]
+X=20
+Y=40
+
+[Box:  - ::BitField]
+X=225
+Y=40
+
+[Box:  - ::ButtonPanelDefine]
+X=240
+Y=210
+
+[Box:  - ::Color]
+X=2055
+Y=380
+
+[Box:  - ::Delegates]
+X=1549
+Y=465
+
+[Box:  - ::EmulationSettingsForm]
+X=845
+Y=125
+
+[Box:  - ::LEDArraySettingsForm]
+X=2630
+Y=210
+
+[Box:  - ::LEDDefine]
+X=2850
+Y=295
+
+[Box:  - ::Lists]
+X=1344
+Y=465
+
+[Box:  - ::Main]
+X=1064
+Y=40
+
+[Box:  - ::PeripheralButtonPanel]
+X=420
+Y=125
+
+[Box:  - ::PeripheralFormDefine]
+X=1545
+Y=210
+
+[Box:  - ::PeripheralLEDArray]
+X=1971
+Y=125
+
+[Box:  - ::PinDefine]
+X=1409
+Y=380
+
+[Box:  - ::ProcessorDefine]
+X=1120
+Y=295
+
+[Box:  - ::ProcessorFormDefine]
+X=1050
+Y=125
+
+[Box:  - ::VisiblePinSelectionDefine]
+X=2425
+Y=295
+
+[Diagram: ]
+OffsetX=0
+OffsetY=0
+Visibility=4
+ShowAssoc=1
+
