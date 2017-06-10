@@ -12,16 +12,19 @@ type
   TfrmEmulationSettings = class(TForm)
     btnOK: TButton;
     btnCancel: TButton;
+    cbLiveUpdate: TCheckBox;
     edtCrystalFrequency: TEdit;
     cbWatchDogEnabled: TCheckBox;
     edtOperationTime: TEdit;
     edtOperationFrequency: TEdit;
     lbCrystalFrequency: TLabel;
-    lbwdte: TLabel;
+    lbWatchDogEnabled: TLabel;
     lbOperationTime: TLabel;
     lbOperationFrequency: TLabel;
+    lbLiveUpdate: TLabel;
     pnlCrystalFrequency: TPanel;
-    pnlCrystalFrequency1: TPanel;
+    pnlWatchDogEnabled: TPanel;
+    pnlLiveUpdate: TPanel;
     pnlOperationTime: TPanel;
     pnlOperationFrequency: TPanel;
     pnlSettingsArea: TPanel;
@@ -91,6 +94,8 @@ end;
 
 procedure TfrmEmulationSettings.SetCrystalFrequency(AValue: Single);
 begin
+  if (AValue <= 0) or IsNan(AValue) then
+    raise Exception.CreateFmt('"%g Hz" is an invalid frequency', [AValue]);
   edtCrystalFrequency.Text := FormatFrequency(AValue);
   edtOperationFrequency.Text := FormatFrequency(AValue / 4);
   edtOperationTime.Text := FormatTime(4 / AValue);
@@ -117,9 +122,14 @@ begin
 end;
 
 procedure TfrmEmulationSettings.edtOperationTimeEditingDone(Sender: TObject);
+var
+  OperationTime: Single;
 begin
   try
-    SetCrystalFrequency(4 / ParseTime(edtOperationTime.Text));
+    OperationTime := ParseTime(edtOperationTime.Text);
+    if (OperationTime <= 0) or IsNan(OperationTime) then
+      raise Exception.CreateFmt('"%g sec" is an invalid frequency', [OperationTime]);
+    SetCrystalFrequency(4 / OperationTime);
   except
     on E: Exception do
       ShowMessage(E.Message);
@@ -134,12 +144,14 @@ begin
     on E: Exception do
       ShowMessage(E.Message);
   end;
+  cbLiveUpdate.Checked := AEmulationSettings.LiveUpdate;
   cbWatchDogEnabled.Checked := AEmulationSettings.WatchDogEnabled;
 end;
 
 procedure TfrmEmulationSettings.SaveEmulationSettings(AEmulationSettings: TEmulationSettings);
 begin
   AEmulationSettings.CrystalFrequency := ParseFrequency(edtCrystalFrequency.Text);
+  AEmulationSettings.LiveUpdate := cbLiveUpdate.Checked;
   AEmulationSettings.WatchDogEnabled := cbWatchDogEnabled.Checked;
 end;
 

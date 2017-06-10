@@ -146,6 +146,7 @@ type
     synCompletion: TSynCompletion;
     procedure actCreatePeripheralExecute(Sender: TObject);
     procedure actEmulationSettingsExecute(Sender: TObject);
+    procedure actEmulationSettingsUpdate(Sender: TObject);
     procedure actHelpProgExecute(Sender: TObject);
     procedure actClearROMExecute(Sender: TObject);
     procedure actClearROMUpdate(Sender: TObject);
@@ -207,8 +208,6 @@ type
     FLineFollowMode: TLineFollowMode;
     FLineFollowRange: Cardinal;
 
-    FSlowMode: Boolean;
-
     FProcessorPortAForm: TProcessorPortAForm;
     FProcessorPortBForm: TProcessorPortBForm;
     FProcessorMasterClearForm: TProcessorMasterClearForm;
@@ -240,6 +239,7 @@ type
     procedure SetMemViewWidth(AValue: Integer);
     procedure SetSpecialFunctionWidth(AValue: Integer);
     procedure SetSpecialFunctionHeight(AValue: Integer);
+    function GetProcessorHighspeed: Boolean;
 
     function GetMemViewCellIndex(ACol, ARow: Integer): Integer;
 
@@ -298,6 +298,8 @@ type
     procedure NotCompiledError;
 
     function Compile: Boolean;
+
+    property ProcessorHighspeed: Boolean read GetProcessorHighspeed;
 
   protected
     procedure UpdateActions; override;
@@ -429,6 +431,11 @@ begin
   frmEmulationSettings.Execute(FProcessor.EmulationSettings);
 end;
 
+procedure TfrmMain.actEmulationSettingsUpdate(Sender: TObject);
+begin
+  actEmulationSettings.Enabled := not FProcessor.Running;
+end;
+
 procedure TfrmMain.actCreatePeripheralExecute(Sender: TObject);
 begin
   PeripheralClasses[cbPeripherals.ItemIndex].Create(Self);
@@ -442,7 +449,7 @@ end;
 
 procedure TfrmMain.actClearROMUpdate(Sender: TObject);
 begin
-  actClearROM.Enabled := not FProcessor.RUnning;
+  actClearROM.Enabled := not FProcessor.Running;
 end;
 
 procedure TfrmMain.actCompileUpdate(Sender: TObject);
@@ -810,7 +817,7 @@ begin
     case MemViewType of
       mtRAM:
       begin
-        if not FProcessor.Running and (I <> -1) and (I = FProcessor.RAM[b0FSR]) then
+        if not ProcessorHighspeed and (I <> -1) and (I = FProcessor.RAM[b0FSR]) then
           sgMemView.Canvas.Brush.Color := $55DD55
         else if I = 0 then
           sgMemView.Canvas.Brush.Color := $44AA44
@@ -819,7 +826,7 @@ begin
       end;
       mtProgram:
       begin
-        if not FProcessor.Running and (I <> -1) and (I div 2 = FProcessor.CurrentProgramPos) then
+        if not ProcessorHighspeed and (I <> -1) and (I div 2 = FProcessor.CurrentProgramPos) then
           sgMemView.Canvas.Brush.Color := $3333FF;
       end;
       mtROM:
@@ -828,7 +835,7 @@ begin
       end;
       mtProgramCounterStack:
       begin
-        if not FProcessor.Running and (I <> -1) and (I div 2 = FProcessor.PCStackPos - 1) then
+        if not ProcessorHighspeed and (I <> -1) and (I div 2 = FProcessor.PCStackPos - 1) then
           sgMemView.Canvas.Brush.Color := $3333FF;
       end;
     end;
@@ -938,7 +945,7 @@ const
   ColorBreakpoint = $2233FF;
   ColorPCBreakpoint = $4466FF;
 begin
-  if Compiled and (not FProcessor.Running or FSlowMode) then
+  if Compiled and not ProcessorHighspeed then
   begin
     if Line = FProcessor.CurrentInstruction.Line then
     begin
@@ -957,6 +964,11 @@ begin
     Markup.Background := ColorBreakpoint;
     Exit;
   end;
+end;
+
+function TfrmMain.GetProcessorHighspeed: Boolean;
+begin
+  Result := FProcessor.Running and not FProcessor.EmulationSettings.LiveUpdate;
 end;
 
 function TfrmMain.GetSpecialFunctionHeight: Integer;
@@ -1413,7 +1425,7 @@ begin
   begin
     try
       try
-        FSlowMode := FProcessor.CatchUp <= 1;
+        FProcessor.CatchUp;
       except
         on E: ENotImplemented do
         begin
@@ -1423,10 +1435,11 @@ begin
       end;
     finally
 
-      if not FProcessor.Running or FSlowMode then
+      if not ProcessorHighspeed then
       begin
         UpdateALUInfo;
         UpdateMemView;
+        UpdateSpecialFunction;
         UpdateSynEditMarkup;
         UpdateSynEditScroll;
       end;
@@ -1445,7 +1458,7 @@ end;
 procedure TfrmMain.UpdateActions;
 begin
   inherited UpdateActions;
-  cbMemorySelection.Enabled := not FProcessor.Running;
+  cbMemorySelection.Enabled := not ProcessorHighspeed;
 end;
 
 function TfrmMain.GetProcessor: TProcessor;
